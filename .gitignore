@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Utils/client_secret_v8_7.json
+/Utils/google-service-account-key8_7a.json
