@@ -1,0 +1,95 @@
+﻿' ===========================================
+' 📄 Form1.vb (Forms\Form1)
+' -------------------------------------------
+' მიზანი: BtnLogin ღილაკით მოახდინოთ Google OAuth 2.0 ავტორიზაცია,
+'          LUser ლეიბლში კი გამოჩნდება ავტორიზებული მომხმარებლის ელ.ფოსტა.
+'          BtnLogin განახლდება ავტორიზაციის შემდეგ როგორც "გასვლა".
+' ===========================================
+
+Imports System.IO
+Imports System.Threading
+Imports Google.Apis.Auth.OAuth2
+Imports Google.Apis.Services
+Imports Google.Apis.Oauth2.v2
+Imports Google.Apis.Oauth2.v2.Data
+
+Public Class Form1
+
+    ' 🔐 გლობალური ცვლადები
+    Private userEmail As String = ""                        ' ავტორიზებული ელ.ფოსტა
+    Private isAuthorized As Boolean = False                   ' ავტორიზაციის სტატუსი
+    Private cred As UserCredential = Nothing                  ' მომხმარებლის კრედენშია
+
+    ' JSON ფაილების განთავსების საქაღალდე Utils
+    Private ReadOnly utilsFolder As String =
+        Path.Combine(Application.StartupPath, "Utils")
+    ' Client Secrets JSON ფაილის ადგილმდებარეობა Utils საქაღალდეში
+    Private ReadOnly secretsFile As String =
+        Path.Combine(utilsFolder, "client_secret_v8_7.json")
+
+    ' ფორმის ჩატვირთვის დროის UI-ის საწყისი კონფიგურაცია
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' Utils საქაღალდის შექმნა, თუ არ არსებობს
+        If Not Directory.Exists(utilsFolder) Then
+            Directory.CreateDirectory(utilsFolder)
+        End If
+        BtnLogin.Text = "ავტორიზაცია"
+        LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
+    End Sub
+
+    ' 📌 BtnLogin დაჭერის ჰენდლერი
+    Private Async Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
+        If Not isAuthorized Then
+            Try
+                ' 1) Client Secrets-ის დატვირთვა Utils საქაღალდიდან
+                Dim secrets = GoogleClientSecrets.Load(
+                    New FileStream(secretsFile, FileMode.Open, FileAccess.Read)
+                ).Secrets
+
+                ' 2) ავტორიზაციის პროცესის დაწყება (Default DataStore გარეშე)
+                cred = Await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    secrets,
+                    New String() {Oauth2Service.Scope.UserinfoEmail, Oauth2Service.Scope.UserinfoProfile},
+                    "user",
+                    CancellationToken.None
+                )
+
+                ' 3) მომხმარებლის ინფორმაციის მიღება Oauth2Service-ის საშუალებით
+                Dim oauthService = New Oauth2Service(New BaseClientService.Initializer() With {
+                    .HttpClientInitializer = cred,
+                    .ApplicationName = "Scheduler_v8.8a"
+                })
+                Dim userInfo = oauthService.Userinfo.Get().Execute()
+
+                ' 4) UI-ის განახლება ავტორიზაციიდან მიღებული მონაცემებით
+                userEmail = userInfo.Email
+                LUser.Text = userEmail
+                BtnLogin.Text = "გასვლა"
+                isAuthorized = True
+
+            Catch ex As Exception
+                MessageBox.Show("ავტორიზაცია წარუმატებელია: " & ex.Message,
+                                "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        Else
+            ' ■ გამოსვლის ლოგიკა (Default DataStore გარეშე)
+            Try
+                If cred IsNot Nothing Then
+                    ' ტოკენის გადაწყობა Google-ის მხარეს
+                    Await cred.RevokeTokenAsync(CancellationToken.None)
+                End If
+
+                ' UI-ის დაბრუნება საწყის მდგომარეობაში
+                cred = Nothing
+                isAuthorized = False
+                userEmail = ""
+                LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
+                BtnLogin.Text = "ავტორიზაცია"
+
+            Catch ex As Exception
+                MessageBox.Show("გასვლისას მოხდა შეცდომა: " & ex.Message,
+                                "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End If
+    End Sub
+End Class
