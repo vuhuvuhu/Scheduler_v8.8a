@@ -1,146 +1,145 @@
 ﻿' ===========================================
-' 📄 Form1.vb (Forms\Form1)
+' 📄 Forms/Form1.vb (Refactored with MVVM and UC_Home integration)
 ' -------------------------------------------
-' მიზანი:
-'   ● Google OAuth 2.0 ავტორიზაცია BtnLogin–ით
-'   ● LUser-ში ელ.ფოსტა და როლის ჩვენება
-'   ● მენიუს მართვა როლის მიხედვით MenuManager–ით
+' მიზანი: UI გამიჯნული ViewModel-ზე, GoogleOAuthService და SheetDataService გამოყენებით,
+'       UC_Home ასაჩვენებლად გამარტივებული ლოჯიკით
 ' ===========================================
-
 Imports System.IO
-Imports System.Threading
-Imports Google.Apis.Auth.OAuth2
-Imports Google.Apis.Services
+Imports System.ComponentModel
 Imports Google.Apis.Oauth2.v2
-Imports Google.Apis.Oauth2.v2.Data
+Imports Google.Apis.Services
 Imports Google.Apis.Sheets.v4
-Imports Google.Apis.Sheets.v4.Data
-Imports Google.Apis.Util.Store
-
-' Utils კლასების ფოლდერში დამატებული MenuManager კლასის გამოყენება
+Imports Scheduler_v8_8a.Services
+Imports Scheduler_v8_8a.Models
 Imports Utils
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
 Public Class Form1
 
-    ' 🔐 ავტორიზაციის ველები
-    Private userEmail As String = String.Empty
-    Private isAuthorized As Boolean = False
-    Private cred As UserCredential = Nothing
-    Private userRole As String = String.Empty
-
-    ' მენიუს მართვის ობიექტი
+    ' ViewModel-ები და სერვისები
+    Private viewModel As MainViewModel
+    Private homeViewModel As HomeViewModel
+    Private authService As GoogleOAuthService
     Private menuMgr As MenuManager
+    Private homeControl As UC_Home
 
-    ' Resources
+    ' კონფიგურაცია
     Private ReadOnly spreadsheetId As String = "1SrBc4vLKPui6467aNmF5Hw-WZEd7dfGhkeFjfcnUqog"
     Private ReadOnly utilsFolder As String = Path.Combine(Application.StartupPath, "Utils")
     Private ReadOnly secretsFile As String = Path.Combine(utilsFolder, "client_secret_v8_7.json")
+    Private ReadOnly tokenStorePath As String = Path.Combine(utilsFolder, "TokenStore")
 
-    ' ===========================================
-    ' ფორმის ჩატვირთვის UI და მენიუს ინიციალიზაცია
-    ' ===========================================
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        ' Utils საქაღალდის შექმნა
-        If Not Directory.Exists(utilsFolder) Then Directory.CreateDirectory(utilsFolder)
-
-        ' UI საწყისი
-        BtnLogin.Text = "ავტორიზაცია"
-        LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
-
-        ' MenuManager-ის შექმნა და დასაწყისი მენიუს კონფიგურაცია
-        menuMgr = New MenuManager(mainMenu)
-        menuMgr.ShowOnlyHomeMenu()
+    ''' <summary>
+    ''' კონსტრუქტორი: InitializeComponent და ViewModel-ების ინიციალიზაცია
+    ''' </summary>
+    Public Sub New()
+        InitializeComponent()
+        viewModel = New MainViewModel()
+        homeViewModel = New HomeViewModel()
+        AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
     End Sub
 
-    ' ===========================================
-    ' BtnLogin-ის ჰენდლერი: ავტორიზაცია და მენიუს განახლება
-    ' ===========================================
+    ''' <summary>
+    ''' Form Load: სერვისების დაწყება, მენიუს კონფიგურაცია, და მთავარი View (UC_Home)
+    ''' </summary>
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' საქაღალდების შექმნა თუ არ არსებობს
+        If Not Directory.Exists(utilsFolder) Then Directory.CreateDirectory(utilsFolder)
+        If Not Directory.Exists(tokenStorePath) Then Directory.CreateDirectory(tokenStorePath)
+
+        ' ავტორიზაცია სერვისი
+        authService = New GoogleOAuthService(secretsFile, tokenStorePath)
+
+        ' მენიუს მენეჯერი - მხოლოდ საწყისი
+        menuMgr = New MenuManager(mainMenu)
+        menuMgr.ShowOnlyHomeMenu()
+
+        ' საწყისი Home View
+        ShowHome()
+
+        ' UI-ის საწყისი ინსტრუქციები ViewModel-იდან
+        LUser.Text = viewModel.Email
+        BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
+    End Sub
+
+    ''' <summary>
+    ''' BtnLogin Click: Login ან Logout ივენთი ViewModel-ით დასმული
+    ''' </summary>
     Private Async Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
-        If Not isAuthorized Then
+        If Not viewModel.IsAuthorized Then
             Try
-                ' წინა ტოკენების წაშლა ახალი scopes–ით
-                Dim tokenPath = Path.Combine(utilsFolder, "TokenStore")
-                If Directory.Exists(tokenPath) Then Directory.Delete(tokenPath, True)
+                '1) Google OAuth ავტორიზაცია
+                Await authService.AuthorizeAsync(New String() {
+                    Oauth2Service.Scope.UserinfoEmail,
+                    Oauth2Service.Scope.UserinfoProfile,
+                    SheetsService.Scope.SpreadsheetsReadonly,
+                    SheetsService.Scope.Spreadsheets
+                })
+                Dim cred = authService.Credential
 
-                ' Client Secrets
-                Dim secrets = GoogleClientSecrets.Load(
-                    New FileStream(secretsFile, FileMode.Open, FileAccess.Read)
-                ).Secrets
-
-                ' OAuth ავტორიზაცია Scopes–ით და FileDataStore-ით
-                Dim dataStore = New FileDataStore(tokenPath, True)
-                cred = Await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    secrets,
-                    New String() {Oauth2Service.Scope.UserinfoEmail, Oauth2Service.Scope.UserinfoProfile, SheetsService.Scope.SpreadsheetsReadonly, SheetsService.Scope.Spreadsheets},
-                    "user",
-                    CancellationToken.None,
-                    dataStore
-                )
-
-                ' მომხმარებლის ელ.ფოსტის მიღება
-                Dim oauthService = New Oauth2Service(New BaseClientService.Initializer() With {
+                '2) Email წამოღება OAuth2 Service-ით
+                Dim oauthSvc = New Oauth2Service(New BaseClientService.Initializer() With {
                     .HttpClientInitializer = cred,
                     .ApplicationName = "Scheduler_v8.8a"
                 })
-                Dim userInfo = oauthService.Userinfo.Get().Execute()
-                userEmail = userInfo.Email
+                Dim email = oauthSvc.Userinfo.Get().Execute().Email
 
-                ' Sheets API და DB-Users დეტექცია
-                Dim sheetsClient = New SheetsService(New BaseClientService.Initializer() With {
-                    .HttpClientInitializer = cred,
-                    .ApplicationName = "Scheduler_v8.8a"
-                })
-                Dim getReq = sheetsClient.Spreadsheets.Values.Get(spreadsheetId, "DB-Users!B2:C")
-                Dim rows = getReq.Execute().Values
+                '3) როლის მიღება/დამატება SheetDataService-ით
+                Dim sheetService = New SheetDataService(cred, spreadsheetId)
+                Dim role = sheetService.GetOrCreateUserRole(email)
 
-                ' როლის გამოკითხვა ან დამატება
-                Dim found As Boolean = False
-                If rows IsNot Nothing Then
-                    For Each row As IList(Of Object) In rows
-                        If row.Count >= 2 AndAlso String.Equals(row(0).ToString(), userEmail, StringComparison.OrdinalIgnoreCase) Then
-                            userRole = row(1).ToString()
-                            found = True
-                            Exit For
-                        End If
-                    Next
-                End If
-                If Not found Then
-                    userRole = "6"
-                    Dim vr = New ValueRange With {.Values = New List(Of IList(Of Object)) From {New List(Of Object) From {userEmail, userRole}}}
-                    Dim appendReq = sheetsClient.Spreadsheets.Values.Append(vr, spreadsheetId, "DB-Users!B:C")
-                    appendReq.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED
-                    appendReq.Execute()
-                End If
-
-                ' UI განახლება
-                LUser.Text = $"{userEmail} (როლი: {userRole})"
-                BtnLogin.Text = "გასვლა"
-                isAuthorized = True
-
-                ' მენიუს ჩვენება როლის მიხედვით
-                menuMgr.ShowMenuByRole(userRole)
-
+                '4) ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
+                viewModel.Email = email
+                viewModel.Role = role
+                viewModel.IsAuthorized = True
             Catch ex As Exception
-                MessageBox.Show($"ავტორიზაცია ან მონაცემთა განახლება ვერ დასრულდა: {ex.Message}",
-                                "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         Else
-            ' გასვლა
             Try
-                If cred IsNot Nothing Then Await cred.RevokeTokenAsync(CancellationToken.None)
-                cred = Nothing
-                isAuthorized = False
-                userEmail = String.Empty
-                userRole = String.Empty
-
-                ' UI და მენიუს დაწყობა ისევ მხოლოდ მთავარი
-                LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
-                BtnLogin.Text = "ავტორიზაცია"
-                menuMgr.ShowOnlyHomeMenu()
-
+                ' Logout
+                Await authService.RevokeAsync()
+                viewModel.IsAuthorized = False
+                viewModel.Email = String.Empty
+                viewModel.Role = String.Empty
             Catch ex As Exception
-                MessageBox.Show($"გასვლისას მოხდა შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show($"გასვლა ვერ განხორციელდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End If
+    End Sub
+
+    ''' <summary>
+    ''' PropertyChanged Handler: UI და მენიუს განახლება ViewModel-იდან
+    ''' </summary>
+    Private Sub OnViewModelPropertyChanged(sender As Object, e As PropertyChangedEventArgs)
+        Select Case e.PropertyName
+            Case NameOf(viewModel.Email)
+                LUser.Text = viewModel.Email
+            Case NameOf(viewModel.IsAuthorized)
+                BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
+            Case NameOf(viewModel.Role)
+                menuMgr.ShowMenuByRole(viewModel.Role)
+        End Select
+    End Sub
+
+    ''' <summary>
+    ''' Shows UC_Home in pnlMain
+    ''' </summary>
+    Private Sub ShowHome()
+        If homeControl Is Nothing Then
+            homeControl = New UC_Home(homeViewModel)
+            homeControl.Dock = DockStyle.Fill
+            pnlMain.Controls.Add(homeControl)
+        End If
+        homeControl.BringToFront()
+    End Sub
+
+    ''' <summary>
+    ''' Menu ItemClicked: საწყისის ღილაკზე ShowHome იძახება
+    ''' </summary>
+    Private Sub mainMenu_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles mainMenu.ItemClicked
+        If e.ClickedItem.Text = "საწყისი" Then ShowHome()
+        ' სხვა მენიუთიემები...
     End Sub
 End Class

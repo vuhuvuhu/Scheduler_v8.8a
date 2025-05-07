@@ -22,9 +22,11 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form1))
         Me.mainMenu = New System.Windows.Forms.MenuStrip()
         Me.BtnLogin = New System.Windows.Forms.Button()
         Me.LUser = New System.Windows.Forms.Label()
+        Me.pnlMain = New System.Windows.Forms.Panel()
         Me.SuspendLayout()
         '
         'mainMenu
@@ -57,11 +59,23 @@ Partial Class Form1
         Me.LUser.TabIndex = 2
         Me.LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
         '
+        'pnlMain
+        '
+        Me.pnlMain.BackColor = System.Drawing.Color.Transparent
+        Me.pnlMain.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.pnlMain.Location = New System.Drawing.Point(0, 24)
+        Me.pnlMain.Name = "pnlMain"
+        Me.pnlMain.Size = New System.Drawing.Size(994, 426)
+        Me.pnlMain.TabIndex = 3
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.BackgroundImage = CType(resources.GetObject("$this.BackgroundImage"), System.Drawing.Image)
+        Me.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.ClientSize = New System.Drawing.Size(994, 450)
+        Me.Controls.Add(Me.pnlMain)
         Me.Controls.Add(Me.LUser)
         Me.Controls.Add(Me.BtnLogin)
         Me.Controls.Add(Me.mainMenu)
@@ -77,4 +91,5 @@ Partial Class Form1
     Friend WithEvents mainMenu As MenuStrip
     Friend WithEvents BtnLogin As Button
     Friend WithEvents LUser As Label
+    Friend WithEvents pnlMain As Panel
 End Class
