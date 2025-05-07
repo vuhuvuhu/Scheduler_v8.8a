@@ -14,7 +14,22 @@ Public Class UC_Home
 
     ' ViewModel რომელზეც ხდება მიბმა
     Private ReadOnly viewModel As HomeViewModel
-
+    ''' <summary>
+    ''' UserControl-ის დატვირთვის ივენთი, რომელიც გაეშვება იგი პირველად ჩნდება
+    ''' </summary>
+    Private Sub UC_Home_Load(sender As Object, e As EventArgs) Handles Me.Load
+        ' Timer-ის ხელახლა დაწყება თუ გაჩერებული იყო
+        If Not Timer1.Enabled Then
+            Timer1.Start()
+        End If
+    End Sub
+    ''' <summary>
+    ''' UserControl-ის დამალვის ივენთი, რომელიც გაეშვება როდესაც კონტროლი იმალება
+    ''' </summary>
+    Private Sub UC_Home_VisibleChanged(sender As Object, e As EventArgs) Handles Me.VisibleChanged
+        ' Timer-ი ვმუშაობს მხოლოდ როცა ხილულია
+        Timer1.Enabled = Me.Visible
+    End Sub
     ''' <summary>
     ''' კონსტრუქტორი: იღებს HomeViewModel-ს Data Binding-ისთვის
     ''' </summary>
@@ -47,11 +62,16 @@ Public Class UC_Home
     ''' Timer-ის მოვლენის დამმუშავებელი - ანახლებს დროს
     ''' </summary>
     Private Sub Timer1_Tick(sender As Object, e As EventArgs)
-        ' ViewModel-ში დროის განახლება
-        viewModel.UpdateTime()
+        Try
+            ' ViewModel-ში დროის განახლება - დავრწმუნდეთ რომ ar ხდება Exception-ი
+            viewModel.UpdateTime()
 
-        ' UI ელემენტების განახლება ViewModels-დან
-        UpdateTimeDisplay()
+            ' UI ელემენტების განახლება ViewModels-დან
+            UpdateTimeDisplay()
+        Catch ex As Exception
+            ' შეცდომის დამუშავება - შესაძლოა Timer გამოვრთოთ თუ მუდმივად არის შეცდომა
+            Debug.WriteLine($"Timer1_Tick შეცდომა: {ex.Message}")
+        End Try
     End Sub
 
     ''' <summary>
@@ -73,9 +93,18 @@ Public Class UC_Home
     ''' დროის ჩვენების განახლება ViewModel-დან
     ''' </summary>
     Private Sub UpdateTimeDisplay()
-        LTime.Text = viewModel.FormattedTime
-        LDate.Text = viewModel.FormattedDate
-        LWeekDay.Text = viewModel.WeekDayName
+        ' UI-ს ვანახლებთ მხოლოდ თუ კონტროლი ხილვადია და ინიციალიზებულია
+        If Me.IsHandleCreated AndAlso Me.Visible Then
+            ' UI ნაკადის შემოწმება
+            If Me.InvokeRequired Then
+                Me.Invoke(Sub() UpdateTimeDisplay())
+            Else
+                ' UI-ს განახლება ViewModel-ის მონაცემებით
+                LTime.Text = viewModel.FormattedTime
+                LDate.Text = viewModel.FormattedDate
+                LWeekDay.Text = viewModel.WeekDayName
+            End If
+        End If
     End Sub
 
     ''' <summary>

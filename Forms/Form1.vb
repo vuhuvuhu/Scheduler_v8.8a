@@ -67,62 +67,82 @@ Public Class Form1
         ShowHome()
 
         ' UI-ის საწყისი ინსტრუქციები ViewModel-იდან
-        LUser.Text = viewModel.Email
+        LUser.Text = If(String.IsNullOrEmpty(viewModel.Email), "გთხოვთ გაიაროთ ავტორიზაცია", viewModel.Email)
         BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
 
         ' დავამატოთ მისალმება homeViewModel-ში
         homeViewModel.Greeting = homeViewModel.GetGreetingByTime()
     End Sub
-
     ''' <summary>
     ''' BtnLogin Click: Login ან Logout ივენთი ViewModel-ით დასმული
     ''' განახლებული ვერსია UserService-ის გამოყენებით
     ''' </summary>
     Private Async Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
+        ' დეაქტივაცია ღილაკის ავტორიზაციის პროცესში მეორეჯერ დაკლიკების თავიდან ასაცილებლად
+        BtnLogin.Enabled = False
+
         If Not viewModel.IsAuthorized Then
             Try
                 ' 1) Google OAuth ავტორიზაცია
                 Await authService.AuthorizeAsync(New String() {
-                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
-                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile,
-                    Google.Apis.Sheets.v4.SheetsService.Scope.SpreadsheetsReadonly,
-                    Google.Apis.Sheets.v4.SheetsService.Scope.Spreadsheets
-                })
+                Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
+                Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile,
+                Google.Apis.Sheets.v4.SheetsService.Scope.SpreadsheetsReadonly,
+                Google.Apis.Sheets.v4.SheetsService.Scope.Spreadsheets
+            })
 
-                ' 2) ინიციალიზება სერვისების ავტორიზაციის შემდეგ
-                dataService = New GoogleSheetsDataService(authService.Credential, spreadsheetId)
-                userService = New UserService(dataService)
+                ' 2) ინიციალიზება სერვისების ავტორიზაციის შემდეგ - დავრწმუნდეთ რომ ნალები არ არის
+                If authService.Credential IsNot Nothing Then
+                    dataService = New GoogleSheetsDataService(authService.Credential, spreadsheetId)
+                    userService = New UserService(dataService)
 
-                ' 3) მომხმარებლის პროფილის მიღება
-                Dim userProfile = Await userService.GetUserProfile(authService.Credential)
+                    ' 3) მომხმარებლის პროფილის მიღება 
+                    Dim userProfile = Await userService.GetUserProfile(authService.Credential)
 
-                ' 4) ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
-                viewModel.Email = userProfile.Email
-                viewModel.Role = userProfile.Role
-                viewModel.IsAuthorized = True
+                    ' 4) ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
+                    If userProfile IsNot Nothing Then
+                        viewModel.Email = userProfile.Email
+                        viewModel.Role = userProfile.Role
+                        viewModel.IsAuthorized = True
 
-                ' 5) HomeViewModel-ის განახლება
-                homeViewModel.UserName = If(String.IsNullOrEmpty(userProfile.Name), userProfile.Email, userProfile.Name)
+                        ' 5) HomeViewModel-ის განახლება
+                        homeViewModel.UserName = If(String.IsNullOrEmpty(userProfile.Name), userProfile.Email, userProfile.Name)
 
-                ' 6) UI განახლება
-                ShowHome()
+                        ' 6) UI განახლება
+                        ShowHome()
+                    Else
+                        MessageBox.Show("მომხმარებლის პროფილის წამოღება ვერ მოხერხდა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End If
+                Else
+                    MessageBox.Show("ავტორიზაცია ვერ შესრულდა - კრედენციალები ვერ მივიღეთ", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
             Catch ex As Exception
                 MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         Else
             Try
-                ' Logout
+                ' Logout - უნდა იყოს მარტივი პროცესი
                 Await authService.RevokeAsync()
                 viewModel.IsAuthorized = False
                 viewModel.Email = String.Empty
                 viewModel.Role = String.Empty
                 homeViewModel.UserName = String.Empty
+
+                ' UI-ის განახლება
+                LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
+                menuMgr.ShowOnlyHomeMenu()
+
+                ' სერვისების გასუფთავება
+                dataService = Nothing
+                userService = Nothing
             Catch ex As Exception
                 MessageBox.Show($"გასვლა ვერ განხორციელდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End If
-    End Sub
 
+        ' ღილაკის ხელახალი აქტივაცია
+        BtnLogin.Enabled = True
+    End Sub
     ''' <summary>
     ''' PropertyChanged Handler: UI და მენიუს განახლება ViewModel-იდან
     ''' </summary>
