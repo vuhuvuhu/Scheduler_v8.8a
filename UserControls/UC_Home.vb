@@ -25,17 +25,18 @@ Public Class UC_Home
 
         ' UI ელემენტების ინიციალიზაცია
         InitializeComponent()
-
+        GBTools.Visible = False
+        GBTools.Enabled = False
         ' Timer-ის დაყენება
         Timer1.Interval = 1000
         AddHandler Timer1.Tick, AddressOf Timer1_Tick
         Timer1.Start()
 
         ' GroupBox-ების გამჭვირვალე ფონის დაყენება (50%)
-        GBGreeting.BackColor = Color.FromArgb(220, Color.White)
-        GBNow.BackColor = Color.FromArgb(220, Color.White)
-        GBTools.BackColor = Color.FromArgb(220, Color.White)
-
+        GBGreeting.BackColor = Color.FromArgb(200, Color.White)
+        GBNow.BackColor = Color.FromArgb(200, Color.White)
+        GBTools.BackColor = Color.FromArgb(200, Color.White)
+        GBRedTasks.BackColor = Color.FromArgb(200, Color.White)
         ' მიბმა ViewModel-ზე
         BindToViewModel()
 
@@ -60,7 +61,7 @@ Public Class UC_Home
             GBGreeting.Width = 253 ' საწყისი სიგანე
         Else
             ' როცა GBTools არ ჩანს, GBGreeting-ი უფრო ფართო უნდა იყოს
-            GBGreeting.Width = 500 ' გაფართოებული სიგანე
+            GBGreeting.Width = 253 ' გაფართოებული სიგანე
         End If
     End Sub
 
@@ -175,7 +176,111 @@ Public Class UC_Home
         ' Timer-ი ვმუშაობს მხოლოდ როცა ხილულია
         Timer1.Enabled = Me.Visible
     End Sub
+    ''' <summary>
+    ''' ვადაგადაცილებული სესიების ბარათების შექმნა და GBRedTasks-ში განთავსება
+    ''' </summary>
+    Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
+        ' გავასუფთაოთ არსებული ბარათები
+        GBRedTasks.Controls.Clear()
 
+        ' თუ სესიები არ არის, დავამატოთ შეტყობინება
+        If sessions Is Nothing OrElse sessions.Count = 0 Then
+            Dim lblNoSessions As New Label()
+            lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
+            lblNoSessions.AutoSize = True
+            lblNoSessions.Dock = DockStyle.Fill
+            lblNoSessions.TextAlign = ContentAlignment.MiddleCenter
+            GBRedTasks.Controls.Add(lblNoSessions)
+            Return
+        End If
+
+        ' ბარათების განსათავსებლადი FlowLayoutPanel
+        Dim flowPanel As New FlowLayoutPanel()
+        flowPanel.Dock = DockStyle.Fill
+        flowPanel.AutoScroll = True
+        flowPanel.FlowDirection = FlowDirection.TopDown
+        flowPanel.WrapContents = False
+        GBRedTasks.Controls.Add(flowPanel)
+
+        ' ყველა სესიისთვის შევქმნათ ბარათი
+        For Each session In sessions
+            Dim card As New Panel()
+            card.Size = New Size(GBRedTasks.Width - 30, 120)
+            card.BorderStyle = BorderStyle.FixedSingle
+            card.BackColor = Color.FromArgb(255, 235, 235) ' მოწითალო ფერი
+            card.Margin = New Padding(5)
+
+            ' დავამატოთ სესიის ინფორმაცია
+            Dim lblDateTime As New Label()
+            lblDateTime.Text = $"თარიღი: {session.FormattedDateTime}"
+            lblDateTime.Location = New Point(10, 10)
+            lblDateTime.AutoSize = True
+            lblDateTime.Font = New Font(lblDateTime.Font, FontStyle.Bold)
+            card.Controls.Add(lblDateTime)
+
+            Dim lblDuration As New Label()
+            lblDuration.Text = $"ხანგრძლივობა: {session.Duration} წთ"
+            lblDuration.Location = New Point(10, 30)
+            lblDuration.AutoSize = True
+            card.Controls.Add(lblDuration)
+
+            Dim lblBeneficiary As New Label()
+            lblBeneficiary.Text = $"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}"
+            lblBeneficiary.Location = New Point(10, 50)
+            lblBeneficiary.AutoSize = True
+            card.Controls.Add(lblBeneficiary)
+
+            Dim lblTherapist As New Label()
+            lblTherapist.Text = $"თერაპევტი: {session.TherapistName}"
+            lblTherapist.Location = New Point(10, 70)
+            lblTherapist.AutoSize = True
+            card.Controls.Add(lblTherapist)
+
+            Dim lblTherapyType As New Label()
+            lblTherapyType.Text = $"თერაპია: {session.TherapyType}"
+            lblTherapyType.Location = New Point(250, 10)
+            lblTherapyType.AutoSize = True
+            card.Controls.Add(lblTherapyType)
+
+            Dim lblSpace As New Label()
+            lblSpace.Text = $"სივრცე: {session.Space}"
+            lblSpace.Location = New Point(250, 30)
+            lblSpace.AutoSize = True
+            card.Controls.Add(lblSpace)
+
+            Dim lblFunding As New Label()
+            lblFunding.Text = $"დაფინანსება: {session.Funding}"
+            lblFunding.Location = New Point(250, 50)
+            lblFunding.AutoSize = True
+            card.Controls.Add(lblFunding)
+
+            ' თუ მომხმარებელი ავტორიზებულია და როლი არის 1, 2 ან 3, დავამატოთ რედაქტირების ღილაკი
+            If isAuthorized AndAlso (userRole = "1" OrElse userRole = "2" OrElse userRole = "3") Then
+                Dim btnEdit As New Button()
+                btnEdit.Text = "რედაქტირება"
+                btnEdit.Location = New Point(card.Width - 120, 70)
+                btnEdit.Size = New Size(100, 25)
+                btnEdit.Tag = session.Id ' შევინახოთ სესიის ID
+                AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+                card.Controls.Add(btnEdit)
+            End If
+
+            ' დავამატოთ ბარათი FlowLayoutPanel-ში
+            flowPanel.Controls.Add(card)
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' რედაქტირების ღილაკზე დაჭერის დამმუშავებელი
+    ''' </summary>
+    Private Sub BtnEditSession_Click(sender As Object, e As EventArgs)
+        Dim btn = DirectCast(sender, Button)
+        Dim sessionId As Integer = CInt(btn.Tag)
+
+        ' აქ იქნება სესიის რედაქტირების ლოგიკა
+        MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
+        ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
+    End Sub
     ' ViewModel-ის თვისებების წაკითხვის მეთოდები UI-დან
     Public ReadOnly Property UserName() As String
         Get

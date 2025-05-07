@@ -80,99 +80,139 @@ Public Class Form1
     ''' განახლებული ვერსია UserService-ის გამოყენებით
     ''' </summary>
     Private Async Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
-        ' დეაქტივაცია ღილაკის ავტორიზაციის პროცესში მეორეჯერ დაკლიკების თავიდან ასაცილებლად
+        ' დავბლოკოთ ღილაკი, რომ თავიდან ავირიდოთ მრავალჯერადი დაჭერა
         BtnLogin.Enabled = False
 
-        If Not viewModel.IsAuthorized Then
-            Try
-                ' 1) Google OAuth ავტორიზაცია
-                Await authService.AuthorizeAsync(New String() {
-                Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
-                Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile,
-                Google.Apis.Sheets.v4.SheetsService.Scope.SpreadsheetsReadonly,
-                Google.Apis.Sheets.v4.SheetsService.Scope.Spreadsheets
-            })
+        Try
+            If Not viewModel.IsAuthorized Then
+                Try
+                    ' 1) Google OAuth ავტორიზაცია
+                    Await authService.AuthorizeAsync(New String() {
+                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
+                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile,
+                    Google.Apis.Sheets.v4.SheetsService.Scope.SpreadsheetsReadonly,
+                    Google.Apis.Sheets.v4.SheetsService.Scope.Spreadsheets
+                })
 
-                ' 2) ინიციალიზება სერვისების ავტორიზაციის შემდეგ - დავრწმუნდეთ რომ ნალები არ არის
-                If authService.Credential IsNot Nothing Then
+                    ' 2) ინიციალიზება სერვისების ავტორიზაციის შემდეგ
                     dataService = New GoogleSheetsDataService(authService.Credential, spreadsheetId)
                     userService = New UserService(dataService)
 
-                    ' 3) მომხმარებლის პროფილის მიღება 
+                    ' 3) მომხმარებლის პროფილის მიღება
                     Dim userProfile = Await userService.GetUserProfile(authService.Credential)
 
                     ' 4) ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
-                    If userProfile IsNot Nothing Then
-                        viewModel.Email = userProfile.Email
-                        viewModel.Role = userProfile.Role
-                        viewModel.IsAuthorized = True
+                    viewModel.Email = userProfile.Email
+                    viewModel.Role = userProfile.Role
+                    viewModel.IsAuthorized = True
 
-                        ' 5) HomeViewModel-ის განახლება
-                        homeViewModel.UserName = If(String.IsNullOrEmpty(userProfile.Name), userProfile.Email, userProfile.Name)
+                    ' 5) HomeViewModel-ის განახლება
+                    homeViewModel.UserName = If(String.IsNullOrEmpty(userProfile.Name), userProfile.Email, userProfile.Name)
 
-                        ' 6) UI განახლება
-                        ShowHome()
-                    Else
-                        MessageBox.Show("მომხმარებლის პროფილის წამოღება ვერ მოხერხდა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    End If
-                Else
-                    MessageBox.Show("ავტორიზაცია ვერ შესრულდა - კრედენციალები ვერ მივიღეთ", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    ' 6) UI განახლება
+                    ShowHome()
+                Catch ex As Exception
+                    MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            Else
+                Try
+                    ' Logout
+                    Await authService.RevokeAsync()
+                    viewModel.IsAuthorized = False
+                    viewModel.Email = String.Empty
+                    viewModel.Role = String.Empty
+                    homeViewModel.UserName = String.Empty
+
+                    ' მენიუს განახლება ავტორიზაციის შემდეგ
+                    menuMgr.ShowOnlyHomeMenu()
+                Catch ex As Exception
+                    MessageBox.Show($"გასვლა ვერ განხორციელდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+        Finally
+            ' გავააქტიუროთ ღილაკი ისევ
+            BtnLogin.Enabled = True
+        End Try
+    End Sub
+    ''' <summary>
+    ''' ინსტრუმენტების ხილვადობის მართვა ავტორიზაციის სტატუსისა და როლის მიხედვით
+    ''' </summary>
+    ''' <param name="isAuthorized">არის თუ არა მომხმარებელი ავტორიზებული</param>
+    ''' <param name="role">მომხმარებლის როლი (არასავალდებულო)</param>
+    ''' <param name="additionalParam">დამატებითი პარამეტრი (არასავალდებულო)</param>
+    Private Sub SetToolsVisibility(isAuthorized As Boolean, Optional role As String = "", Optional additionalParam As Object = Nothing)
+        Try
+            ' თუ homeControl არ არის ინიციალიზებული, გამოვიდეთ მეთოდიდან
+            If homeControl Is Nothing OrElse homeControl.IsDisposed Then
+                Return
+            End If
+
+            ' როლის მნიშვნელობის დადგენა
+            Dim userRole As String = If(String.IsNullOrEmpty(role), viewModel.Role, role)
+
+            ' ვიპოვოთ GBTools პანელი, თუ არსებობს
+            Dim toolsPanel = TryCast(homeControl.Controls.Find("GBTools", True).FirstOrDefault(), GroupBox)
+            If toolsPanel IsNot Nothing Then
+                ' შევცვალოთ როგორც Enabled, ასევე Visible თვისებები
+                toolsPanel.Enabled = isAuthorized
+                toolsPanel.Visible = isAuthorized
+
+                ' ცალკეული ღილაკების ხილვადობის მართვა
+                ' მაგალითად, BtnAddAray ხილვადია მხოლოდ ადმინისტრატორებისა (1) და მენეჯერებისთვის (2)
+                Dim addButton = TryCast(homeControl.Controls.Find("BtnAddAray", True).FirstOrDefault(), Button)
+                If addButton IsNot Nothing Then
+                    addButton.Visible = isAuthorized AndAlso (userRole = "1" OrElse userRole = "2")
                 End If
-            Catch ex As Exception
-                MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        Else
-            Try
-                ' Logout - უნდა იყოს მარტივი პროცესი
-                Await authService.RevokeAsync()
-                viewModel.IsAuthorized = False
-                viewModel.Email = String.Empty
-                viewModel.Role = String.Empty
-                homeViewModel.UserName = String.Empty
 
-                ' UI-ის განახლება
-                LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
-                menuMgr.ShowOnlyHomeMenu()
+                ' BtnRefresh ღილაკი ხილვადია ყველასთვის, ვინც ავტორიზებულია
+                Dim refreshButton = TryCast(homeControl.Controls.Find("BtnRefresh", True).FirstOrDefault(), Button)
+                If refreshButton IsNot Nothing Then
+                    refreshButton.Visible = isAuthorized
+                End If
+            End If
 
-                ' სერვისების გასუფთავება
-                dataService = Nothing
-                userService = Nothing
-            Catch ex As Exception
-                MessageBox.Show($"გასვლა ვერ განხორციელდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        End If
-
-        ' ღილაკის ხელახალი აქტივაცია
-        BtnLogin.Enabled = True
-        ' ხილვადობის განახლება ავტორიზაციის შემდეგ
-        ManageToolsVisibility(viewModel.Role)
-
-        ' ==================================
-        ' Form1.vb-ში ShowHome მეთოდის შიგნით დასამატებელი კოდი
-        ' ==================================
-
-        ' ახალი homeControl-ის შემთხვევაში, ვმართავთ GBTools ხილვადობას
-        If homeControl IsNot Nothing Then
-            ManageToolsVisibility(viewModel.Role)
-        End If
+            ' უფრო დაწვრილებითი დებაგირებისთვის დავამატოთ ჩანაწერი
+            Debug.WriteLine($"SetToolsVisibility გამოძახებულია: isAuthorized={isAuthorized}, role={userRole}")
+            If toolsPanel IsNot Nothing Then
+                Debug.WriteLine($"ინსტრუმენტების პანელი ნაპოვნია: Enabled={toolsPanel.Enabled}, Visible={toolsPanel.Visible}")
+            Else
+                Debug.WriteLine("ინსტრუმენტების პანელი ვერ მოიძებნა!")
+            End If
+        Catch ex As Exception
+            ' ვიჭერთ და ვაღრიცხავთ ნებისმიერ შეცდომას
+            Debug.WriteLine($"შეცდომა ინსტრუმენტების პანელის მართვისას: {ex.Message}")
+        End Try
     End Sub
     ''' <summary>
     ''' PropertyChanged Handler: UI და მენიუს განახლება ViewModel-იდან
     ''' </summary>
     Private Sub OnViewModelPropertyChanged(sender As Object, e As PropertyChangedEventArgs)
-        ' ამოცანა: UI-ის განახლება ViewModel-ის ცვლილებების შესაბამისად
-        Select Case e.PropertyName
-            Case NameOf(viewModel.Email)
-                LUser.Text = viewModel.Email
-            Case NameOf(viewModel.IsAuthorized)
-                BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
-                ' ავტორიზაციის სტატუსის ცვლილებისას მართვა GBTools ხილვადობა
-                ManageToolsVisibility(viewModel.Role)
-            Case NameOf(viewModel.Role)
-                menuMgr.ShowMenuByRole(viewModel.Role)
-                ' როლის ცვლილებისას მართვა GBTools ხილვადობა
-                ManageToolsVisibility(viewModel.Role)
-        End Select
+        ' თავიდან ავიცილოთ UI-თრედის დაბლოკვა
+        If Me.InvokeRequired Then
+            Me.Invoke(Sub() OnViewModelPropertyChanged(sender, e))
+            Return
+        End If
+
+        ' ვიხეიროთ მიმდინარე მნიშვნელობები იმისთვის, რომ თავიდან ავიცილოთ ციკლური განახლებები
+        Static isUpdating As Boolean = False
+        If isUpdating Then Return
+
+        isUpdating = True
+        Try
+            Select Case e.PropertyName
+                Case NameOf(viewModel.Email)
+                    LUser.Text = viewModel.Email
+                Case NameOf(viewModel.IsAuthorized)
+                    BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
+                    SetToolsVisibility(viewModel.IsAuthorized)
+                Case NameOf(viewModel.Role)
+                    menuMgr.ShowMenuByRole(viewModel.Role)
+                    ' როლის ცვლილება შეიძლება არ საჭიროებდეს ინსტრუმენტების ხელახალ კონფიგურაციას
+                    ' თუ მხოლოდ მენიუებს ცვლის
+            End Select
+        Finally
+            isUpdating = False
+        End Try
     End Sub
     ''' <summary>
     ''' მთავარი გვერდის ჩვენება UC_Home-ის გამოყენებით
@@ -183,9 +223,14 @@ Public Class Form1
             homeControl = New UC_Home(homeViewModel)
             homeControl.Dock = DockStyle.Fill
             pnlMain.Controls.Add(homeControl)
+            Debug.WriteLine("შეიქმნა ახალი homeControl")
         End If
 
         homeControl.BringToFront()
+        Debug.WriteLine($"homeControl გახდა წინ: IsDisposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
+
+        ' ინსტრუმენტების ხილვადობის განახლება - მნიშვნელოვანია ამ ადგილას!
+        SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
 
         ' თუ ავტორიზებულია მომხმარებელი, ვცდილობთ განვაახლოთ მონაცემები
         If viewModel.IsAuthorized AndAlso dataService IsNot Nothing Then
@@ -196,48 +241,69 @@ Public Class Form1
                 Debug.WriteLine($"მონაცემების დატვირთვის შეცდომა: {ex.Message}")
             End Try
         End If
-
-        ' ხილვადობის მართვა როლის მიხედვით
-        ManageToolsVisibility(viewModel.Role)
     End Sub
 
     ''' <summary>
     ''' HomeViewModel-ისთვის მონაცემების ასინქრონული დატვირთვა
     ''' </summary>
-    ''' 
     Private Async Sub LoadHomeDataAsync()
         Try
             ' დავიცადოთ დატვირთვამდე
             Await Task.Delay(100)
 
-            ' მოლოდინში არსებული სესიების დატვირთვა
-            If dataService IsNot Nothing Then
-                ' მოლოდინში არსებული სესიები
-                Dim pendingSessions = dataService.GetPendingSessions()
-                homeViewModel.PendingSessions.Clear()
-                For Each session In pendingSessions
-                    homeViewModel.PendingSessions.Add(session)
-                Next
+            ' დატვირთვის ლოგიკა გავიტანოთ ცალკე თრედზე
+            Await Task.Run(Sub()
+                               Try
+                                   ' მონაცემების წამოღება სხვა თრედზე
+                                   Dim pendingSessions = dataService.GetPendingSessions()
+                                   Dim overdueSessions = dataService.GetOverdueSessions() ' დავამატოთ ეს ხაზი
+                                   Dim birthdays = dataService.GetUpcomingBirthdays(7)
+                                   Dim tasks = dataService.GetActiveTasks()
 
-                ' სესიების რაოდენობის დაყენება
-                homeViewModel.PendingSessionsCount = pendingSessions.Count
+                                   ' UI განახლება მთავარ თრედზე
+                                   Me.Invoke(Sub()
+                                                 Try
+                                                     ' სესიების განახლება
+                                                     homeViewModel.PendingSessions.Clear()
+                                                     For Each session In pendingSessions
+                                                         homeViewModel.PendingSessions.Add(session)
+                                                     Next
+                                                     homeViewModel.PendingSessionsCount = pendingSessions.Count
 
-                ' მომავალი დაბადების დღეები (7 დღით)
-                Dim birthdays = dataService.GetUpcomingBirthdays(7)
-                homeViewModel.UpcomingBirthdays.Clear()
-                For Each birthday In birthdays
-                    homeViewModel.UpcomingBirthdays.Add(birthday)
-                Next
+                                                     ' ვადაგადაცილებული სესიების განახლება
+                                                     homeViewModel.OverdueSessions.Clear()
+                                                     For Each session In overdueSessions
+                                                         homeViewModel.OverdueSessions.Add(session)
+                                                     Next
 
-                ' აქტიური დავალებები
-                Dim tasks = dataService.GetActiveTasks()
-                homeViewModel.ActiveTasks.Clear()
-                For Each task In tasks
-                    homeViewModel.ActiveTasks.Add(task)
-                Next
-            End If
+                                                     ' ვადაგადაცილებული სესიების ბარათების შექმნა
+                                                     If homeControl IsNot Nothing Then
+                                                         homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
+                                                               viewModel.IsAuthorized,
+                                                               viewModel.Role)
+                                                     End If
+
+                                                     ' დაბადების დღეების განახლება
+                                                     homeViewModel.UpcomingBirthdays.Clear()
+                                                     For Each birthday In birthdays
+                                                         homeViewModel.UpcomingBirthdays.Add(birthday)
+                                                     Next
+
+                                                     ' დავალებების განახლება
+                                                     homeViewModel.ActiveTasks.Clear()
+                                                     For Each task In tasks
+                                                         homeViewModel.ActiveTasks.Add(task)
+                                                     Next
+                                                 Catch uiEx As Exception
+                                                     Debug.WriteLine($"შეცდომა UI განახლებისას: {uiEx.Message}")
+                                                 End Try
+                                             End Sub)
+                               Catch threadEx As Exception
+                                   Debug.WriteLine($"შეცდომა მონაცემების დამუშავების თრედზე: {threadEx.Message}")
+                               End Try
+                           End Sub)
         Catch ex As Exception
-            Debug.WriteLine($"მონაცემების ასინქრონული დატვირთვის შეცდომა: {ex.Message}")
+            Debug.WriteLine($"საერთო შეცდომა მონაცემების დატვირთვისას: {ex.Message}")
         End Try
     End Sub
     ''' <summary>

@@ -428,5 +428,51 @@ Namespace Scheduler_v8_8a.Services
                 Return New List(Of TaskModel)()
             End Try
         End Function
+        ''' <summary>
+        ''' IDataService.GetOverdueSessions იმპლემენტაცია
+        ''' </summary>
+        Public Function GetOverdueSessions() As List(Of SessionModel) Implements IDataService.GetOverdueSessions
+            ' შევამოწმოთ ქეში
+            Dim cacheKey = "overdue_sessions"
+            Dim cachedSessions As List(Of SessionModel) = Nothing
+
+            If TryGetFromCache(cacheKey, cachedSessions) Then
+                Return cachedSessions
+            End If
+
+            Try
+                Dim sessions As New List(Of SessionModel)()
+                Dim rows = GetData(sessionsRange)
+
+                If rows IsNot Nothing Then
+                    For Each row As IList(Of Object) In rows
+                        Try
+                            ' შევქმნათ SessionModel
+                            Dim session = SessionModel.FromSheetRow(row)
+
+                            ' შევამოწმოთ არის თუ არა სესია ვადაგადაცილებული
+                            ' ვადაგადაცილებულია სესია, რომელიც ჯერ არ არის შესრულებული და თარიღი უკვე გასულია
+                            If session.Status = "დაგეგმილი" AndAlso session.DateTime < DateTime.Now Then
+                                sessions.Add(session)
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგი ჩანაწერით
+                            Continue For
+                        End Try
+                    Next
+                End If
+
+                ' დავალაგოთ სესიები თარიღის მიხედვით
+                sessions = sessions.OrderBy(Function(s) s.DateTime).ToList()
+
+                ' ქეშში შენახვა
+                CacheData(cacheKey, sessions)
+
+                Return sessions
+            Catch ex As Exception
+                Debug.WriteLine($"ვადაგადაცილებული სესიების წამოღების შეცდომა: {ex.Message}")
+                Return New List(Of SessionModel)()
+            End Try
+        End Function
     End Class
 End Namespace

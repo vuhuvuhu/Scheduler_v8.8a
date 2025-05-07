@@ -149,7 +149,22 @@ Namespace Scheduler_v8_8a.Models
                 OnPropertyChanged(NameOf(UpcomingBirthdays))
             End Set
         End Property
+        ' ვადაგადაცილებული სესიების სია
+        Private _overdueSessions As ObservableCollection(Of SessionModel)
 
+        ''' <summary>ვადაგადაცილებული სესიების სია</summary>
+        Public Property OverdueSessions As ObservableCollection(Of SessionModel)
+            Get
+                If _overdueSessions Is Nothing Then
+                    _overdueSessions = New ObservableCollection(Of SessionModel)()
+                End If
+                Return _overdueSessions
+            End Get
+            Set(value As ObservableCollection(Of SessionModel))
+                _overdueSessions = value
+                OnPropertyChanged(NameOf(OverdueSessions))
+            End Set
+        End Property
         ''' <summary>აქტიური დავალებების სია</summary>
         Public Property ActiveTasks As ObservableCollection(Of TaskModel)
             Get

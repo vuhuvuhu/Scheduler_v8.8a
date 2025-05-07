@@ -65,6 +65,11 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         ''' <returns>დავალებების მოდელების სია</returns>
         Function GetActiveTasks() As List(Of Models.TaskModel)
+        ''' <summary>
+        ''' წამოიღებს ვადაგადაცილებულ სესიებს (სტატუსით "დაგეგმილი", მაგრამ თარიღი უკვე გასულია)
+        ''' </summary>
+        ''' <returns>ვადაგადაცილებული სესიების მოდელების სია</returns>
+        Function GetOverdueSessions() As List(Of Models.SessionModel)
     End Interface
 
 End Namespace
