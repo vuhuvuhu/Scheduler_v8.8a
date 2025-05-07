@@ -12,6 +12,7 @@ Imports Google.Apis.Sheets.v4
 Imports Scheduler_v8_8a.Services
 Imports Scheduler_v8_8a.Models
 Imports Utils
+Imports System.Drawing
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
@@ -93,6 +94,27 @@ Public Class Form1
                 viewModel.Email = email
                 viewModel.Role = role
                 viewModel.IsAuthorized = True
+                ' ორ ადგილი: DB-Personal-დან სახელი წამოღება და HomeControl-ში ჩვენება
+                Dim personalService = New SheetDataService(authService.Credential, spreadsheetId)
+                Dim personalRows = personalService.ReadRange("DB-Personal!B2:G")
+                Dim foundName As String = String.Empty
+                If personalRows IsNot Nothing Then
+                    For Each prow As IList(Of Object) In personalRows
+                        If prow.Count >= 6 AndAlso String.Equals(prow(5).ToString(), viewModel.Email, StringComparison.OrdinalIgnoreCase) Then
+                            foundName = prow(0).ToString()
+                            Exit For
+                        End If
+                    Next
+                End If
+                ' Ensure Home control is visible and set the name or email with style
+                ShowHome()
+                If Not String.IsNullOrEmpty(foundName) Then
+                    homeControl.LUserName.Text = foundName
+                    homeControl.LUserName.Font = New Font(homeControl.LUserName.Font.FontFamily, 12, FontStyle.Bold)
+                Else
+                    homeControl.LUserName.Text = viewModel.Email
+                    homeControl.LUserName.Font = New Font(homeControl.LUserName.Font.FontFamily, 8, FontStyle.Regular)
+                End If
             Catch ex As Exception
                 MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try

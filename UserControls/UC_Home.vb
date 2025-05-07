@@ -22,12 +22,13 @@ Public Class UC_Home
         InitializeComponent()
 
         Timer1.Interval = 1000
-        'AddHandler Timer1.Tick
+        AddHandler Timer1.Tick, AddressOf Timer1_Tick
         Timer1.Start()
         ' GroupBox გამჭვირვალედ დაყენება (50%)
         'GBGreeting.SetStyle(ControlStyles.SupportsTransparentBackColor, True)
         GBGreeting.BackColor = Color.FromArgb(220, Color.White)
         GBNow.BackColor = Color.FromArgb(220, Color.White)
+        GBTools.BackColor = Color.FromArgb(220, Color.White)
     End Sub
     Private Sub Timer1_Tick(sender As Object, e As EventArgs)
         Dim now = DateTime.Now

@@ -163,6 +163,12 @@
     <Content Include="Resources\AppImages\bg2.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\AppImages\BtnAdd.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\AppImages\btnRefresh.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\AppImages\logo1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
