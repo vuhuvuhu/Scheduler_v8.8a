@@ -54,6 +54,8 @@ Public Class Form1
 
         ' PropertyChanged ივენთის ჰენდლერი
         AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
+        ' საწყისი მდგომარეობაში ინსტრუმენტები დამალულია
+        SetToolsVisibility(False)
     End Sub
 
     ''' <summary>
@@ -142,6 +144,17 @@ Public Class Form1
 
         ' ღილაკის ხელახალი აქტივაცია
         BtnLogin.Enabled = True
+        ' ხილვადობის განახლება ავტორიზაციის შემდეგ
+        ManageToolsVisibility(viewModel.Role)
+
+        ' ==================================
+        ' Form1.vb-ში ShowHome მეთოდის შიგნით დასამატებელი კოდი
+        ' ==================================
+
+        ' ახალი homeControl-ის შემთხვევაში, ვმართავთ GBTools ხილვადობას
+        If homeControl IsNot Nothing Then
+            ManageToolsVisibility(viewModel.Role)
+        End If
     End Sub
     ''' <summary>
     ''' PropertyChanged Handler: UI და მენიუს განახლება ViewModel-იდან
@@ -153,11 +166,14 @@ Public Class Form1
                 LUser.Text = viewModel.Email
             Case NameOf(viewModel.IsAuthorized)
                 BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
+                ' ავტორიზაციის სტატუსის ცვლილებისას მართვა GBTools ხილვადობა
+                ManageToolsVisibility(viewModel.Role)
             Case NameOf(viewModel.Role)
                 menuMgr.ShowMenuByRole(viewModel.Role)
+                ' როლის ცვლილებისას მართვა GBTools ხილვადობა
+                ManageToolsVisibility(viewModel.Role)
         End Select
     End Sub
-
     ''' <summary>
     ''' მთავარი გვერდის ჩვენება UC_Home-ის გამოყენებით
     ''' </summary>
@@ -180,11 +196,15 @@ Public Class Form1
                 Debug.WriteLine($"მონაცემების დატვირთვის შეცდომა: {ex.Message}")
             End Try
         End If
+
+        ' ხილვადობის მართვა როლის მიხედვით
+        ManageToolsVisibility(viewModel.Role)
     End Sub
 
     ''' <summary>
     ''' HomeViewModel-ისთვის მონაცემების ასინქრონული დატვირთვა
     ''' </summary>
+    ''' 
     Private Async Sub LoadHomeDataAsync()
         Try
             ' დავიცადოთ დატვირთვამდე
@@ -220,7 +240,26 @@ Public Class Form1
             Debug.WriteLine($"მონაცემების ასინქრონული დატვირთვის შეცდომა: {ex.Message}")
         End Try
     End Sub
+    ''' <summary>
+    ''' როლის ცვლილებისას ხილვადობის მართვა
+    ''' </summary>
+    ''' <param name="role">მომხმარებლის როლი</param>
+    Private Sub ManageToolsVisibility(role As String)
+        ' თუ homeControl არ არის შექმნილი, გამოვტოვოთ
+        If homeControl Is Nothing Then
+            Return
+        End If
 
+        ' გადავამოწმოთ ავტორიზაციის სტატუსი და როლი
+        If viewModel.IsAuthorized Then
+            ' როლის მიხედვით გადაწყვეტილება
+            Dim hasAccess As Boolean = role = "1" OrElse role = "2" OrElse role = "3"
+            homeControl.SetToolsVisibility(hasAccess)
+        Else
+            ' ავტორიზაციის გარეშე ყოველთვის დამალულია
+            homeControl.SetToolsVisibility(False)
+        End If
+    End Sub
     ''' <summary>
     ''' Menu ItemClicked: MenuStrip-ის ივენთის დამმუშავებელი
     ''' </summary>

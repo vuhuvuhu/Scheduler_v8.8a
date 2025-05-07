@@ -14,22 +14,7 @@ Public Class UC_Home
 
     ' ViewModel რომელზეც ხდება მიბმა
     Private ReadOnly viewModel As HomeViewModel
-    ''' <summary>
-    ''' UserControl-ის დატვირთვის ივენთი, რომელიც გაეშვება იგი პირველად ჩნდება
-    ''' </summary>
-    Private Sub UC_Home_Load(sender As Object, e As EventArgs) Handles Me.Load
-        ' Timer-ის ხელახლა დაწყება თუ გაჩერებული იყო
-        If Not Timer1.Enabled Then
-            Timer1.Start()
-        End If
-    End Sub
-    ''' <summary>
-    ''' UserControl-ის დამალვის ივენთი, რომელიც გაეშვება როდესაც კონტროლი იმალება
-    ''' </summary>
-    Private Sub UC_Home_VisibleChanged(sender As Object, e As EventArgs) Handles Me.VisibleChanged
-        ' Timer-ი ვმუშაობს მხოლოდ როცა ხილულია
-        Timer1.Enabled = Me.Visible
-    End Sub
+
     ''' <summary>
     ''' კონსტრუქტორი: იღებს HomeViewModel-ს Data Binding-ისთვის
     ''' </summary>
@@ -56,6 +41,27 @@ Public Class UC_Home
 
         ' საწყისი მონაცემების ჩატვირთვა
         LoadData()
+
+        ' საწყისი მდგომარეობაში ინსტრუმენტები დამალულია
+        SetToolsVisibility(False)
+    End Sub
+
+    ''' <summary>
+    ''' ხილვადობის დაყენება ინსტრუმენტების პანელისთვის (GBTools)
+    ''' </summary>
+    ''' <param name="visible">უნდა იყოს თუ არა ხილული</param>
+    Public Sub SetToolsVisibility(visible As Boolean)
+        ' ინსტრუმენტების პანელი მხოლოდ მაშინ ჩანს, როცა მომხმარებელს აქვს შესაბამისი როლი
+        GBTools.Visible = visible
+
+        ' დავარეგულიროთ სხვა კონტეინერების ზომები, რათა არ იყოს ცარიელი ადგილი
+        If visible Then
+            ' ჩვეულებრივი მდგომარეობა, როცა ყველა პანელი ჩანს
+            GBGreeting.Width = 253 ' საწყისი სიგანე
+        Else
+            ' როცა GBTools არ ჩანს, GBGreeting-ი უფრო ფართო უნდა იყოს
+            GBGreeting.Width = 500 ' გაფართოებული სიგანე
+        End If
     End Sub
 
     ''' <summary>
@@ -152,7 +158,23 @@ Public Class UC_Home
         LoadData()
     End Sub
 
-    ' შეინიშნეთ: Dispose მეთოდი წაშლილია, რადგან ის უკვე განსაზღვრულია Designer ფაილში
+    ''' <summary>
+    ''' UserControl-ის დატვირთვის ივენთი, რომელიც გაეშვება იგი პირველად ჩნდება
+    ''' </summary>
+    Private Sub UC_Home_Load(sender As Object, e As EventArgs) Handles Me.Load
+        ' Timer-ის ხელახლა დაწყება თუ გაჩერებული იყო
+        If Not Timer1.Enabled Then
+            Timer1.Start()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' UserControl-ის დამალვის ივენთი, რომელიც გაეშვება როდესაც კონტროლი იმალება
+    ''' </summary>
+    Private Sub UC_Home_VisibleChanged(sender As Object, e As EventArgs) Handles Me.VisibleChanged
+        ' Timer-ი ვმუშაობს მხოლოდ როცა ხილულია
+        Timer1.Enabled = Me.Visible
+    End Sub
 
     ' ViewModel-ის თვისებების წაკითხვის მეთოდები UI-დან
     Public ReadOnly Property UserName() As String
