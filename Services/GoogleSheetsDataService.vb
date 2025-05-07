@@ -309,7 +309,7 @@ Namespace Scheduler_v8_8a.Services
                     For Each row As IList(Of Object) In rows
                         Try
                             ' შევქმნათ BirthdayModel
-                            Dim birthday = BirthdayModel.FromSheetRow(row)
+                            Dim birthday = BirthdayModel.CreateFromSheetRow(row)
 
                             ' შევამოწმოთ არის თუ არა მოახლოებული
                             If birthday.DaysUntilBirthday <= days AndAlso birthday.DaysUntilBirthday >= 0 Then
