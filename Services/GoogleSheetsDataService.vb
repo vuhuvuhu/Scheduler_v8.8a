@@ -451,7 +451,6 @@ Namespace Scheduler_v8_8a.Services
                             Dim session = SessionModel.FromSheetRow(row)
 
                             ' შევამოწმოთ არის თუ არა სესია ვადაგადაცილებული
-                            ' ვადაგადაცილებულია სესია, რომელიც ჯერ არ არის შესრულებული და თარიღი უკვე გასულია
                             If session.Status = "დაგეგმილი" AndAlso session.DateTime < DateTime.Now Then
                                 sessions.Add(session)
                             End If

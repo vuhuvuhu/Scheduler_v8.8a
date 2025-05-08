@@ -279,8 +279,8 @@ Public Class Form1
                                                      ' ვადაგადაცილებული სესიების ბარათების შექმნა
                                                      If homeControl IsNot Nothing Then
                                                          homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
-                                                               viewModel.IsAuthorized,
-                                                               viewModel.Role)
+                                                              viewModel.IsAuthorized,
+                                                              viewModel.Role)
                                                      End If
 
                                                      ' დაბადების დღეების განახლება
@@ -341,4 +341,5 @@ Public Class Form1
             MessageBox.Show("ბაზების ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
+
 End Class
