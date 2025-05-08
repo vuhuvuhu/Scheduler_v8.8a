@@ -286,9 +286,9 @@ Namespace Scheduler_v8_8a.Models
                 Dim sessionId As Integer = 0
 
                 If Not String.IsNullOrWhiteSpace(idStr) AndAlso Integer.TryParse(idStr, sessionId) Then
-                    Debug.WriteLine($"SessionModel.FromSheetRow: ID წარმატებით დაპარსილია: {sessionId}")
+                    'Debug.WriteLine($"SessionModel.FromSheetRow: ID წარმატებით დაპარსილია: {sessionId}")
                 Else
-                    Debug.WriteLine($"SessionModel.FromSheetRow: ID-ის პარსინგის შეცდომა: '{idStr}', ვიყენებთ 0")
+                    'Debug.WriteLine($"SessionModel.FromSheetRow: ID-ის პარსინგის შეცდომა: '{idStr}', ვიყენებთ 0")
                     sessionId = 0
                 End If
 
@@ -300,7 +300,7 @@ Namespace Scheduler_v8_8a.Models
 
                 ' თარიღი F სვეტიდან (ინდექსი 5)
                 Dim dateTimeStr = If(rowData.Count > 5, rowData(5).ToString().Trim(), String.Empty)
-                Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის თარიღი='{dateTimeStr}'")
+                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის თარიღი='{dateTimeStr}'")
 
                 ' [არსებული თარიღის დამუშავების კოდი]
                 Try
@@ -308,17 +308,17 @@ Namespace Scheduler_v8_8a.Models
                         ' დროის დაპარსვა
                         If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
                                           System.Globalization.DateTimeStyles.None, session.DateTime) Then
-                            Debug.WriteLine($"SessionModel.FromSheetRow: თარიღი წარმატებით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
+                            'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღი წარმატებით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
                         Else
-                            Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის პარსინგის შეცდომა: '{dateTimeStr}'")
+                            'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის პარსინგის შეცდომა: '{dateTimeStr}'")
                             session.DateTime = DateTime.Now
                         End If
                     Else
-                        Debug.WriteLine("SessionModel.FromSheetRow: თარიღის სტრიქონი ცარიელია")
+                        'Debug.WriteLine("SessionModel.FromSheetRow: თარიღის სტრიქონი ცარიელია")
                         session.DateTime = DateTime.Now
                     End If
                 Catch ex As Exception
-                    Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის დამუშავების შეცდომა - {ex.Message}")
+                    'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის დამუშავების შეცდომა - {ex.Message}")
                     session.DateTime = DateTime.Now
                 End Try
 
@@ -332,14 +332,14 @@ Namespace Scheduler_v8_8a.Models
 
                 ' სტატუსი M სვეტიდან (ინდექსი 12)
                 session.Status = If(rowData.Count > 12, rowData(12).ToString().Trim(), "დაგეგმილი")
-                Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სტატუსი='{session.Status}'")
+                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სტატუსი='{session.Status}'")
 
                 ' კომენტარი უკანასკნელი სვეტიდან N (ინდექსი 13)
                 session.Comments = If(rowData.Count > 13, rowData(13).ToString(), String.Empty)
 
                 Return session
             Catch ex As Exception
-                Debug.WriteLine($"SessionModel.FromSheetRow: ზოგადი შეცდომა - {ex.Message}")
+                'Debug.WriteLine($"SessionModel.FromSheetRow: ზოგადი შეცდომა - {ex.Message}")
                 Throw New Exception($"შეცდომა SessionModel-ის შექმნისას: {ex.Message}", ex)
             End Try
         End Function
@@ -389,9 +389,9 @@ Namespace Scheduler_v8_8a.Models
                 ' 2. სესიის თარიღი უკვე გასულია
                 Dim result = isPlanned AndAlso isPastDue
 
-                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}' (ნორმალიზებული='{normalizedStatus}'), isPlanned={isPlanned}")
-                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={sessionDate:dd.MM.yyyy}, დღეს={currentDate:dd.MM.yyyy}, isPastDue={isPastDue}")
-                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}' (ნორმალიზებული='{normalizedStatus}'), isPlanned={isPlanned}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={sessionDate:dd.MM.yyyy}, დღეს={currentDate:dd.MM.yyyy}, isPastDue={isPastDue}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
 
                 Return result
             End Get

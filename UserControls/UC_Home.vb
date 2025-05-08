@@ -8,12 +8,18 @@ Imports System.Drawing
 Imports Scheduler_v8_8a.Models
 Imports System.Globalization
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
 Public Class UC_Home
     Inherits UserControl
 
     ' ViewModel რომელზეც ხდება მიბმა
     Private ReadOnly viewModel As HomeViewModel
+
+    ' კეშირების და ოპტიმიზაციის ცვლადები
+    Private cachedSessions As List(Of SessionModel) = Nothing ' კეშირებული სესიები
+    Private sessionsLoaded As Boolean = False ' მოხდა თუ არა სესიების ჩატვირთვა
+    Private isLoadingData As Boolean = False ' მიმდინარეობს თუ არა მონაცემების ჩატვირთვა
 
     ''' <summary>
     ''' კონსტრუქტორი: იღებს HomeViewModel-ს Data Binding-ისთვის
@@ -168,49 +174,333 @@ Public Class UC_Home
             Timer1.Start()
         End If
 
-        ' ალტერნატიული პანელის შექმნა
-        CreateAlternativePanel()
+        ' ვადაგადაცილებული სესიების პანელის შექმნა
+        CreateOverdueSessionsPanel()
     End Sub
 
-    Private Sub CreateAlternativePanel()
+    ''' <summary>
+    ''' ვადაგადაცილებული სესიების პანელის შექმნა
+    ''' </summary>
+    Private Sub CreateOverdueSessionsPanel()
         Try
-            ' შევქმნათ ახალი პანელი
-            Dim altPanel As New Panel()
-            altPanel.Size = New Size(300, 300)
-            altPanel.Location = New Point(20, 300)
-            altPanel.BorderStyle = BorderStyle.FixedSingle
-            altPanel.BackColor = Color.LightBlue
+            ' შევქმნათ პანელი
+            Dim sessionsPanel As New Panel()
+            sessionsPanel.Size = New Size(750, 300)
+            sessionsPanel.Location = New Point(10, 150)
+            sessionsPanel.BorderStyle = BorderStyle.FixedSingle
+            sessionsPanel.BackColor = Color.FromArgb(255, 245, 245) ' ღია წითელი ფონი
+            sessionsPanel.AutoScroll = True ' დავამატოთ სქროლი
+            sessionsPanel.Tag = "OverdueSessionsPanel" ' ტეგი
 
             ' სათაურის ლეიბლი
             Dim titleLabel As New Label()
-            titleLabel.Text = "ალტერნატიული პანელი"
+            titleLabel.Text = "ვადაგადაცილებული სესიები"
             titleLabel.AutoSize = True
             titleLabel.Location = New Point(10, 10)
             titleLabel.Font = New Font(titleLabel.Font.FontFamily, 12, FontStyle.Bold)
 
-            altPanel.Controls.Add(titleLabel)
+            sessionsPanel.Controls.Add(titleLabel)
 
-            ' ღილაკები
-            Dim btn1 As New Button()
-            btn1.Text = "ღილაკი 1"
-            btn1.Size = New Size(100, 30)
-            btn1.Location = New Point(20, 50)
+            ' ღილაკი სესიების ჩატვირთვისთვის
+            Dim btnLoadSessions As New Button()
+            btnLoadSessions.Text = "სესიების ჩატვირთვა"
+            btnLoadSessions.Size = New Size(150, 30)
+            btnLoadSessions.Location = New Point(250, 10)
+            btnLoadSessions.BackColor = Color.FromArgb(0, 122, 204)
+            btnLoadSessions.ForeColor = Color.White
 
-            Dim btn2 As New Button()
-            btn2.Text = "ღილაკი 2"
-            btn2.Size = New Size(100, 30)
-            btn2.Location = New Point(150, 50)
+            ' ღილაკზე დაჭერის ფუნქცია
+            AddHandler btnLoadSessions.Click, AddressOf BtnLoadSessions_Click
 
-            altPanel.Controls.Add(btn1)
-            altPanel.Controls.Add(btn2)
+            sessionsPanel.Controls.Add(btnLoadSessions)
+
+            ' სტატუსის ლეიბლი
+            Dim lblStatus As New Label()
+            lblStatus.Text = "დააჭირეთ ღილაკს სესიების ჩატვირთვისთვის"
+            lblStatus.AutoSize = True
+            lblStatus.Location = New Point(10, 50)
+            lblStatus.Name = "lblStatus" ' სახელი ძიებისთვის
+
+            sessionsPanel.Controls.Add(lblStatus)
 
             ' დავამატოთ UserControl-ზე
-            Me.Controls.Add(altPanel)
-            altPanel.BringToFront()
-
-            Debug.WriteLine("CreateAlternativePanel: შეიქმნა ალტერნატიული პანელი")
+            Me.Controls.Add(sessionsPanel)
+            sessionsPanel.BringToFront()
         Catch ex As Exception
-            Debug.WriteLine($"CreateAlternativePanel შეცდომა: {ex.Message}")
+            Debug.WriteLine($"CreateOverdueSessionsPanel შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიების ჩატვირთვის ღილაკზე დაჭერა - ოპტიმიზებული ვერსია
+    ''' </summary>
+    Private Sub BtnLoadSessions_Click(sender As Object, e As EventArgs)
+        Try
+            ' შევამოწმოთ არის თუ არა უკვე მიმდინარე დატვირთვა
+            If isLoadingData Then
+                MessageBox.Show("მონაცემები უკვე იტვირთება, გთხოვთ დაიცადოთ")
+                Return
+            End If
+
+            ' მოვძებნოთ პანელი
+            Dim sessionsPanel As Panel = Nothing
+
+            For Each ctrl As Control In Me.Controls
+                If TypeOf ctrl Is Panel AndAlso ctrl.Tag IsNot Nothing AndAlso ctrl.Tag.ToString() = "OverdueSessionsPanel" Then
+                    sessionsPanel = DirectCast(ctrl, Panel)
+                    Exit For
+                End If
+            Next
+
+            If sessionsPanel Is Nothing Then
+                MessageBox.Show("ვერ მოიძებნა სესიების პანელი")
+                Return
+            End If
+
+            ' მოვძებნოთ სტატუსის ლეიბლი
+            Dim lblStatus As Label = Nothing
+            For Each ctrl As Control In sessionsPanel.Controls
+                If TypeOf ctrl Is Label AndAlso ctrl.Name = "lblStatus" Then
+                    lblStatus = DirectCast(ctrl, Label)
+                    Exit For
+                End If
+            Next
+
+            If lblStatus Is Nothing Then
+                lblStatus = New Label()
+                lblStatus.AutoSize = True
+                lblStatus.Location = New Point(10, 50)
+                lblStatus.Name = "lblStatus"
+                sessionsPanel.Controls.Add(lblStatus)
+            End If
+
+            ' ფორმის განახლება იმწამიერად
+            lblStatus.Text = "მიმდინარეობს მონაცემების ჩატვირთვა..."
+            sessionsPanel.Refresh()
+            Application.DoEvents()
+
+            ' ვიწყებთ ფონურ ჩატვირთვას
+            isLoadingData = True
+
+            ' გავასუფთაოთ არსებული ბარათები
+            Dim controlsToRemove As New List(Of Control)
+            For Each ctrl As Control In sessionsPanel.Controls
+                If TypeOf ctrl Is Panel AndAlso ctrl.Tag IsNot Nothing AndAlso ctrl.Tag.ToString() = "SessionCard" Then
+                    controlsToRemove.Add(ctrl)
+                End If
+            Next
+
+            For Each ctrl In controlsToRemove
+                sessionsPanel.Controls.Remove(ctrl)
+            Next
+
+            ' ფონურ ნაკადში ვტვირთავთ სესიებს
+            System.Threading.Tasks.Task.Run(Sub()
+                                                Try
+                                                    ' თუ უკვე გვაქვს კეშირებული სესიები, აღარ ვტვირთავთ ხელახლა
+                                                    If Not sessionsLoaded OrElse cachedSessions Is Nothing Then
+                                                        ' გამოვიძახოთ API და მივიღოთ სესიები
+                                                        Dim dataForm = Form1.ActiveForm
+                                                        If dataForm Is Nothing Then
+                                                            Me.Invoke(Sub() lblStatus.Text = "ვერ მოიძებნა აქტიური ფორმა")
+                                                            isLoadingData = False
+                                                            Return
+                                                        End If
+
+                                                        ' გამოვიყენოთ რეფლექშენი dataService-ის მისაღებად
+                                                        Dim dataServiceField = dataForm.GetType().GetField("dataService", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+                                                        If dataServiceField Is Nothing Then
+                                                            Me.Invoke(Sub() lblStatus.Text = "ვერ მოიძებნა dataService ველი")
+                                                            isLoadingData = False
+                                                            Return
+                                                        End If
+
+                                                        Dim dataService = DirectCast(dataServiceField.GetValue(dataForm), IDataService)
+                                                        If dataService Is Nothing Then
+                                                            Me.Invoke(Sub() lblStatus.Text = "dataService არის Nothing")
+                                                            isLoadingData = False
+                                                            Return
+                                                        End If
+
+                                                        ' განვაახლოთ სტატუსი
+                                                        Me.Invoke(Sub() lblStatus.Text = "სესიების ჩატვირთვა Google Sheets-დან...")
+
+                                                        ' მივიღოთ სესიები ფონურად
+                                                        cachedSessions = dataService.GetOverdueSessions()
+                                                        sessionsLoaded = True
+                                                    End If
+
+                                                    ' ჩავხატოთ UI (კეშირებული სესიებიდან)
+                                                    Me.Invoke(Sub()
+                                                                  lblStatus.Text = $"ნაპოვნია {cachedSessions.Count} ვადაგადაცილებული სესია"
+
+                                                                  ' თუ სესიები ცარიელია
+                                                                  If cachedSessions.Count = 0 Then
+                                                                      lblStatus.Text = "ვადაგადაცილებული სესიები არ მოიძებნა"
+                                                                      isLoadingData = False
+                                                                      Return
+                                                                  End If
+
+                                                                  ' შეზღუდული რაოდენობა მხოლოდ
+                                                                  Dim displayCount = Math.Min(10, cachedSessions.Count)
+                                                                  Dim yPos As Integer = 80
+
+                                                                  ' მხოლოდ პირველი რამდენიმე სესიის ჩვენება
+                                                                  For i As Integer = 0 To displayCount - 1
+                                                                      Dim session = cachedSessions(i)
+
+                                                                      ' ბარათის შექმნა
+                                                                      Dim card As New Panel()
+                                                                      card.Size = New Size(sessionsPanel.Width - 40, 80)
+                                                                      card.Location = New Point(20, yPos)
+                                                                      card.BorderStyle = BorderStyle.FixedSingle
+                                                                      card.BackColor = Color.FromArgb(255, 220, 220) ' უფრო ღია წითელი
+                                                                      card.Tag = "SessionCard" ' ტეგი
+
+                                                                      ' დავამატოთ ინფორმაცია
+                                                                      Dim lblDateTime As New Label()
+                                                                      lblDateTime.Text = $"თარიღი: {session.FormattedDateTime}"
+                                                                      lblDateTime.Location = New Point(10, 10)
+                                                                      lblDateTime.AutoSize = True
+                                                                      lblDateTime.Font = New Font(lblDateTime.Font, FontStyle.Bold)
+                                                                      card.Controls.Add(lblDateTime)
+
+                                                                      Dim lblBeneficiary As New Label()
+                                                                      lblBeneficiary.Text = $"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}"
+                                                                      lblBeneficiary.Location = New Point(10, 30)
+                                                                      lblBeneficiary.AutoSize = True
+                                                                      card.Controls.Add(lblBeneficiary)
+
+                                                                      Dim lblTherapist As New Label()
+                                                                      lblTherapist.Text = $"თერაპევტი: {session.TherapistName}"
+                                                                      lblTherapist.Location = New Point(10, 50)
+                                                                      lblTherapist.AutoSize = True
+                                                                      card.Controls.Add(lblTherapist)
+
+                                                                      Dim lblId As New Label()
+                                                                      lblId.Text = $"ID: {session.Id}"
+                                                                      lblId.Location = New Point(card.Width - 60, 10)
+                                                                      lblId.AutoSize = True
+                                                                      lblId.Font = New Font(lblId.Font, FontStyle.Italic)
+                                                                      card.Controls.Add(lblId)
+
+                                                                      ' დავამატოთ ბარათი პანელზე
+                                                                      sessionsPanel.Controls.Add(card)
+                                                                      yPos += 90 ' შემდეგი ბარათისთვის
+                                                                  Next
+
+                                                                  ' დამატებითი სესიების არსებობის შემთხვევაში დავამატოთ ღილაკი
+                                                                  If cachedSessions.Count > displayCount Then
+                                                                      Dim btnLoadMore As New Button()
+                                                                      btnLoadMore.Text = $"კიდევ {cachedSessions.Count - displayCount} სესიის ჩვენება"
+                                                                      btnLoadMore.Size = New Size(200, 30)
+                                                                      btnLoadMore.Location = New Point((sessionsPanel.Width - 200) / 2, yPos + 10)
+
+                                                                      ' ღილაკზე დაჭერა
+                                                                      AddHandler btnLoadMore.Click, Sub(s, args)
+                                                                                                        ShowAllSessions(sessionsPanel)
+                                                                                                    End Sub
+
+                                                                      sessionsPanel.Controls.Add(btnLoadMore)
+                                                                  End If
+
+                                                                  ' დავასრულოთ ჩატვირთვა
+                                                                  isLoadingData = False
+                                                              End Sub)
+
+                                                Catch ex As Exception
+                                                    ' შეცდომის შემთხვევაში განვაახლოთ UI
+                                                    Me.Invoke(Sub()
+                                                                  lblStatus.Text = $"შეცდომა: {ex.Message}"
+                                                                  isLoadingData = False
+                                                              End Sub)
+
+                                                    Debug.WriteLine($"BtnLoadSessions_Click შეცდომა: {ex.Message}")
+                                                End Try
+                                            End Sub)
+
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა სესიების ჩატვირთვისას: {ex.Message}")
+            Debug.WriteLine($"BtnLoadSessions_Click შეცდომა: {ex.Message}")
+            isLoadingData = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ყველა სესიის ჩვენება
+    ''' </summary>
+    Private Sub ShowAllSessions(sessionsPanel As Panel)
+        Try
+            ' გავასუფთაოთ ყველა ბარათი და ღილაკი
+            Dim controlsToRemove As New List(Of Control)
+
+            For Each ctrl As Control In sessionsPanel.Controls
+                If (TypeOf ctrl Is Panel AndAlso ctrl.Tag IsNot Nothing AndAlso ctrl.Tag.ToString() = "SessionCard") OrElse
+                   (TypeOf ctrl Is Button AndAlso ctrl.Text.Contains("კიდევ")) Then
+                    controlsToRemove.Add(ctrl)
+                End If
+            Next
+
+            For Each ctrl In controlsToRemove
+                sessionsPanel.Controls.Remove(ctrl)
+            Next
+
+            ' ჩავხატოთ ყველა სესია
+            Dim yPos As Integer = 80
+
+            For i As Integer = 0 To cachedSessions.Count - 1
+                Dim session = cachedSessions(i)
+
+                ' ბარათის შექმნა
+                Dim card As New Panel()
+                card.Size = New Size(sessionsPanel.Width - 40, 80)
+                card.Location = New Point(20, yPos)
+                card.BorderStyle = BorderStyle.FixedSingle
+                card.BackColor = Color.FromArgb(255, 220, 220) ' უფრო ღია წითელი
+                card.Tag = "SessionCard" ' ტეგი
+
+                ' დავამატოთ ინფორმაცია
+                Dim lblDateTime As New Label()
+                lblDateTime.Text = $"თარიღი: {session.FormattedDateTime}"
+                lblDateTime.Location = New Point(10, 10)
+                lblDateTime.AutoSize = True
+                lblDateTime.Font = New Font(lblDateTime.Font, FontStyle.Bold)
+                card.Controls.Add(lblDateTime)
+
+                Dim lblBeneficiary As New Label()
+                lblBeneficiary.Text = $"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}"
+                lblBeneficiary.Location = New Point(10, 30)
+                lblBeneficiary.AutoSize = True
+                card.Controls.Add(lblBeneficiary)
+
+                Dim lblTherapist As New Label()
+                lblTherapist.Text = $"თერაპევტი: {session.TherapistName}"
+                lblTherapist.Location = New Point(10, 50)
+                lblTherapist.AutoSize = True
+                card.Controls.Add(lblTherapist)
+
+                Dim lblId As New Label()
+                lblId.Text = $"ID: {session.Id}"
+                lblId.Location = New Point(card.Width - 60, 10)
+                lblId.AutoSize = True
+                lblId.Font = New Font(lblId.Font, FontStyle.Italic)
+                card.Controls.Add(lblId)
+
+                ' დავამატოთ ბარათი პანელზე
+                sessionsPanel.Controls.Add(card)
+                yPos += 90 ' შემდეგი ბარათისთვის
+            Next
+
+            ' მაჩვენებელი, რომ ყველა სესია ნაჩვენებია
+            Dim lblAllShown As New Label()
+            lblAllShown.Text = "ნაჩვენებია ყველა სესია"
+            lblAllShown.AutoSize = True
+            lblAllShown.Location = New Point((sessionsPanel.Width - 150) / 2, yPos + 10)
+            lblAllShown.Font = New Font(lblAllShown.Font, FontStyle.Italic)
+            sessionsPanel.Controls.Add(lblAllShown)
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowAllSessions შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -221,12 +511,16 @@ Public Class UC_Home
         ' Timer-ი ვმუშაობს მხოლოდ როცა ხილულია
         Timer1.Enabled = Me.Visible
     End Sub
+
     ''' <summary>
     ''' ვადაგადაცილებული სესიების ბარათების შექმნა და GBRedTasks-ში განთავსება
     ''' </summary>
     Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
         Try
-            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
+            ' დარწმუნდით, რომ ამ მეთოდის გამოძახება ხილული და დახატულ კონტროლზე ხდება
+            If Not Me.IsHandleCreated OrElse Not Me.Visible Then
+                Return
+            End If
 
             ' შევამოწმოთ არის თუ არა უკვე შექმნილი ჩვენი კონტეინერი
             Dim overduePanel As Panel = Nothing
@@ -250,11 +544,9 @@ Public Class UC_Home
                 overduePanel.Tag = "OverdueSessionsPanel" ' ტეგი ძიებისთვის
 
                 Me.Controls.Add(overduePanel)
-                Debug.WriteLine("UC_Home.PopulateOverdueSessions: შეიქმნა ახალი პანელი ვადაგადაცილებული სესიებისთვის")
             Else
                 ' გავასუფთაოთ არსებული პანელი
                 overduePanel.Controls.Clear()
-                Debug.WriteLine("UC_Home.PopulateOverdueSessions: არსებული პანელი გასუფთავდა")
             End If
 
             ' სათაური
@@ -272,7 +564,6 @@ Public Class UC_Home
                 lblNoSessions.AutoSize = True
                 lblNoSessions.Location = New Point(10, 40)
                 overduePanel.Controls.Add(lblNoSessions)
-                Debug.WriteLine("UC_Home.PopulateOverdueSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
                 Return
             End If
 
@@ -319,8 +610,6 @@ Public Class UC_Home
                 ' დავამატოთ ბარათი პანელზე
                 overduePanel.Controls.Add(card)
                 yPos += 90 ' შემდეგი ბარათისთვის
-
-                Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაემატა ბარათი სესიისთვის ID: {session.Id}")
             Next
 
             ' პანელის წინა პლანზე გამოტანა
@@ -328,13 +617,12 @@ Public Class UC_Home
             overduePanel.Refresh()
             Application.DoEvents()
 
-            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაემატებულია {Math.Min(15, sessions.Count)} ბარათი")
-
         Catch ex As Exception
-            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"PopulateOverdueSessions შეცდომა: {ex.Message}")
             MessageBox.Show($"შეცდომა ვადაგადაცილებული სესიების ასახვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
     ''' <summary>
     ''' რედაქტირების ღილაკზე დაჭერის დამმუშავებელი
     ''' </summary>
@@ -346,12 +634,14 @@ Public Class UC_Home
         MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
         ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
     End Sub
+
     ' ViewModel-ის თვისებების წაკითხვის მეთოდები UI-დან
     Public ReadOnly Property UserName() As String
         Get
             Return viewModel.UserName
         End Get
     End Property
+
     Public Sub TestDirectControls()
         Try
             ' შევიტანოთ სათაური
@@ -380,8 +670,6 @@ Public Class UC_Home
             btnTest.BringToFront()
             Me.Refresh()
             Application.DoEvents()
-
-            Debug.WriteLine("TestDirectControls: დაემატა 2 კონტროლი პირდაპირ UC_Home-ზე")
         Catch ex As Exception
             Debug.WriteLine($"TestDirectControls შეცდომა: {ex.Message}")
         End Try
