@@ -1,250 +1,176 @@
 ﻿' ===========================================
 ' 📄 Services/SheetDataService.vb
 ' -------------------------------------------
-' პასუხისმგებელი Google Sheets–დან მონაცემთა წამოღებასა და ჩანაწერების დამატებაზე
+' შეცვლილი კლასი, რომელიც იყენებს GoogleServiceAccountClient-ს
 ' ===========================================
-Imports Google.Apis.Sheets.v4
-Imports Google.Apis.Sheets.v4.Data
-Imports Google.Apis.Services
 Imports Google.Apis.Auth.OAuth2
-Imports System.IO
-Imports Scheduler_v8_8a.Models
+Imports Google.Apis.Sheets.v4
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 
 Namespace Scheduler_v8_8a.Services
 
     ''' <summary>
-    ''' SheetDataService ახორციელებს მონაცემთა წაკითხვასა და განახლებას
-    ''' Google Sheets–ის "DB-Users" ფურცელზე (B სვეტი = ელ.ფოსტა, C სვეტი = როლი).
+    ''' SheetDataService - მონაცემთა წაკითხვა და ჩაწერა სერვის აკაუნტის გამოყენებით
     ''' </summary>
     Public Class SheetDataService
         Implements IDataService
 
-        Private ReadOnly sheetsService As SheetsService
-        Private ReadOnly spreadsheetId As String
+        Private ReadOnly serviceClient As GoogleServiceAccountClient
         Private Const usersRange As String = "DB-Users!B2:C"
         Private Const appendRange As String = "DB-Users!B:C"
         Private Const defaultRole As String = "6"
         Private Const sessionsRange As String = "DB-Schedule!B2:P"
-
-        ' ქეშირებისთვის საჭირო ცვლადები
-        Private ReadOnly cacheFolder As String
-        Private ReadOnly cacheFile As String
+        Private Const birthdaysRange As String = "DB-Personal!B2:G"
+        Private Const tasksRange As String = "DB-Tasks!B2:M"
 
         ''' <summary>
-        ''' კონსტრუქტორი: აგებს SheetsService–ს OAUTHCredential–ით და spreadsheetId–თ.
+        ''' კონსტრუქტორი: შექმნის სერვის კლიენტს
         ''' </summary>
-        ''' <param name="credential">Google OAuth2 UserCredential</param>
-        ''' <param name="spreadsheetId">Spreadsheet-ის ID</param>
-        Public Sub New(credential As UserCredential, spreadsheetId As String)
-            Me.sheetsService = New SheetsService(New BaseClientService.Initializer() With {
-                .HttpClientInitializer = credential,
-                .ApplicationName = "Scheduler_v8.8a"
-            })
-            Me.spreadsheetId = spreadsheetId
+        ''' <param name="serviceAccountKeyPath">სერვის აკაუნტის key ფაილის მისამართი</param>
+        ''' <param name="spreadsheetId">სპრედშიტის ID</param>
+        Public Sub New(serviceAccountKeyPath As String, spreadsheetId As String)
+            ' შევქმნათ სერვის კლიენტი
+            serviceClient = New GoogleServiceAccountClient(serviceAccountKeyPath, spreadsheetId)
 
-            ' ქეშის საქაღალდის ინიციალიზაცია
-            cacheFolder = Path.Combine(Application.StartupPath, "Cache")
-            cacheFile = Path.Combine(cacheFolder, "sheetdata_cache.json")
-
-            If Not Directory.Exists(cacheFolder) Then
-                Directory.CreateDirectory(cacheFolder)
+            ' შევამოწმოთ წარმატებით შეიქმნა თუ არა
+            If Not serviceClient.IsInitialized Then
+                Throw New Exception($"ვერ მოხერხდა Google Sheets სერვისის ინიციალიზაცია: {serviceClient.InitializationError}")
             End If
-
-            ' ქეშის ჩატვირთვა თუ არსებობს
-            LoadCache()
         End Sub
 
         ''' <summary>
-        ''' კონსტრუქტორი: SheetsService-ით
-        ''' </summary>
-        ''' <param name="service">Google SheetsService ობიექტი</param>
-        ''' <param name="spreadsheetId">Spreadsheet-ის ID</param>
-        Public Sub New(service As SheetsService, spreadsheetId As String)
-            Me.sheetsService = service
-            Me.spreadsheetId = spreadsheetId
-
-            ' ქეშის საქაღალდის ინიციალიზაცია
-            cacheFolder = Path.Combine(Application.StartupPath, "Cache")
-            cacheFile = Path.Combine(cacheFolder, "sheetdata_cache.json")
-
-            If Not Directory.Exists(cacheFolder) Then
-                Directory.CreateDirectory(cacheFolder)
-            End If
-
-            ' ქეშის ჩატვირთვა თუ არსებობს
-            LoadCache()
-        End Sub
-
-        ''' <summary>
-        ''' ქეშის ჩატვირთვა ფაილიდან
-        ''' </summary>
-        Private Sub LoadCache()
-            ' ქეშის ჩატვირთვის ლოგიკა
-            Debug.WriteLine("ქეშის ჩატვირთვის მცდელობა...")
-        End Sub
-
-        ''' <summary>
-        ''' IDataService.GetData იმპლემენტაცია
+        ''' მონაცემების მიღება მითითებული დიაპაზონიდან
         ''' </summary>
         Public Function GetData(range As String) As IList(Of IList(Of Object)) Implements IDataService.GetData
-            Dim request = sheetsService.Spreadsheets.Values.Get(spreadsheetId, range)
-            Return request.Execute().Values
+            Return serviceClient.ReadRange(range)
         End Function
 
         ''' <summary>
-        ''' IDataService.AppendData იმპლემენტაცია
+        ''' მონაცემების დამატება მითითებულ დიაპაზონში
         ''' </summary>
         Public Sub AppendData(range As String, values As IList(Of Object)) Implements IDataService.AppendData
-            Dim valueRange As New ValueRange With {
-                .Values = New List(Of IList(Of Object)) From {values}
-            }
-            Dim request = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range)
-            request.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED
-            request.Execute()
+            serviceClient.AppendValues(range, values)
         End Sub
 
         ''' <summary>
-        ''' IDataService.UpdateData იმპლემენტაცია
+        ''' მონაცემების განახლება მითითებულ დიაპაზონში
         ''' </summary>
         Public Sub UpdateData(range As String, values As IList(Of Object)) Implements IDataService.UpdateData
-            Dim valueRange As New ValueRange With {
-                .Values = New List(Of IList(Of Object)) From {values}
-            }
-            Dim request = sheetsService.Spreadsheets.Values.Update(valueRange, spreadsheetId, range)
-            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED
-            request.Execute()
+            serviceClient.UpdateValues(range, values)
         End Sub
 
         ''' <summary>
-        ''' აბრუნებს მომხმარებლის როლს, ან ხსნის ახალ ჩანაწერს თუ არ არსებობს (role=6).
-        ''' </summary>
-        ''' <param name="userEmail">მომხმარებლის ელ.ფოსტა</param>
-        ''' <returns>C სვეტში მდებარე როლი როგორც string</returns>
-        Public Function GetOrCreateUserRole(userEmail As String) As String Implements IDataService.GetOrCreateUserRole
-            ' 1) წაკითხვა
-            Dim getReq = sheetsService.Spreadsheets.Values.Get(spreadsheetId, usersRange)
-            Dim rows As IList(Of IList(Of Object)) = getReq.Execute().Values
-            If rows IsNot Nothing Then
-                For Each row As IList(Of Object) In rows
-                    If row.Count >= 2 AndAlso String.Equals(row(0).ToString(), userEmail, StringComparison.OrdinalIgnoreCase) Then
-                        Return row(1).ToString()
-                    End If
-                Next
-            End If
-            ' 2) თუ არ მოიძებნა, დავამატოთ ახალი role=6 და დავუბრუნოთ defaultRole
-            Dim newRow As IList(Of Object) = New List(Of Object) From {userEmail, defaultRole}
-            Dim valueRange As New ValueRange With {.Values = New List(Of IList(Of Object)) From {newRow}}
-            Dim appendReq = sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, appendRange)
-            appendReq.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED
-            appendReq.Execute()
-            Return defaultRole
-        End Function
-
-        ''' <summary>
-        ''' IDataService.GetUserRole იმპლემენტაცია
+        ''' მომხმარებლის როლის მიღება ელფოსტის მიხედვით
         ''' </summary>
         Public Function GetUserRole(email As String) As String Implements IDataService.GetUserRole
-            ' მოვძებნოთ მომხმარებლის როლი
             Dim rows = GetData(usersRange)
+
             If rows IsNot Nothing Then
-                For Each row As IList(Of Object) In rows
+                For Each row In rows
                     If row.Count >= 2 AndAlso String.Equals(row(0).ToString(), email, StringComparison.OrdinalIgnoreCase) Then
                         Return row(1).ToString()
                     End If
                 Next
             End If
+
             Return String.Empty
         End Function
 
         ''' <summary>
-        ''' ვადაგადაცილებული სესიების მიღება
+        ''' მომხმარებლის როლის მიღება ან შექმნა
         ''' </summary>
-        Public Function GetOverdueSessions() As List(Of Models.SessionModel) Implements IDataService.GetOverdueSessions
-            Dim sessions As New List(Of Models.SessionModel)()
+        Public Function GetOrCreateUserRole(email As String) As String Implements IDataService.GetOrCreateUserRole
+            ' ჯერ ვცდილობთ არსებული როლის მოძიებას
+            Dim role = GetUserRole(email)
 
-            Try
-                ' მონაცემების წამოღება
-                Dim rows = GetData(sessionsRange)
+            ' თუ ვერ ვიპოვეთ, ვქმნით ახალს
+            If String.IsNullOrEmpty(role) Then
+                Dim newRow As New List(Of Object) From {email, defaultRole}
+                AppendData(appendRange, newRow)
+                role = defaultRole
+            End If
 
-                If rows IsNot Nothing Then
-                    Debug.WriteLine($"DB-Schedule-დან წამოღებულია {rows.Count} ჩანაწერი")
-
-                    For Each row As IList(Of Object) In rows
-                        Try
-                            ' ვქმნით SessionModel-ს row-დან
-                            Dim session = Models.SessionModel.FromSheetRow(row)
-
-                            ' ვამოწმებთ არის თუ არა სესია ვადაგადაცილებული
-                            If session.Status = "დაგეგმილი" AndAlso session.DateTime < DateTime.Now Then
-                                sessions.Add(session)
-                                Debug.WriteLine($"ნაპოვნია ვადაგადაცილებული სესია: {session.Id}, {session.DateTime}, {session.BeneficiaryName}")
-                            End If
-                        Catch ex As Exception
-                            Debug.WriteLine($"შეცდომა სესიის შექმნისას: {ex.Message}")
-                            Continue For
-                        End Try
-                    Next
-                End If
-
-                Debug.WriteLine($"სულ ვადაგადაცილებული სესია: {sessions.Count}")
-
-                Return sessions
-            Catch ex As Exception
-                Debug.WriteLine($"შეცდომა GetOverdueSessions-ში: {ex.Message}")
-                Return New List(Of Models.SessionModel)()
-            End Try
+            Return role
         End Function
 
         ''' <summary>
-        ''' მოლოდინში სესიების მიღება
-        ''' </summary>
-        Public Function GetPendingSessions() As List(Of Models.SessionModel) Implements IDataService.GetPendingSessions
-            Dim sessions As New List(Of Models.SessionModel)()
-
-            Try
-                ' მონაცემების წამოღება
-                Dim rows = GetData(sessionsRange)
-
-                If rows IsNot Nothing Then
-                    Debug.WriteLine($"DB-Schedule-დან წამოღებულია {rows.Count} ჩანაწერი")
-
-                    For Each row As IList(Of Object) In rows
-                        Try
-                            ' ვქმნით SessionModel-ს row-დან
-                            Dim session = Models.SessionModel.FromSheetRow(row)
-
-                            ' ვამოწმებთ არის თუ არა სესია მოლოდინში
-                            If session.Status = "დაგეგმილი" AndAlso session.DateTime > DateTime.Now Then
-                                sessions.Add(session)
-                            End If
-                        Catch ex As Exception
-                            Debug.WriteLine($"შეცდომა სესიის შექმნისას: {ex.Message}")
-                            Continue For
-                        End Try
-                    Next
-                End If
-
-                Return sessions
-            Catch ex As Exception
-                Debug.WriteLine($"შეცდომა GetPendingSessions-ში: {ex.Message}")
-                Return New List(Of Models.SessionModel)()
-            End Try
-        End Function
-
-        ''' <summary>
-        ''' დაბადების დღეების მიღება
+        ''' წამოიღებს მოახლოებულ დაბადების დღეებს
         ''' </summary>
         Public Function GetUpcomingBirthdays(Optional days As Integer = 7) As List(Of Models.BirthdayModel) Implements IDataService.GetUpcomingBirthdays
-            ' მოკლედ შევავსოთ ცარიელი სიით
+            ' აქ შეგიძლიათ დაამატოთ დაბადების დღეების მიღების ლოგიკა
             Return New List(Of Models.BirthdayModel)()
         End Function
 
         ''' <summary>
-        ''' აქტიური დავალებების მიღება
+        ''' წამოიღებს მოლოდინში არსებულ სესიებს
+        ''' </summary>
+        Public Function GetPendingSessions() As List(Of Models.SessionModel) Implements IDataService.GetPendingSessions
+            Dim sessions As New List(Of Models.SessionModel)()
+            Dim rows = GetData(sessionsRange)
+
+            If rows IsNot Nothing Then
+                For Each row In rows
+                    Try
+                        If row.Count < 12 Then Continue For
+
+                        Dim session = SessionModel.FromSheetRow(row)
+
+                        ' მოლოდინში არის სესია, რომელიც ჯერ არ არის შესრულებული და დაგეგმილია მომავალში
+                        If session.Status = "დაგეგმილი" AndAlso session.DateTime > DateTime.Now Then
+                            sessions.Add(session)
+                        End If
+                    Catch ex As Exception
+                        ' ვაგრძელებთ შემდეგი ჩანაწერით
+                        Continue For
+                    End Try
+                Next
+            End If
+
+            ' დავალაგოთ სესიები თარიღის მიხედვით
+            sessions = sessions.OrderBy(Function(s) s.DateTime).ToList()
+
+            Return sessions
+        End Function
+
+        ''' <summary>
+        ''' წამოიღებს აქტიურ დავალებებს
         ''' </summary>
         Public Function GetActiveTasks() As List(Of Models.TaskModel) Implements IDataService.GetActiveTasks
-            ' მოკლედ შევავსოთ ცარიელი სიით
+            ' აქ შეგიძლიათ დაამატოთ აქტიური დავალებების მიღების ლოგიკა
             Return New List(Of Models.TaskModel)()
+        End Function
+
+        ''' <summary>
+        ''' წამოიღებს ვადაგადაცილებულ სესიებს
+        ''' </summary>
+        Public Function GetOverdueSessions() As List(Of Models.SessionModel) Implements IDataService.GetOverdueSessions
+            Dim overdueSessions As New List(Of Models.SessionModel)()
+            Dim rows = GetData(sessionsRange)
+
+            If rows IsNot Nothing Then
+                For Each row In rows
+                    Try
+                        ' მინიმუმ 12 სვეტი გვჭირდება
+                        If row.Count < 12 Then Continue For
+
+                        ' სესიის ობიექტის შექმნა
+                        Dim session = SessionModel.FromSheetRow(row)
+
+                        ' ვადაგადაცილებულობის შემოწმება
+                        If session.IsOverdue Then
+                            overdueSessions.Add(session)
+                        End If
+                    Catch ex As Exception
+                        ' ვაგრძელებთ შემდეგი მწკრივით
+                        Continue For
+                    End Try
+                Next
+            End If
+
+            ' დავალაგოთ თარიღის მიხედვით
+            overdueSessions = overdueSessions.OrderBy(Function(s) s.DateTime).ToList()
+
+            Return overdueSessions
         End Function
     End Class
 End Namespace

@@ -181,7 +181,7 @@ Public Class UC_Home
     ''' </summary>
     Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
         Try
-            Debug.WriteLine($"PopulateOverdueSessions გამოძახებულია, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
 
             ' გავასუფთაოთ არსებული ბარათები
             GBRedTasks.Controls.Clear()
@@ -194,7 +194,7 @@ Public Class UC_Home
                 lblNoSessions.Dock = DockStyle.Fill
                 lblNoSessions.TextAlign = ContentAlignment.MiddleCenter
                 GBRedTasks.Controls.Add(lblNoSessions)
-                Debug.WriteLine("დაემატა შეტყობინება: ვადაგადაცილებული სესიები არ არის")
+                Debug.WriteLine("UC_Home.PopulateOverdueSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
                 Return
             End If
 
@@ -205,10 +205,12 @@ Public Class UC_Home
             flowPanel.FlowDirection = FlowDirection.TopDown
             flowPanel.WrapContents = False
             GBRedTasks.Controls.Add(flowPanel)
-            Debug.WriteLine("FlowLayoutPanel დაემატა")
+            Debug.WriteLine("UC_Home.PopulateOverdueSessions: FlowLayoutPanel დაემატა")
 
             ' ყველა სესიისთვის შევქმნათ ბარათი
             For Each session In sessions
+                Debug.WriteLine($"UC_Home.PopulateOverdueSessions: ვქმნი ბარათს სესიისთვის ID: {session.Id}, თარიღი: {session.DateTime}, სტატუსი: {session.Status}")
+
                 Dim card As New Panel()
                 card.Size = New Size(GBRedTasks.Width - 30, 120)
                 card.BorderStyle = BorderStyle.FixedSingle
@@ -272,15 +274,16 @@ Public Class UC_Home
 
                 ' დავამატოთ ბარათი FlowLayoutPanel-ში
                 flowPanel.Controls.Add(card)
+                Debug.WriteLine($"UC_Home.PopulateOverdueSessions: ბარათი დაემატა სესიისთვის ID: {session.Id}")
             Next
 
-            Debug.WriteLine($"დაემატა {sessions.Count} ბარათი")
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაემატა {sessions.Count} ბარათი")
 
             ' დარწმუნდეთ რომ GBRedTasks ხილვადია
             GBRedTasks.Visible = True
 
         Catch ex As Exception
-            Debug.WriteLine($"შეცდომა ვადაგადაცილებული სესიების ასახვისას: {ex.Message}")
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: შეცდომა - {ex.Message}")
             MessageBox.Show($"შეცდომა ვადაგადაცილებული სესიების ასახვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub

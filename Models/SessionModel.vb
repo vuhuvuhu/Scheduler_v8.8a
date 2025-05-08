@@ -273,7 +273,7 @@ Namespace Scheduler_v8_8a.Models
         ''' <returns>SessionModel შევსებული მონაცემებით</returns>
         Public Shared Function FromSheetRow(rowData As IList(Of Object)) As SessionModel
             ' შემოწმება მონაცემების რაოდენობის
-            If rowData Is Nothing OrElse rowData.Count < 14 Then
+            If rowData Is Nothing OrElse rowData.Count < 12 Then
                 Throw New ArgumentException("არასაკმარისი მონაცემები SessionModel-ისთვის")
             End If
 
@@ -285,19 +285,49 @@ Namespace Scheduler_v8_8a.Models
                 session.BeneficiaryName = rowData(2).ToString()
                 session.BeneficiarySurname = rowData(3).ToString()
 
-                ' თარიღის და დროის პარსინგი
-                Dim dateTimeStr = rowData(4).ToString()
-                Debug.WriteLine($"ვცდილობ პარსინგს: '{dateTimeStr}'")
-                Dim dateTime As DateTime
-                Dim formats As String() = {"dd.MM.yyyy HH:mm", "dd.MM.yy, HH:mm", "dd.MM.yy HH:mm"}
-                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yy, HH:mm",
-                        Globalization.CultureInfo.InvariantCulture,
-                        Globalization.DateTimeStyles.None, dateTime) Then
-                    session.DateTime = dateTime
-                    Debug.WriteLine($"პარსინგი წარმატებით დასრულდა: {dateTime}")
-                Else
-                    Debug.WriteLine("პარსინგი ვერ შესრულდა!")
-                End If
+                ' თარიღის და დროის პარსინგი - მაგალითი: "07.05.2025 17:00"
+                Dim dateTimeStr = rowData(4).ToString().Trim()
+                Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის თარიღი='{dateTimeStr}'")
+
+                ' ფიქსირებული ფორმატის მიდგომა - სპეციფიკურად "07.05.2025 17:00" ფორმატისთვის
+                Try
+                    Dim parts = dateTimeStr.Split(" "c)
+                    If parts.Length >= 2 Then
+                        Dim datePart = parts(0).Trim()
+                        Dim timePart = parts(1).Trim()
+
+                        ' თარიღის ნაწილების დაპარსვა (დღე.თვე.წელი)
+                        Dim datePieces = datePart.Split("."c)
+                        If datePieces.Length >= 3 Then
+                            Dim day = Integer.Parse(datePieces(0))
+                            Dim month = Integer.Parse(datePieces(1))
+                            Dim year = Integer.Parse(datePieces(2))
+
+                            ' თუ წელი 2-ნიშნაა, დავამატოთ 2000
+                            If year < 100 Then
+                                year += 2000
+                            End If
+
+                            ' დროის ნაწილების დაპარსვა (საათი:წუთი)
+                            Dim timePieces = timePart.Split(":"c)
+                            Dim hour = If(timePieces.Length >= 1, Integer.Parse(timePieces(0)), 0)
+                            Dim minute = If(timePieces.Length >= 2, Integer.Parse(timePieces(1)), 0)
+
+                            ' შევქმნათ თარიღის ობიექტი ამ კომპონენტებით
+                            session.DateTime = New DateTime(year, month, day, hour, minute, 0)
+                            Debug.WriteLine($"SessionModel.FromSheetRow: თარიღი დაპარსა წარმატებით: {session.DateTime:dd.MM.yyyy HH:mm}")
+                        Else
+                            Debug.WriteLine("SessionModel.FromSheetRow: თარიღი არასწორი ფორმატით (ვერ დაშალა დღე.თვე.წელი)")
+                            session.DateTime = DateTime.Now
+                        End If
+                    Else
+                        Debug.WriteLine("SessionModel.FromSheetRow: თარიღი არასწორი ფორმატით (ვერ დაშალა თარიღი და დრო)")
+                        session.DateTime = DateTime.Now
+                    End If
+                Catch ex As Exception
+                    Debug.WriteLine($"SessionModel.FromSheetRow: შეცდომა ძირითადი პარსინგისას: {ex.Message}")
+                    session.DateTime = DateTime.Now
+                End Try
 
                 ' დანარჩენი მონაცემების დაყენება
                 session.Duration = Integer.Parse(rowData(5).ToString())
@@ -306,20 +336,21 @@ Namespace Scheduler_v8_8a.Models
                 session.TherapyType = rowData(8).ToString()
                 session.Space = rowData(9).ToString()
                 session.Price = Decimal.Parse(rowData(10).ToString())
-                session.Status = rowData(11).ToString()
-                session.Funding = rowData(12).ToString()
+                session.Status = rowData(11).ToString().Trim() ' მნიშვნელოვანია გავასუფთაოთ შესაძლო სიცარიელეებისგან
 
-                ' კომენტარი თუ არის
-                If rowData.Count > 13 Then
-                    session.Comments = rowData(13).ToString()
+                ' კომენტარი თუ არის და სესიებს აქვს საკმარისი სვეტები
+                If rowData.Count > 12 Then
+                    session.Comments = rowData(12).ToString()
                 End If
+
+                Debug.WriteLine($"SessionModel.FromSheetRow: სესია შეიქმნა ID={session.Id}, თარიღი={session.DateTime:dd.MM.yyyy HH:mm}, სტატუსი='{session.Status}'")
 
                 Return session
             Catch ex As Exception
+                Debug.WriteLine($"SessionModel.FromSheetRow: შეცდომა - {ex.Message}")
                 Throw New Exception("შეცდომა SessionModel-ის შექმნისას: " & ex.Message, ex)
             End Try
         End Function
-
         ''' <summary>
         ''' გარდაქმნის SessionModel-ს მწკრივად Google Sheets-ისთვის
         ''' </summary>
@@ -344,5 +375,35 @@ Namespace Scheduler_v8_8a.Models
 
             Return rowData
         End Function
+        ''' <summary>
+        ''' არის თუ არა სესია ვადაგადაცილებული
+        ''' </summary>
+        Public ReadOnly Property IsOverdue As Boolean
+            Get
+                ' მიმდინარე თარიღი - მხოლოდ თარიღის კომპონენტი (დრო 00:00)
+                Dim currentDate = DateTime.Today
+
+                ' სესიის თარიღი (მხოლოდ თარიღის ნაწილი, დროის გარეშე)
+                Dim sessionDate = Me.DateTime.Date
+
+                ' სტატუსი ზუსტად უნდა იყოს "დაგეგმილი"
+                Dim normalizedStatus = Me.Status.Trim()
+                Dim isPlanned = (normalizedStatus = "დაგეგმილი")
+
+                ' შევადაროთ თარიღები - სესია უნდა იყოს წარსულში
+                Dim isPastDue = sessionDate < currentDate
+
+                ' ვადაგადაცილებულია, თუ:
+                ' 1. სტატუსი არის "დაგეგმილი" და
+                ' 2. სესიის თარიღი უკვე გასულია
+                Dim result = isPlanned AndAlso isPastDue
+
+                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}', isPlanned={isPlanned}")
+                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={sessionDate:dd.MM.yyyy}, დღეს={currentDate:dd.MM.yyyy}, isPastDue={isPastDue}")
+                Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
+
+                Return result
+            End Get
+        End Property
     End Class
 End Namespace

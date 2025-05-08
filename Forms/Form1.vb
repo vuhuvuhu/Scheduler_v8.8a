@@ -10,6 +10,7 @@ Imports Scheduler_v8_8a.Services
 Imports Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
+Imports System.Text
 
 Public Class Form1
 
@@ -30,6 +31,7 @@ Public Class Form1
     ' კონფიგურაცია
     Private ReadOnly spreadsheetId As String = "1SrBc4vLKPui6467aNmF5Hw-WZEd7dfGhkeFjfcnUqog"
     Private ReadOnly utilsFolder As String = Path.Combine(Application.StartupPath, "Utils")
+    Private ReadOnly serviceAccountKeyPath As String = Path.Combine(utilsFolder, "google-service-account-key8_7a.json")
     Private ReadOnly secretsFile As String = Path.Combine(utilsFolder, "client_secret_v8_7.json")
     Private ReadOnly tokenStorePath As String = Path.Combine(utilsFolder, "TokenStore")
 
@@ -64,9 +66,18 @@ Public Class Form1
 
             Dim serviceAccountService = New GoogleServiceAccountService(serviceAccountPath)
             Dim credential = serviceAccountService.AuthorizeAsync()
-            Dim sheetsService = serviceAccountService.CreateSheetsService()
+            'Dim sheetsService = serviceAccountService.CreateSheetsService()
 
             ' შევქმნათ dataService - სერვის ანგარიშის გამოყენებით
+            ' შექმენით SheetsService ობიექტი
+            Dim sheetsService = New Google.Apis.Sheets.v4.SheetsService(
+    New Google.Apis.Services.BaseClientService.Initializer() With {
+        .HttpClientInitializer = authService.Credential,
+        .ApplicationName = "Scheduler_v8.8a"
+    }
+)
+
+            ' და შემდეგ გამოიყენეთ ის SheetDataService-ში
             dataService = New SheetDataService(sheetsService, spreadsheetId)
             Debug.WriteLine("სერვის ანგარიშით დაკავშირება წარმატებულია")
         Catch ex As Exception
@@ -84,11 +95,43 @@ Public Class Form1
     End Sub
 
     ''' <summary>
-    ''' Form Load: სერვისების დაწყება, მენიუს კონფიგურაცია და UI-ის ინიციალიზაცია
+    ''' Form Load: ინიციალიზაცია და Google Sheets სერვისთან დაკავშირება
     ''' </summary>
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' მენიუს საწყისი მდგომარეობა - მხოლოდ საწყისი
         menuMgr.ShowOnlyHomeMenu()
+
+        ' ViewModel-ების ინიციალიზაცია
+        viewModel = New MainViewModel()
+        homeViewModel = New HomeViewModel()
+
+        ' GoogleServiceAccountClient-ის ინიციალიზაცია და მონაცემების სერვისის შექმნა
+        Try
+            ' შევამოწმოთ, არსებობს თუ არა საქაღალდე და საჭირო ფაილები
+            If Not Directory.Exists(utilsFolder) Then
+                Directory.CreateDirectory(utilsFolder)
+            End If
+
+            ' შევამოწმოთ არსებობს თუ არა სერვის აკაუნტის ფაილი
+            If Not File.Exists(serviceAccountKeyPath) Then
+                MessageBox.Show($"სერვის აკაუნტის JSON ფაილი ვერ მოიძებნა: {serviceAccountKeyPath}",
+                           "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Else
+                ' შევქმნათ მონაცემთა სერვისი სერვის აკაუნტის გამოყენებით
+                dataService = New SheetDataService(serviceAccountKeyPath, spreadsheetId)
+                Debug.WriteLine("Form1_Load: მონაცემთა სერვისი წარმატებით ინიციალიზებულია")
+            End If
+
+            ' OAuth სერვისის ინიციალიზაცია მომხმარებლის ავტორიზაციისთვის
+            authService = New GoogleOAuthService(secretsFile, tokenStorePath)
+
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა სერვისების ინიციალიზაციისას: {ex.Message}",
+                       "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+        ' ივენთის ჰენდლერის დამატება
+        AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
 
         ' საწყისი Home View
         ShowHome()
@@ -99,10 +142,12 @@ Public Class Form1
 
         ' დავამატოთ მისალმება homeViewModel-ში
         homeViewModel.Greeting = homeViewModel.GetGreetingByTime()
+
+
     End Sub
+
     ''' <summary>
-    ''' BtnLogin Click: Login ან Logout ივენთი ViewModel-ით დასმული
-    ''' განახლებული ვერსია UserService-ის გამოყენებით
+    ''' BtnLogin Click: მხოლოდ მომხმარებლის ავტორიზაცია მისი ვინაობის დასადგენად
     ''' </summary>
     Private Async Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
         ' დავბლოკოთ ღილაკი, რომ თავიდან ავირიდოთ მრავალჯერადი დაჭერა
@@ -111,49 +156,65 @@ Public Class Form1
         Try
             If Not viewModel.IsAuthorized Then
                 Try
-                    ' 1) Google OAuth ავტორიზაცია - ეს არის მომხმარებლის ავტორიზაცია
-                    Await authService.AuthorizeAsync(New String() {
+                    ' 1) Google OAuth ავტორიზაცია ᲛᲮᲝᲚᲝᲓ მომხმარებლის ინფორმაციისთვის
+                    Dim credential = Await authService.AuthorizeAsync(New String() {
                     Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
                     Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile
                 })
 
-                    ' ახალი: სერვისი მომხმარებლის პროფილის მისაღებად
+                    ' 2) OAuth სერვისის შექმნა მომხმარებლის ინფორმაციის მისაღებად
                     Dim oauthService = New Google.Apis.Oauth2.v2.Oauth2Service(
                     New Google.Apis.Services.BaseClientService.Initializer() With {
-                        .HttpClientInitializer = authService.Credential,
+                        .HttpClientInitializer = credential,
                         .ApplicationName = "Scheduler_v8.8a"
                     })
 
-                    ' მომხმარებლის ინფორმაციის წამოღება
+                    ' 3) მომხმარებლის ინფორმაციის მიღება
                     Dim userInfo = Await oauthService.Userinfo.Get().ExecuteAsync()
+                    Dim email = userInfo.Email
+                    Dim name = userInfo.Name
 
-                    ' მომხმარებლის როლის წამოღება
-                    Dim role = dataService.GetOrCreateUserRole(userInfo.Email)
+                    ' 4) მომხმარებლის როლის მიღება dataService-დან (რომელიც იყენებს სერვის აკაუნტს)
+                    Dim role = dataService.GetOrCreateUserRole(email)
 
-                    ' ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
-                    viewModel.Email = userInfo.Email
+                    ' 5) ViewModel განახლება
+                    viewModel.Email = email
                     viewModel.Role = role
                     viewModel.IsAuthorized = True
 
-                    ' HomeViewModel-ის განახლება
-                    homeViewModel.UserName = If(String.IsNullOrEmpty(userInfo.Name), userInfo.Email, userInfo.Name)
+                    ' 6) მხოლოდ სახელის გამოყოფა
+                    Dim firstName = GetFirstName(name)
+                    homeViewModel.UserName = If(String.IsNullOrEmpty(firstName), email, firstName)
 
-                    ' UI განახლება
+                    ' 7) UI და მენიუს განახლება
+                    BtnLogin.Text = "გასვლა"
+                    LUser.Text = email
+                    menuMgr.ShowMenuByRole(role)
+
+                    ' 8) Home გვერდის ჩვენება და მონაცემების ჩატვირთვა
                     ShowHome()
+
                 Catch ex As Exception
                     MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
             Else
                 Try
-                    ' Logout
+                    ' გასვლის ლოგიკა
                     Await authService.RevokeAsync()
                     viewModel.IsAuthorized = False
                     viewModel.Email = String.Empty
                     viewModel.Role = String.Empty
                     homeViewModel.UserName = String.Empty
 
-                    ' მენიუს განახლება ავტორიზაციის შემდეგ
+                    ' UI განახლება
+                    BtnLogin.Text = "ავტორიზაცია"
+                    LUser.Text = "გთხოვთ გაიაროთ ავტორიზაცია"
+
+                    ' მენიუს განახლება
                     menuMgr.ShowOnlyHomeMenu()
+
+                    ' Home გვერდის განახლება
+                    ShowHome()
                 Catch ex As Exception
                     MessageBox.Show($"გასვლა ვერ განხორციელდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
@@ -163,6 +224,29 @@ Public Class Form1
             BtnLogin.Enabled = True
         End Try
     End Sub
+    ''' <summary>
+    ''' სრული სახელიდან პირველი სახელის გამოყოფა
+    ''' </summary>
+    ''' <param name="fullName">სრული სახელი (სახელი და გვარი)</param>
+    ''' <returns>მხოლოდ პირველი სახელი</returns>
+    Private Function GetFirstName(fullName As String) As String
+        ' თუ ცარიელია, დავაბრუნოთ ცარიელი სტრიქონი
+        If String.IsNullOrEmpty(fullName) Then
+            Return String.Empty
+        End If
+
+        ' გამოვყოთ სიტყვები სახელიდან (გამოყოფილი ჰარით)
+        Dim nameParts As String() = fullName.Trim().Split(" "c)
+
+        ' დავაბრუნოთ პირველი სიტყვა, რომელიც უნდა იყოს სახელი
+        If nameParts.Length > 0 Then
+            Return nameParts(0)
+        End If
+
+        ' თუ ვერ დავშალეთ, დავაბრუნოთ სრული სახელი
+        Return fullName
+    End Function
+
     ''' <summary>
     ''' ინსტრუმენტების ხილვადობის მართვა ავტორიზაციის სტატუსისა და როლის მიხედვით
     ''' </summary>
@@ -222,23 +306,44 @@ Public Class Form1
             Return
         End If
 
-        ' ვიხეიროთ მიმდინარე მნიშვნელობები იმისთვის, რომ თავიდან ავიცილოთ ციკლური განახლებები
+        ' პრევენცია ციკლური განახლებებისთვის
         Static isUpdating As Boolean = False
         If isUpdating Then Return
 
         isUpdating = True
         Try
+            Debug.WriteLine($"OnViewModelPropertyChanged: პროპერთი {e.PropertyName} შეიცვალა")
+
             Select Case e.PropertyName
                 Case NameOf(viewModel.Email)
-                    LUser.Text = viewModel.Email
+                    LUser.Text = If(String.IsNullOrEmpty(viewModel.Email),
+                               "გთხოვთ გაიაროთ ავტორიზაცია",
+                               viewModel.Email)
+                    Debug.WriteLine($"OnViewModelPropertyChanged: LUser.Text განახლდა: {LUser.Text}")
+
                 Case NameOf(viewModel.IsAuthorized)
                     BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
+                    Debug.WriteLine($"OnViewModelPropertyChanged: BtnLogin.Text განახლდა: {BtnLogin.Text}")
+
                     SetToolsVisibility(viewModel.IsAuthorized)
+                    Debug.WriteLine($"OnViewModelPropertyChanged: ინსტრუმენტების ხილვადობა განახლდა")
+
+                    If Not viewModel.IsAuthorized Then
+                        menuMgr.ShowOnlyHomeMenu()
+                        Debug.WriteLine("OnViewModelPropertyChanged: მენიუ განახლდა (მხოლოდ საწყისი)")
+                    End If
+
                 Case NameOf(viewModel.Role)
-                    menuMgr.ShowMenuByRole(viewModel.Role)
-                    ' როლის ცვლილება შეიძლება არ საჭიროებდეს ინსტრუმენტების ხელახალ კონფიგურაციას
-                    ' თუ მხოლოდ მენიუებს ცვლის
+                    If String.IsNullOrEmpty(viewModel.Role) Then
+                        menuMgr.ShowOnlyHomeMenu()
+                        Debug.WriteLine("OnViewModelPropertyChanged: მენიუ განახლდა (მხოლოდ საწყისი, ცარიელი როლი)")
+                    Else
+                        menuMgr.ShowMenuByRole(viewModel.Role)
+                        Debug.WriteLine($"OnViewModelPropertyChanged: მენიუ განახლდა როლით: {viewModel.Role}")
+                    End If
             End Select
+        Catch ex As Exception
+            Debug.WriteLine($"OnViewModelPropertyChanged: შეცდომა - {ex.Message}")
         Finally
             isUpdating = False
         End Try
@@ -280,12 +385,18 @@ Public Class Form1
             ' დავიცადოთ დატვირთვამდე
             Await Task.Delay(100)
 
+            Debug.WriteLine("LoadHomeDataAsync: დაიწყო მონაცემების დატვირთვა")
+
             ' დატვირთვის ლოგიკა გავიტანოთ ცალკე თრედზე
             Await Task.Run(Sub()
                                Try
                                    ' მონაცემების წამოღება სხვა თრედზე
                                    Dim pendingSessions = dataService.GetPendingSessions()
-                                   Dim overdueSessions = dataService.GetOverdueSessions() ' დავამატოთ ეს ხაზი
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {pendingSessions.Count} მოლოდინში სესია")
+
+                                   Dim overdueSessions = dataService.GetOverdueSessions()
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {overdueSessions.Count} ვადაგადაცილებული სესია")
+
                                    Dim birthdays = dataService.GetUpcomingBirthdays(7)
                                    Dim tasks = dataService.GetActiveTasks()
 
@@ -304,12 +415,16 @@ Public Class Form1
                                                      For Each session In overdueSessions
                                                          homeViewModel.OverdueSessions.Add(session)
                                                      Next
+                                                     Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {overdueSessions.Count} ვადაგადაცილებული სესია")
 
                                                      ' ვადაგადაცილებული სესიების ბარათების შექმნა
                                                      If homeControl IsNot Nothing Then
+                                                         Debug.WriteLine("LoadHomeDataAsync: ვიძახებთ PopulateOverdueSessions")
                                                          homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
-                                                              viewModel.IsAuthorized,
-                                                              viewModel.Role)
+                                                          viewModel.IsAuthorized,
+                                                          viewModel.Role)
+                                                     Else
+                                                         Debug.WriteLine("LoadHomeDataAsync: homeControl არის Nothing!")
                                                      End If
 
                                                      ' დაბადების დღეების განახლება
@@ -324,15 +439,17 @@ Public Class Form1
                                                          homeViewModel.ActiveTasks.Add(task)
                                                      Next
                                                  Catch uiEx As Exception
-                                                     Debug.WriteLine($"შეცდომა UI განახლებისას: {uiEx.Message}")
+                                                     Debug.WriteLine($"LoadHomeDataAsync: შეცდომა UI განახლებისას: {uiEx.Message}")
                                                  End Try
                                              End Sub)
                                Catch threadEx As Exception
-                                   Debug.WriteLine($"შეცდომა მონაცემების დამუშავების თრედზე: {threadEx.Message}")
+                                   Debug.WriteLine($"LoadHomeDataAsync: შეცდომა მონაცემების დამუშავების თრედზე: {threadEx.Message}")
                                End Try
                            End Sub)
+
+            Debug.WriteLine("LoadHomeDataAsync: მონაცემების დატვირთვა დასრულდა")
         Catch ex As Exception
-            Debug.WriteLine($"საერთო შეცდომა მონაცემების დატვირთვისას: {ex.Message}")
+            Debug.WriteLine($"LoadHomeDataAsync: საერთო შეცდომა: {ex.Message}")
         End Try
     End Sub
     ''' <summary>
@@ -370,5 +487,78 @@ Public Class Form1
             MessageBox.Show("ბაზების ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
+    ' დებაგის ღილაკის დაჭერაზე რეაქცია
+    Private Sub btnDebug_Click_1(sender As Object, e As EventArgs) Handles btnDebug.Click
+        Try
+            ' შევამოწმოთ გვაქვს თუ არა dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული!", "შეტყობინება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
 
+            ' მივიღოთ ყველა სესია პირდაპირ
+            Dim rows = dataService.GetData("DB-Schedule!B2:P") ' ყველა სესიის მონაცემები
+
+            If rows Is Nothing OrElse rows.Count = 0 Then
+                MessageBox.Show("ვერ მოიძებნა არცერთი სესია!", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' დავამუშავოთ ყველა მწკრივი
+            Dim allSessions As New List(Of SessionModel)()
+            For Each row In rows
+                Try
+                    ' მინიმუმ 12 სვეტი გვჭირდება
+                    If row.Count < 12 Then Continue For
+
+                    ' შევქმნათ სესიის ობიექტი
+                    Dim session = SessionModel.FromSheetRow(row)
+                    allSessions.Add(session)
+                Catch ex As Exception
+                    ' თუ რომელიმე მწკრივის დამუშავება ვერ მოხერხდა, გავაგრძელოთ შემდეგით
+                    Continue For
+                End Try
+            Next
+
+            ' შევქმნათ ტექსტური ანგარიში
+            Dim report As New StringBuilder()
+            report.AppendLine($"===== სულ {allSessions.Count} სესია =====")
+            report.AppendLine($"მიმდინარე დრო: {DateTime.Now:dd.MM.yyyy HH:mm:ss}")
+            report.AppendLine()
+
+            ' ვადაგადაცილებული სესიების მთვლელი
+            Dim overdueCount As Integer = 0
+
+            ' თითოეული სესიის ანალიზი
+            For Each session In allSessions
+                Dim currentDate = DateTime.Today
+                Dim sessionDate = session.DateTime.Date
+                Dim statusLower = session.Status.Trim().ToLower()
+
+                Dim isPastDue = sessionDate < currentDate
+                Dim isPlanned = statusLower = "დაგეგმილი"
+                Dim isOverdue = isPlanned AndAlso isPastDue
+
+                report.AppendLine($"ID: {session.Id}")
+                report.AppendLine($"  თარიღი: {session.DateTime:dd.MM.yyyy HH:mm}")
+                report.AppendLine($"  სტატუსი: '{session.Status}'")
+                report.AppendLine($"  დაგეგმილია: {isPlanned}")
+                report.AppendLine($"  ვადა გასულია: {isPastDue}")
+                report.AppendLine($"  ვადაგადაცილებულია: {isOverdue}")
+                report.AppendLine()
+
+                If isOverdue Then
+                    overdueCount += 1
+                End If
+            Next
+
+            report.AppendLine($"===== სულ {overdueCount} ვადაგადაცილებული სესია =====")
+
+            ' გამოვაჩინოთ ანგარიში
+            MessageBox.Show(report.ToString(), "სესიების ანალიზი", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            MessageBox.Show($"დებაგ რეჟიმის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

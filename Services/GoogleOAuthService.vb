@@ -69,11 +69,46 @@ Namespace Scheduler_v8_8a.Services
         ''' Revokes existing token და წაშლის Local FileDataStore მონაცემებს
         ''' </summary>
         Public Async Function RevokeAsync() As Task
-            If Credential IsNot Nothing Then
-                Await Credential.RevokeTokenAsync(CancellationToken.None)
-            End If
-            ' წაშალეთ საქაღალდე, რომ მომავალში ახალი ავტორიზაცია განხორციელდეს
-            If Directory.Exists(tokenStorePath) Then Directory.Delete(tokenStorePath, True)
+            Debug.WriteLine("GoogleOAuthService.RevokeAsync: დაწყება")
+
+            Try
+                ' 1. თუ credential არ არის null, ცდილობს გააუქმოს
+                If _credential IsNot Nothing Then
+                    Try
+                        Debug.WriteLine("GoogleOAuthService.RevokeAsync: ტოკენის გაუქმების მცდელობა")
+                        Await _credential.RevokeTokenAsync(CancellationToken.None)
+                        Debug.WriteLine("GoogleOAuthService.RevokeAsync: ტოკენი წარმატებით გაუქმდა")
+                    Catch ex As Exception
+                        Debug.WriteLine($"GoogleOAuthService.RevokeAsync: შეცდომა ტოკენის გაუქმებისას - {ex.Message}")
+                        ' ვაგრძელებთ პროცესს შეცდომის მიუხედავად
+                    End Try
+                Else
+                    Debug.WriteLine("GoogleOAuthService.RevokeAsync: credential არის null")
+                End If
+
+                ' 2. ყოველთვის ვცდილობთ წავშალოთ TokenStore საქაღალდე
+                Try
+                    If Directory.Exists(tokenStorePath) Then
+                        Debug.WriteLine($"GoogleOAuthService.RevokeAsync: ვშლი საქაღალდეს {tokenStorePath}")
+                        Directory.Delete(tokenStorePath, True)
+                        Debug.WriteLine("GoogleOAuthService.RevokeAsync: საქაღალდე წარმატებით წაიშალა")
+                    Else
+                        Debug.WriteLine("GoogleOAuthService.RevokeAsync: საქაღალდე არ არსებობს")
+                    End If
+                Catch dirEx As Exception
+                    Debug.WriteLine($"GoogleOAuthService.RevokeAsync: შეცდომა საქაღალდის წაშლისას - {dirEx.Message}")
+                    ' ვაგრძელებთ პროცესს შეცდომის მიუხედავად
+                End Try
+
+                ' 3. ბოლოს ვასუფთავებთ credential-ს
+                _credential = Nothing
+                Debug.WriteLine("GoogleOAuthService.RevokeAsync: credential განულებულია")
+            Catch ex As Exception
+                Debug.WriteLine($"GoogleOAuthService.RevokeAsync: ზოგადი შეცდომა - {ex.Message}")
+                Throw ' გადავაგზავნოთ შეცდომა მომხმარებელთან
+            End Try
+
+            Debug.WriteLine("GoogleOAuthService.RevokeAsync: დასრულება")
         End Function
 
     End Class

@@ -426,45 +426,69 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' IDataService.GetOverdueSessions იმპლემენტაცია
         ''' </summary>
-        Public Function GetOverdueSessions() As List(Of SessionModel) Implements IDataService.GetOverdueSessions
-            ' შევამოწმოთ ქეში
-            Dim cacheKey = "overdue_sessions"
-            Dim cachedSessions As List(Of SessionModel) = Nothing
+        Public Function GetOverdueSessions() As List(Of Models.SessionModel) Implements IDataService.GetOverdueSessions
+            Debug.WriteLine("GoogleSheetsDataService.GetOverdueSessions: დაიწყო ძიება")
 
-            If TryGetFromCache(cacheKey, cachedSessions) Then
-                Return cachedSessions
-            End If
+            ' გავასუფთავოთ ყველა ქეში, რომ ყოველთვის ახალი მონაცემები მივიღოთ
+            cache.Clear()
+
+            Try
+                ' მივიღოთ ყველა სესია
+                Dim allSessions = GetAllSessions()
+                Debug.WriteLine($"GoogleSheetsDataService.GetOverdueSessions: მიღებულია {allSessions.Count} სესია")
+
+                ' გავფილტროთ ვადაგადაცილებული სესიები
+                Dim overdueSessions = allSessions.Where(Function(s) s.IsOverdue).ToList()
+                Debug.WriteLine($"GoogleSheetsDataService.GetOverdueSessions: მათგან {overdueSessions.Count} არის ვადაგადაცილებული")
+
+                ' დავალაგოთ თარიღის მიხედვით
+                overdueSessions = overdueSessions.OrderBy(Function(s) s.DateTime).ToList()
+
+                ' ვაბრუნებთ შედეგს
+                Return overdueSessions
+            Catch ex As Exception
+                Debug.WriteLine($"GoogleSheetsDataService.GetOverdueSessions: ძირითადი შეცდომა - {ex.Message}")
+                Return New List(Of Models.SessionModel)()
+            End Try
+        End Function
+        ''' <summary>
+        ''' ყველა სესიის წამოღება დებაგირებისთვის
+        ''' </summary>
+        Public Function GetAllSessions() As List(Of SessionModel)
+            Debug.WriteLine("GoogleSheetsDataService.GetAllSessions: დაიწყო დებაგირებისთვის")
 
             Try
                 Dim sessions As New List(Of SessionModel)()
                 Dim rows = GetData(sessionsRange)
 
-                If rows IsNot Nothing Then
-                    For Each row As IList(Of Object) In rows
-                        Try
-                            ' შევქმნათ SessionModel
-                            Dim session = SessionModel.FromSheetRow(row)
+                Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მოვიპოვეთ {If(rows Is Nothing, 0, rows.Count)} მწკრივი")
 
-                            ' შევამოწმოთ არის თუ არა სესია ვადაგადაცილებული
-                            If session.Status = "დაგეგმილი" AndAlso session.DateTime < DateTime.Now Then
-                                sessions.Add(session)
+                If rows IsNot Nothing Then
+                    For i As Integer = 0 To rows.Count - 1
+                        Try
+                            ' მინიმუმ 12 სვეტი გვჭირდება (სტატუსის ჩათვლით)
+                            If rows(i).Count < 12 Then
+                                Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მწკრივი {i} არასაკმარისი სვეტებით: {rows(i).Count}")
+                                Continue For
                             End If
+
+                            ' სესიის ობიექტის შექმნა
+                            Dim session = SessionModel.FromSheetRow(rows(i))
+                            sessions.Add(session)
+
+                            Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: დაემატა სესია ID={session.Id}, თარიღი={session.DateTime:dd.MM.yyyy HH:mm}, სტატუსი={session.Status}")
+
                         Catch ex As Exception
-                            ' ვაგრძელებთ შემდეგი ჩანაწერით
-                            Continue For
+                            Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: შეცდომა მწკრივი {i}-ის დამუშავებისას: {ex.Message}")
                         End Try
                     Next
                 End If
 
-                ' დავალაგოთ სესიები თარიღის მიხედვით
-                sessions = sessions.OrderBy(Function(s) s.DateTime).ToList()
-
-                ' ქეშში შენახვა
-                CacheData(cacheKey, sessions)
-
+                Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მოძიებულია {sessions.Count} სესია")
                 Return sessions
+
             Catch ex As Exception
-                Debug.WriteLine($"ვადაგადაცილებული სესიების წამოღების შეცდომა: {ex.Message}")
+                Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მთავარი შეცდომა - {ex.Message}")
                 Return New List(Of SessionModel)()
             End Try
         End Function

@@ -243,7 +243,6 @@ Namespace Scheduler_v8_8a.Services
 
                 Return profile
             Catch ex As Exception
-                Debug.WriteLine($"მომხმარებლის პროფილის წამოღების შეცდომა: {ex.Message}")
                 Throw New Exception("მომხმარებლის პროფილის წამოღება ვერ მოხერხდა", ex)
             End Try
         End Function
