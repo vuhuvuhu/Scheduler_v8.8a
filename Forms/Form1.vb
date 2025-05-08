@@ -461,6 +461,9 @@ Public Class Form1
             Debug.WriteLine($"LoadHomeDataAsync: საერთო შეცდომა: {ex.Message}")
             Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {ex.StackTrace}")
         End Try
+        If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
+            homeControl.TestDirectControls()
+        End If
     End Sub
     ''' <summary>
     ''' როლის ცვლილებისას ხილვადობის მართვა

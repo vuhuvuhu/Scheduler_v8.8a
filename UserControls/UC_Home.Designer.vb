@@ -179,7 +179,7 @@ Partial Class UC_Home
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.GBRedTasks.Location = New System.Drawing.Point(4, 86)
         Me.GBRedTasks.Name = "GBRedTasks"
-        Me.GBRedTasks.Size = New System.Drawing.Size(766, 355)
+        Me.GBRedTasks.Size = New System.Drawing.Size(766, 381)
         Me.GBRedTasks.TabIndex = 3
         Me.GBRedTasks.TabStop = False
         Me.GBRedTasks.Text = "მოითხოვს რეაგირებას"
@@ -236,9 +236,9 @@ Partial Class UC_Home
         Me.Button1.Cursor = System.Windows.Forms.Cursors.Default
         Me.Button1.FlatAppearance.BorderSize = 0
         Me.Button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button1.Location = New System.Drawing.Point(4, 447)
+        Me.Button1.Location = New System.Drawing.Point(3, 473)
         Me.Button1.Name = "Button1"
-        Me.Button1.Size = New System.Drawing.Size(56, 56)
+        Me.Button1.Size = New System.Drawing.Size(30, 30)
         Me.Button1.TabIndex = 5
         Me.Button1.UseVisualStyleBackColor = False
         '
@@ -252,9 +252,9 @@ Partial Class UC_Home
         Me.Button2.Cursor = System.Windows.Forms.Cursors.Default
         Me.Button2.FlatAppearance.BorderSize = 0
         Me.Button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button2.Location = New System.Drawing.Point(129, 447)
+        Me.Button2.Location = New System.Drawing.Point(84, 473)
         Me.Button2.Name = "Button2"
-        Me.Button2.Size = New System.Drawing.Size(56, 56)
+        Me.Button2.Size = New System.Drawing.Size(30, 30)
         Me.Button2.TabIndex = 1
         Me.Button2.UseVisualStyleBackColor = False
         '
@@ -262,10 +262,10 @@ Partial Class UC_Home
         '
         Me.Label1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.Label1.AutoSize = True
-        Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label1.Location = New System.Drawing.Point(66, 469)
+        Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.Label1.Location = New System.Drawing.Point(39, 482)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(57, 20)
+        Me.Label1.Size = New System.Drawing.Size(39, 13)
         Me.Label1.TabIndex = 6
         Me.Label1.Text = "Label1"
         '
