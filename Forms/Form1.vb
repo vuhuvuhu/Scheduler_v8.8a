@@ -14,18 +14,16 @@ Imports System.Text
 
 Public Class Form1
 
-    ' ViewModel-ები
-    Private ReadOnly viewModel As MainViewModel
-    Private ReadOnly homeViewModel As HomeViewModel
+    ' ViewModel-ები - აღარ გამოვაცხადოთ როგორც ReadOnly
+    Private viewModel As MainViewModel
+    Private homeViewModel As HomeViewModel
 
-    ' სერვისები (Dependency Injection)
-    Private ReadOnly authService As GoogleOAuthService
-    Private serviceAccountService As GoogleServiceAccountService
+    ' სერვისები - აღარ გამოვაცხადოთ როგორც ReadOnly
+    Private authService As GoogleOAuthService
     Private dataService As IDataService
-    Private userService As UserService
 
-    ' UI კომპონენტები
-    Private ReadOnly menuMgr As MenuManager
+    ' UI კომპონენტები - აღარ გამოვაცხადოთ როგორც ReadOnly
+    Private menuMgr As MenuManager
     Private homeControl As UC_Home
 
     ' კონფიგურაცია
@@ -36,62 +34,17 @@ Public Class Form1
     Private ReadOnly tokenStorePath As String = Path.Combine(utilsFolder, "TokenStore")
 
     ''' <summary>
-    ''' კონსტრუქტორი: InitializeComponent და ViewModel-ების ინიციალიზაცია
+    ''' კონსტრუქტორი: ძირითადი ინიციალიზაცია
     ''' </summary>
     Public Sub New()
         InitializeComponent()
 
-        ' საქაღალდების შექმნა თუ არ არსებობს
+        ' საქაღალდეების შექმნა თუ არ არსებობს
         If Not Directory.Exists(utilsFolder) Then Directory.CreateDirectory(utilsFolder)
         If Not Directory.Exists(tokenStorePath) Then Directory.CreateDirectory(tokenStorePath)
 
-        ' ViewModel-ების ინიციალიზაცია
-        viewModel = New MainViewModel()
-        homeViewModel = New HomeViewModel()
-
-        ' ავტორიზაციის სერვისის ინიციალიზაცია
-        authService = New GoogleOAuthService(secretsFile, tokenStorePath)
-
-        ' სერვის ანგარიშის გამოყენება ცხრილებთან დასაკავშირებლად - პროგრამის გაშვებისთანავე
-        Try
-            Debug.WriteLine("სერვის ანგარიშით დაკავშირების მცდელობა...")
-            Dim serviceAccountPath = Path.Combine(utilsFolder, "google-service-account-key8_7a.json")
-
-            ' შემოწმება არსებობს თუ არა ფაილი
-            If Not File.Exists(serviceAccountPath) Then
-                Debug.WriteLine($"სერვის ანგარიშის ფაილი არ არსებობს: {serviceAccountPath}")
-                MessageBox.Show("სერვის ანგარიშის ფაილი არ მოიძებნა. პროგრამა ვერ შეძლებს მონაცემებთან წვდომას.", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Return
-            End If
-
-            Dim serviceAccountService = New GoogleServiceAccountService(serviceAccountPath)
-            Dim credential = serviceAccountService.AuthorizeAsync()
-            'Dim sheetsService = serviceAccountService.CreateSheetsService()
-
-            ' შევქმნათ dataService - სერვის ანგარიშის გამოყენებით
-            ' შექმენით SheetsService ობიექტი
-            Dim sheetsService = New Google.Apis.Sheets.v4.SheetsService(
-    New Google.Apis.Services.BaseClientService.Initializer() With {
-        .HttpClientInitializer = authService.Credential,
-        .ApplicationName = "Scheduler_v8.8a"
-    }
-)
-
-            ' და შემდეგ გამოიყენეთ ის SheetDataService-ში
-            dataService = New SheetDataService(sheetsService, spreadsheetId)
-            Debug.WriteLine("სერვის ანგარიშით დაკავშირება წარმატებულია")
-        Catch ex As Exception
-            Debug.WriteLine($"სერვის ანგარიშით დაკავშირების შეცდომა: {ex.Message}")
-            MessageBox.Show($"სერვის ანგარიშით დაკავშირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-
         ' მენიუს მენეჯერის ინიციალიზაცია
         menuMgr = New MenuManager(mainMenu)
-
-        ' PropertyChanged ივენთის ჰენდლერი
-        AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
-        ' საწყისი მდგომარეობაში ინსტრუმენტები დამალულია
-        SetToolsVisibility(False)
     End Sub
 
     ''' <summary>
@@ -105,17 +58,15 @@ Public Class Form1
         viewModel = New MainViewModel()
         homeViewModel = New HomeViewModel()
 
+        ' ივენთის ჰენდლერის დამატება
+        AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
+
         ' GoogleServiceAccountClient-ის ინიციალიზაცია და მონაცემების სერვისის შექმნა
         Try
-            ' შევამოწმოთ, არსებობს თუ არა საქაღალდე და საჭირო ფაილები
-            If Not Directory.Exists(utilsFolder) Then
-                Directory.CreateDirectory(utilsFolder)
-            End If
-
             ' შევამოწმოთ არსებობს თუ არა სერვის აკაუნტის ფაილი
             If Not File.Exists(serviceAccountKeyPath) Then
                 MessageBox.Show($"სერვის აკაუნტის JSON ფაილი ვერ მოიძებნა: {serviceAccountKeyPath}",
-                           "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                              "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Else
                 ' შევქმნათ მონაცემთა სერვისი სერვის აკაუნტის გამოყენებით
                 dataService = New SheetDataService(serviceAccountKeyPath, spreadsheetId)
@@ -127,11 +78,8 @@ Public Class Form1
 
         Catch ex As Exception
             MessageBox.Show($"შეცდომა სერვისების ინიციალიზაციისას: {ex.Message}",
-                       "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                          "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-
-        ' ივენთის ჰენდლერის დამატება
-        AddHandler viewModel.PropertyChanged, AddressOf OnViewModelPropertyChanged
 
         ' საწყისი Home View
         ShowHome()
@@ -142,7 +90,6 @@ Public Class Form1
 
         ' დავამატოთ მისალმება homeViewModel-ში
         homeViewModel.Greeting = homeViewModel.GetGreetingByTime()
-
 
     End Sub
 
