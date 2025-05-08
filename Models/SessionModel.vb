@@ -287,11 +287,15 @@ Namespace Scheduler_v8_8a.Models
 
                 ' თარიღის და დროის პარსინგი
                 Dim dateTimeStr = rowData(4).ToString()
+                Debug.WriteLine($"ვცდილობ პარსინგს: '{dateTimeStr}'")
                 Dim dateTime As DateTime
-                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                        Globalization.CultureInfo.InvariantCulture,
-                                        Globalization.DateTimeStyles.None, dateTime) Then
+                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yy, HH:mm",
+                        Globalization.CultureInfo.InvariantCulture,
+                        Globalization.DateTimeStyles.None, dateTime) Then
                     session.DateTime = dateTime
+                    Debug.WriteLine($"პარსინგი წარმატებით დასრულდა: {dateTime}")
+                Else
+                    Debug.WriteLine("პარსინგი ვერ შესრულდა!")
                 End If
 
                 ' დანარჩენი მონაცემების დაყენება
