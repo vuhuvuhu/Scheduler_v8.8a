@@ -12,6 +12,7 @@ Imports System.IO
 Imports Newtonsoft.Json
 Imports Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports System.Text
 
 Namespace Scheduler_v8_8a.Services
 
@@ -30,7 +31,7 @@ Namespace Scheduler_v8_8a.Services
         Private Const usersRange As String = "DB-Users!B2:C"
         Private Const appendUsersRange As String = "DB-Users!B:C"
         Private Const birthdaysRange As String = "DB-Personal!B2:G"
-        Private Const sessionsRange As String = "DB-Schedule!B2:P"
+        Private Const sessionsRange As String = "DB-Schedule!A2:O"
         Private Const tasksRange As String = "DB-Tasks!B2:M"
         Private Const defaultRole As String = "6"
 
@@ -141,23 +142,25 @@ Namespace Scheduler_v8_8a.Services
         ''' IDataService.GetData იმპლემენტაცია
         ''' </summary>
         Public Function GetData(range As String) As IList(Of IList(Of Object)) Implements IDataService.GetData
-            ' შევამოწმოთ ქეში
-            Dim cacheKey = $"data_{range}"
-            Dim cachedData As IList(Of IList(Of Object)) = Nothing
-
-            If TryGetFromCache(cacheKey, cachedData) Then
-                Return cachedData
-            End If
-
             Try
                 ' მონაცემთა წამოღება Google Sheets-დან
                 Dim request = sheetsService.Spreadsheets.Values.Get(spreadsheetId, range)
                 Dim response = request.Execute()
                 Dim values = response.Values
 
-                ' ქეშში შენახვა
-                If values IsNot Nothing Then
-                    CacheData(cacheKey, values)
+                ' დამატებითი დებაგინგი:
+                Debug.WriteLine($"GetData: მოთხოვნილი დიაპაზონი '{range}', მიღებულია {If(values Is Nothing, 0, values.Count)} მწკრივი")
+
+                If values IsNot Nothing AndAlso values.Count > 0 AndAlso range.Contains("A2:") Then
+                    For i As Integer = 0 To Math.Min(3, values.Count - 1)
+                        Dim colValues = New StringBuilder()
+                        colValues.Append($"  მწკრივი {i + 2}: [")
+                        For j As Integer = 0 To Math.Min(3, values(i).Count - 1)
+                            colValues.Append($"{j}='{values(i)(j)}', ")
+                        Next
+                        colValues.Append("]")
+                        Debug.WriteLine(colValues.ToString())
+                    Next
                 End If
 
                 Return values

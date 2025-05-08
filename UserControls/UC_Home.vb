@@ -183,39 +183,54 @@ Public Class UC_Home
         Try
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
 
+            ' შევამოწმოთ კონტროლის მდგომარეობა
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: GBRedTasks.Size={GBRedTasks.Size}, Visible={GBRedTasks.Visible}, Dock={GBRedTasks.Dock}")
+
             ' გავასუფთაოთ არსებული ბარათები
             GBRedTasks.Controls.Clear()
+
+            ' ბარათების ტესტისთვის
+            Dim testHeaderPanel As New Panel()
+            testHeaderPanel.BackColor = Color.Navy
+            testHeaderPanel.Size = New Size(GBRedTasks.Width - 20, 30)
+            testHeaderPanel.Location = New Point(10, 10)
+
+            Dim testHeaderLabel As New Label()
+            testHeaderLabel.Text = $"ნაპოვნია {sessions.Count} ვადაგადაცილებული სესია"
+            testHeaderLabel.ForeColor = Color.White
+            testHeaderLabel.AutoSize = True
+            testHeaderLabel.Location = New Point(10, 5)
+
+            testHeaderPanel.Controls.Add(testHeaderLabel)
+            GBRedTasks.Controls.Add(testHeaderPanel)
+            Debug.WriteLine("UC_Home.PopulateOverdueSessions: ტესტის სათაური დაემატა")
 
             ' თუ სესიები არ არის, დავამატოთ შეტყობინება
             If sessions Is Nothing OrElse sessions.Count = 0 Then
                 Dim lblNoSessions As New Label()
                 lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
                 lblNoSessions.AutoSize = True
-                lblNoSessions.Dock = DockStyle.Fill
-                lblNoSessions.TextAlign = ContentAlignment.MiddleCenter
+                lblNoSessions.Location = New Point(10, 50)
                 GBRedTasks.Controls.Add(lblNoSessions)
                 Debug.WriteLine("UC_Home.PopulateOverdueSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
+                GBRedTasks.Visible = True
+                GBRedTasks.Refresh()
                 Return
             End If
 
-            ' ბარათების განსათავსებლად FlowLayoutPanel
-            Dim flowPanel As New FlowLayoutPanel()
-            flowPanel.Dock = DockStyle.Fill
-            flowPanel.AutoScroll = True
-            flowPanel.FlowDirection = FlowDirection.TopDown
-            flowPanel.WrapContents = False
-            GBRedTasks.Controls.Add(flowPanel)
-            Debug.WriteLine("UC_Home.PopulateOverdueSessions: FlowLayoutPanel დაემატა")
+            ' ყველა სესიისთვის შევქმნათ ბარათი, რომლებსაც პირდაპირ GBRedTasks-ში ვამატებთ
+            Dim yPos As Integer = 50
+            Dim cardCount As Integer = 0
 
-            ' ყველა სესიისთვის შევქმნათ ბარათი
-            For Each session In sessions
+            For i As Integer = 0 To Math.Min(10, sessions.Count - 1) ' პირველი 10 ბარათი მაინც
+                Dim session = sessions(i)
                 Debug.WriteLine($"UC_Home.PopulateOverdueSessions: ვქმნი ბარათს სესიისთვის ID: {session.Id}, თარიღი: {session.DateTime}, სტატუსი: {session.Status}")
 
                 Dim card As New Panel()
-                card.Size = New Size(GBRedTasks.Width - 30, 120)
+                card.Size = New Size(GBRedTasks.Width - 40, 80)
+                card.Location = New Point(20, yPos)
                 card.BorderStyle = BorderStyle.FixedSingle
                 card.BackColor = Color.FromArgb(255, 235, 235) ' მოწითალო ფერი
-                card.Margin = New Padding(5)
 
                 ' დავამატოთ სესიის ინფორმაცია
                 Dim lblDateTime As New Label()
@@ -225,62 +240,34 @@ Public Class UC_Home
                 lblDateTime.Font = New Font(lblDateTime.Font, FontStyle.Bold)
                 card.Controls.Add(lblDateTime)
 
-                Dim lblDuration As New Label()
-                lblDuration.Text = $"ხანგრძლივობა: {session.Duration} წთ"
-                lblDuration.Location = New Point(10, 30)
-                lblDuration.AutoSize = True
-                card.Controls.Add(lblDuration)
-
                 Dim lblBeneficiary As New Label()
                 lblBeneficiary.Text = $"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}"
-                lblBeneficiary.Location = New Point(10, 50)
+                lblBeneficiary.Location = New Point(10, 35)
                 lblBeneficiary.AutoSize = True
                 card.Controls.Add(lblBeneficiary)
 
-                Dim lblTherapist As New Label()
-                lblTherapist.Text = $"თერაპევტი: {session.TherapistName}"
-                lblTherapist.Location = New Point(10, 70)
-                lblTherapist.AutoSize = True
-                card.Controls.Add(lblTherapist)
+                Dim lblId As New Label()
+                lblId.Text = $"ID: {session.Id}"
+                lblId.Location = New Point(10, 60)
+                lblId.AutoSize = True
+                lblId.Font = New Font(lblId.Font, FontStyle.Italic)
+                card.Controls.Add(lblId)
 
-                Dim lblTherapyType As New Label()
-                lblTherapyType.Text = $"თერაპია: {session.TherapyType}"
-                lblTherapyType.Location = New Point(250, 10)
-                lblTherapyType.AutoSize = True
-                card.Controls.Add(lblTherapyType)
+                ' დავამატოთ ბარათი GBRedTasks-ში
+                GBRedTasks.Controls.Add(card)
+                cardCount += 1
+                yPos += 90 ' შემდეგი ბარათისთვის Y პოზიცია
 
-                Dim lblSpace As New Label()
-                lblSpace.Text = $"სივრცე: {session.Space}"
-                lblSpace.Location = New Point(250, 30)
-                lblSpace.AutoSize = True
-                card.Controls.Add(lblSpace)
-
-                Dim lblFunding As New Label()
-                lblFunding.Text = $"დაფინანსება: {session.Funding}"
-                lblFunding.Location = New Point(250, 50)
-                lblFunding.AutoSize = True
-                card.Controls.Add(lblFunding)
-
-                ' თუ მომხმარებელი ავტორიზებულია და როლი არის 1, 2 ან 3, დავამატოთ რედაქტირების ღილაკი
-                If isAuthorized AndAlso (userRole = "1" OrElse userRole = "2" OrElse userRole = "3") Then
-                    Dim btnEdit As New Button()
-                    btnEdit.Text = "რედაქტირება"
-                    btnEdit.Location = New Point(card.Width - 120, 70)
-                    btnEdit.Size = New Size(100, 25)
-                    btnEdit.Tag = session.Id ' შევინახოთ სესიის ID
-                    AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
-                    card.Controls.Add(btnEdit)
-                End If
-
-                ' დავამატოთ ბარათი FlowLayoutPanel-ში
-                flowPanel.Controls.Add(card)
                 Debug.WriteLine($"UC_Home.PopulateOverdueSessions: ბარათი დაემატა სესიისთვის ID: {session.Id}")
             Next
 
-            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაემატა {sessions.Count} ბარათი")
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაემატა {cardCount} ბარათი")
 
-            ' დარწმუნდეთ რომ GBRedTasks ხილვადია
+            ' დარწმუნდეთ რომ GBRedTasks ხილვადია და განახლებულია
             GBRedTasks.Visible = True
+            GBRedTasks.BringToFront()
+            GBRedTasks.Refresh()
+            Application.DoEvents()
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: შეცდომა - {ex.Message}")

@@ -299,29 +299,53 @@ Public Class Form1
     ''' მთავარი გვერდის ჩვენება UC_Home-ის გამოყენებით
     ''' </summary>
     Private Sub ShowHome()
+        Debug.WriteLine("ShowHome: დაიწყო - ამჟამინდელი UC_Home მდგომარეობა:")
+
+        ' ამჟამინდელი home კონტროლის დიაგნოსტიკა
+        If homeControl IsNot Nothing Then
+            Debug.WriteLine($"ShowHome: არსებული homeControl - Disposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
+        Else
+            Debug.WriteLine("ShowHome: homeControl არის Nothing")
+        End If
+
+        ' შევამოწმოთ pnlMain
+        Debug.WriteLine($"ShowHome: pnlMain - Controls={pnlMain.Controls.Count}, Visible={pnlMain.Visible}")
+
         ' ამოცანა: UC_Home კონტროლის ჩვენება და განახლება
-        If homeControl Is Nothing Then
+        If homeControl Is Nothing OrElse homeControl.IsDisposed Then
+            Debug.WriteLine("ShowHome: ახალი homeControl-ის შექმნა")
             homeControl = New UC_Home(homeViewModel)
             homeControl.Dock = DockStyle.Fill
             pnlMain.Controls.Add(homeControl)
-            Debug.WriteLine("შეიქმნა ახალი homeControl")
+            Debug.WriteLine($"ShowHome: შეიქმნა ახალი homeControl - Disposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
+        Else
+            Debug.WriteLine("ShowHome: homeControl უკვე არსებობს და ვალიდურია")
         End If
 
+        ' გავხადოთ homeControl წინა პლანზე
         homeControl.BringToFront()
-        Debug.WriteLine($"homeControl გახდა წინ: IsDisposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
+        Debug.WriteLine($"ShowHome: homeControl.BringToFront() გამოძახებულია")
+
+        ' შეგვიძლია ასევე გამოვიძახოთ Refresh
+        homeControl.Refresh()
+        Debug.WriteLine($"ShowHome: homeControl.Refresh() გამოძახებულია")
 
         ' ინსტრუმენტების ხილვადობის განახლება
         SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
 
-        ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას, რადგან dataService უკვე ინიციალიზებულია სერვის ანგარიშით
+        ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას
         If dataService IsNot Nothing Then
             Try
-                ' ახალი მეთოდი: დატვირთვა ასინქრონულად
+                Debug.WriteLine("ShowHome: LoadHomeDataAsync() გამოძახება...")
                 LoadHomeDataAsync()
             Catch ex As Exception
-                Debug.WriteLine($"მონაცემების დატვირთვის შეცდომა: {ex.Message}")
+                Debug.WriteLine($"ShowHome: მონაცემების დატვირთვის შეცდომა: {ex.Message}")
             End Try
+        Else
+            Debug.WriteLine("ShowHome: dataService არის Nothing, მონაცემების დატვირთვა შეუძლებელია")
         End If
+
+        Debug.WriteLine("ShowHome: დასრულებულია")
     End Sub
 
     ''' <summary>
@@ -344,8 +368,19 @@ Public Class Form1
                                    Dim overdueSessions = dataService.GetOverdueSessions()
                                    Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {overdueSessions.Count} ვადაგადაცილებული სესია")
 
+                                   ' პირველი 3 ვადაგადაცილებული სესიის დებაგინგი
+                                   For i As Integer = 0 To Math.Min(2, overdueSessions.Count - 1)
+                                       Debug.WriteLine($"LoadHomeDataAsync: ვადაგადაცილებული სესია #{i + 1} - " &
+                                                  $"ID={overdueSessions(i).Id}, " &
+                                                  $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
+                                                  $"სტატუსი='{overdueSessions(i).Status}'")
+                                   Next
+
                                    Dim birthdays = dataService.GetUpcomingBirthdays(7)
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {birthdays.Count} მოახლოებული დაბადების დღე")
+
                                    Dim tasks = dataService.GetActiveTasks()
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {tasks.Count} აქტიური დავალება")
 
                                    ' UI განახლება მთავარ თრედზე
                                    Me.Invoke(Sub()
@@ -356,22 +391,40 @@ Public Class Form1
                                                          homeViewModel.PendingSessions.Add(session)
                                                      Next
                                                      homeViewModel.PendingSessionsCount = pendingSessions.Count
+                                                     Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {pendingSessions.Count} მოლოდინში სესია")
 
                                                      ' ვადაგადაცილებული სესიების განახლება
                                                      homeViewModel.OverdueSessions.Clear()
                                                      For Each session In overdueSessions
                                                          homeViewModel.OverdueSessions.Add(session)
+                                                         Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა სესია - ID={session.Id}, სტატუსი={session.Status}")
                                                      Next
                                                      Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {overdueSessions.Count} ვადაგადაცილებული სესია")
 
                                                      ' ვადაგადაცილებული სესიების ბარათების შექმნა
-                                                     If homeControl IsNot Nothing Then
-                                                         Debug.WriteLine("LoadHomeDataAsync: ვიძახებთ PopulateOverdueSessions")
+                                                     If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
+                                                         Debug.WriteLine($"LoadHomeDataAsync: ვიძახებთ PopulateOverdueSessions - " &
+                                                                    $"სესიების რაოდენობა: {overdueSessions.Count}, " &
+                                                                    $"homeControl.Visible: {homeControl.Visible}, " &
+                                                                    $"homeControl.IsHandleCreated: {homeControl.IsHandleCreated}")
+
+                                                         ' შევამოწმოთ თუ ეს "ლაივ" homeControl ობიექტია და არა გასუფთავებული მიმართვა
+                                                         Dim isHomeControlVisible As Boolean = False
+                                                         Try
+                                                             isHomeControlVisible = homeControl.Visible AndAlso homeControl.IsHandleCreated
+                                                             Debug.WriteLine($"LoadHomeDataAsync: homeControl.Visible={isHomeControlVisible}")
+                                                         Catch ex As Exception
+                                                             Debug.WriteLine($"LoadHomeDataAsync: ვერ შემოწმდა homeControl.Visible: {ex.Message}")
+                                                         End Try
+
+                                                         ' PopulateOverdueSessions-ის გამოძახება, თუ ის მოქმედი homeControl-ია
                                                          homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
-                                                          viewModel.IsAuthorized,
-                                                          viewModel.Role)
+                                                                                         viewModel.IsAuthorized,
+                                                                                         viewModel.Role)
+
+                                                         Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
                                                      Else
-                                                         Debug.WriteLine("LoadHomeDataAsync: homeControl არის Nothing!")
+                                                         Debug.WriteLine($"LoadHomeDataAsync: homeControl არის None ან Disposed! IsNothing={homeControl Is Nothing}, IsDisposed={If(homeControl IsNot Nothing, homeControl.IsDisposed, True)}")
                                                      End If
 
                                                      ' დაბადების დღეების განახლება
@@ -379,24 +432,34 @@ Public Class Form1
                                                      For Each birthday In birthdays
                                                          homeViewModel.UpcomingBirthdays.Add(birthday)
                                                      Next
+                                                     Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {birthdays.Count} დაბადების დღე")
 
                                                      ' დავალებების განახლება
                                                      homeViewModel.ActiveTasks.Clear()
                                                      For Each task In tasks
                                                          homeViewModel.ActiveTasks.Add(task)
                                                      Next
+                                                     Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {tasks.Count} დავალება")
+
+                                                     ' Application.DoEvents() გამოძახება, რათა UI-მ მოასწროს განახლება
+                                                     Application.DoEvents()
+                                                     Debug.WriteLine("LoadHomeDataAsync: Application.DoEvents() გამოძახებულია UI-ის განახლებისთვის")
+
                                                  Catch uiEx As Exception
                                                      Debug.WriteLine($"LoadHomeDataAsync: შეცდომა UI განახლებისას: {uiEx.Message}")
+                                                     Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {uiEx.StackTrace}")
                                                  End Try
                                              End Sub)
                                Catch threadEx As Exception
                                    Debug.WriteLine($"LoadHomeDataAsync: შეცდომა მონაცემების დამუშავების თრედზე: {threadEx.Message}")
+                                   Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {threadEx.StackTrace}")
                                End Try
                            End Sub)
 
             Debug.WriteLine("LoadHomeDataAsync: მონაცემების დატვირთვა დასრულდა")
         Catch ex As Exception
             Debug.WriteLine($"LoadHomeDataAsync: საერთო შეცდომა: {ex.Message}")
+            Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {ex.StackTrace}")
         End Try
     End Sub
     ''' <summary>
@@ -443,69 +506,100 @@ Public Class Form1
                 Return
             End If
 
-            ' მივიღოთ ყველა სესია პირდაპირ
-            Dim rows = dataService.GetData("DB-Schedule!B2:P") ' ყველა სესიის მონაცემები
+            ' მონაცემების წამოღება მთლიანი დიაპაზონიდან
+            Dim rows = dataService.GetData("DB-Schedule!A2:O") ' სრული დიაპაზონი
 
             If rows Is Nothing OrElse rows.Count = 0 Then
                 MessageBox.Show("ვერ მოიძებნა არცერთი სესია!", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
 
-            ' დავამუშავოთ ყველა მწკრივი
-            Dim allSessions As New List(Of SessionModel)()
-            For Each row In rows
-                Try
-                    ' მინიმუმ 12 სვეტი გვჭირდება
-                    If row.Count < 12 Then Continue For
-
-                    ' შევქმნათ სესიის ობიექტი
-                    Dim session = SessionModel.FromSheetRow(row)
-                    allSessions.Add(session)
-                Catch ex As Exception
-                    ' თუ რომელიმე მწკრივის დამუშავება ვერ მოხერხდა, გავაგრძელოთ შემდეგით
-                    Continue For
-                End Try
-            Next
-
-            ' შევქმნათ ტექსტური ანგარიში
-            Dim report As New StringBuilder()
-            report.AppendLine($"===== სულ {allSessions.Count} სესია =====")
-            report.AppendLine($"მიმდინარე დრო: {DateTime.Now:dd.MM.yyyy HH:mm:ss}")
-            report.AppendLine()
-
-            ' ვადაგადაცილებული სესიების მთვლელი
+            ' სტატუსების ანალიზი
+            Dim statusCounts As New Dictionary(Of String, Integer)
             Dim overdueCount As Integer = 0
 
-            ' თითოეული სესიის ანალიზი
-            For Each session In allSessions
-                Dim currentDate = DateTime.Today
-                Dim sessionDate = session.DateTime.Date
-                Dim statusLower = session.Status.Trim().ToLower()
+            For Each row In rows
+                If row.Count > 12 Then
+                    ' M სვეტი (სტატუსი) არის ინდექსით 12
+                    Dim status = row(12).ToString().Trim()
 
-                Dim isPastDue = sessionDate < currentDate
-                Dim isPlanned = statusLower = "დაგეგმილი"
-                Dim isOverdue = isPlanned AndAlso isPastDue
+                    ' დავამატოთ სტატუსი ლექსიკონში
+                    If statusCounts.ContainsKey(status) Then
+                        statusCounts(status) += 1
+                    Else
+                        statusCounts.Add(status, 1)
+                    End If
 
-                report.AppendLine($"ID: {session.Id}")
-                report.AppendLine($"  თარიღი: {session.DateTime:dd.MM.yyyy HH:mm}")
-                report.AppendLine($"  სტატუსი: '{session.Status}'")
-                report.AppendLine($"  დაგეგმილია: {isPlanned}")
-                report.AppendLine($"  ვადა გასულია: {isPastDue}")
-                report.AppendLine($"  ვადაგადაცილებულია: {isOverdue}")
-                report.AppendLine()
+                    ' შევამოწმოთ არის თუ არა ვადაგადაცილებული
+                    If status.ToLower() = "დაგეგმილი" Then
+                        ' F სვეტი (თარიღი) არის ინდექსით 5
+                        Dim dateStr = If(row.Count > 5, row(5).ToString(), String.Empty)
+                        Dim sessionDate As DateTime
 
-                If isOverdue Then
-                    overdueCount += 1
+                        If DateTime.TryParseExact(dateStr, "dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
+                                             System.Globalization.DateTimeStyles.None, sessionDate) Then
+                            If sessionDate.Date < DateTime.Today Then
+                                overdueCount += 1
+                            End If
+                        End If
+                    End If
                 End If
             Next
 
-            report.AppendLine($"===== სულ {overdueCount} ვადაგადაცილებული სესია =====")
+            ' შედეგების გამოტანა
+            Dim statusInfo As New StringBuilder()
+            statusInfo.AppendLine("==== სტატუსების ანალიზი (M სვეტი) ====")
+            statusInfo.AppendLine($"სულ {rows.Count} მწკრივია ცხრილში.")
+            statusInfo.AppendLine()
 
-            ' გამოვაჩინოთ ანგარიში
-            MessageBox.Show(report.ToString(), "სესიების ანალიზი", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            For Each pair In statusCounts
+                statusInfo.AppendLine($"სტატუსი '{pair.Key}': {pair.Value} სესია")
+            Next
+
+            statusInfo.AppendLine()
+            statusInfo.AppendLine($"სულ ვადაგადაცილებული სესიები: {overdueCount}")
+            statusInfo.AppendLine("(დაგეგმილი სტატუსით და წარსული თარიღით)")
+
+            ' პირველი რამდენიმე მწკრივის სტრუქტურა
+            statusInfo.AppendLine()
+            statusInfo.AppendLine("==== პირველი 3 სესიის სტრუქტურა ====")
+
+            For i As Integer = 0 To Math.Min(2, rows.Count - 1)
+                statusInfo.AppendLine($"მწკრივი {i + 2}:")
+                statusInfo.AppendLine($"  ID (A): '{rows(i)(0)}'")
+                If rows(i).Count > 5 Then statusInfo.AppendLine($"  თარიღი (F): '{rows(i)(5)}'")
+                If rows(i).Count > 12 Then statusInfo.AppendLine($"  სტატუსი (M): '{rows(i)(12)}'")
+                statusInfo.AppendLine()
+            Next
+
+            MessageBox.Show(statusInfo.ToString(), "სესიების ანალიზი", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
         Catch ex As Exception
             MessageBox.Show($"დებაგ რეჟიმის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+    ''' <summary>
+    ''' ამოწმებს და აღწერს კონტროლის ხილვადობის მდგომარეობას დებაგირებისთვის
+    ''' </summary>
+    Private Sub DiagnoseControlVisibility(control As Control, controlName As String)
+        If control Is Nothing Then
+            Debug.WriteLine($"DiagnoseControlVisibility: {controlName} არის Nothing")
+            Return
+        End If
+
+        Debug.WriteLine($"DiagnoseControlVisibility: {controlName}")
+        Debug.WriteLine($"  Visible: {control.Visible}")
+        Debug.WriteLine($"  Created: {control.IsHandleCreated}")
+        Debug.WriteLine($"  Enabled: {control.Enabled}")
+        Debug.WriteLine($"  Bounds: {control.Bounds}")
+        Debug.WriteLine($"  Size: {control.Size}")
+
+        If control.Parent IsNot Nothing Then
+            Debug.WriteLine($"  Parent: {control.Parent.Name}, Visible: {control.Parent.Visible}")
+        Else
+            Debug.WriteLine($"  Parent: None")
+        End If
+
+        Debug.WriteLine($"  Controls Count: {control.Controls.Count}")
     End Sub
 End Class

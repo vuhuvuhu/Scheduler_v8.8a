@@ -19,7 +19,7 @@ Namespace Scheduler_v8_8a.Services
         Private Const usersRange As String = "DB-Users!B2:C"
         Private Const appendRange As String = "DB-Users!B:C"
         Private Const defaultRole As String = "6"
-        Private Const sessionsRange As String = "DB-Schedule!B2:P"
+        Private Const sessionsRange As String = "DB-Schedule!A2:O"
         Private Const birthdaysRange As String = "DB-Personal!B2:G"
         Private Const tasksRange As String = "DB-Tasks!B2:M"
 
