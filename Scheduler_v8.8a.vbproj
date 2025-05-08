@@ -123,6 +123,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Services\GoogleOAuthService.vb" />
+    <Compile Include="Services\GoogleServiceAccountService.vb" />
     <Compile Include="Services\GoogleSheetsDataService.vb" />
     <Compile Include="Services\IDataService.vb" />
     <Compile Include="Services\SheetDataService.vb" />

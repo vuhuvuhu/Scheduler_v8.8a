@@ -289,6 +289,7 @@ Namespace Scheduler_v8_8a.Models
                 Dim dateTimeStr = rowData(4).ToString()
                 Debug.WriteLine($"ვცდილობ პარსინგს: '{dateTimeStr}'")
                 Dim dateTime As DateTime
+                Dim formats As String() = {"dd.MM.yyyy HH:mm", "dd.MM.yy, HH:mm", "dd.MM.yy HH:mm"}
                 If DateTime.TryParseExact(dateTimeStr, "dd.MM.yy, HH:mm",
                         Globalization.CultureInfo.InvariantCulture,
                         Globalization.DateTimeStyles.None, dateTime) Then

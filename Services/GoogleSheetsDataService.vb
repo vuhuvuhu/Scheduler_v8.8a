@@ -51,17 +51,13 @@ Namespace Scheduler_v8_8a.Services
                 Return DateTime.Now.Subtract(Timestamp) > TimeSpan.FromMinutes(15)
             End Function
         End Class
-
         ''' <summary>
-        ''' კონსტრუქტორი: აგებს SheetsService–ს OAUTHCredential–ით და spreadsheetId–თ
+        ''' კონსტრუქტორი: აგებს SheetsService–ს SheetsService ობიექტით და spreadsheetId–თ
         ''' </summary>
-        ''' <param name="credential">Google OAuth2 UserCredential</param>
+        ''' <param name="service">Google SheetsService ობიექტი</param>
         ''' <param name="spreadsheetId">Spreadsheet-ის ID</param>
-        Public Sub New(credential As UserCredential, spreadsheetId As String)
-            Me.sheetsService = New SheetsService(New BaseClientService.Initializer() With {
-                .HttpClientInitializer = credential,
-                .ApplicationName = "Scheduler_v8.8a"
-            })
+        Public Sub New(service As SheetsService, spreadsheetId As String)
+            Me.sheetsService = service
             Me.spreadsheetId = spreadsheetId
 
             ' ქეშის საქაღალდის ინიციალიზაცია
@@ -75,7 +71,6 @@ Namespace Scheduler_v8_8a.Services
             ' ქეშის ჩატვირთვა თუ არსებობს
             LoadCache()
         End Sub
-
         ''' <summary>
         ''' ქეშის ჩატვირთვა ფაილიდან
         ''' </summary>

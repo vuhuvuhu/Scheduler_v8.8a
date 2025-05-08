@@ -17,10 +17,11 @@ Public Class Form1
     Private ReadOnly viewModel As MainViewModel
     Private ReadOnly homeViewModel As HomeViewModel
 
-    ' სერვისები (Dependency Injection) - აღარ არის ReadOnly
+    ' სერვისები (Dependency Injection)
+    Private ReadOnly authService As GoogleOAuthService
+    Private serviceAccountService As GoogleServiceAccountService
     Private dataService As IDataService
     Private userService As UserService
-    Private ReadOnly authService As GoogleOAuthService
 
     ' UI კომპონენტები
     Private ReadOnly menuMgr As MenuManager
@@ -48,6 +49,30 @@ Public Class Form1
 
         ' ავტორიზაციის სერვისის ინიციალიზაცია
         authService = New GoogleOAuthService(secretsFile, tokenStorePath)
+
+        ' სერვის ანგარიშის გამოყენება ცხრილებთან დასაკავშირებლად - პროგრამის გაშვებისთანავე
+        Try
+            Debug.WriteLine("სერვის ანგარიშით დაკავშირების მცდელობა...")
+            Dim serviceAccountPath = Path.Combine(utilsFolder, "google-service-account-key8_7a.json")
+
+            ' შემოწმება არსებობს თუ არა ფაილი
+            If Not File.Exists(serviceAccountPath) Then
+                Debug.WriteLine($"სერვის ანგარიშის ფაილი არ არსებობს: {serviceAccountPath}")
+                MessageBox.Show("სერვის ანგარიშის ფაილი არ მოიძებნა. პროგრამა ვერ შეძლებს მონაცემებთან წვდომას.", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            Dim serviceAccountService = New GoogleServiceAccountService(serviceAccountPath)
+            Dim credential = serviceAccountService.AuthorizeAsync()
+            Dim sheetsService = serviceAccountService.CreateSheetsService()
+
+            ' შევქმნათ dataService - სერვის ანგარიშის გამოყენებით
+            dataService = New SheetDataService(sheetsService, spreadsheetId)
+            Debug.WriteLine("სერვის ანგარიშით დაკავშირება წარმატებულია")
+        Catch ex As Exception
+            Debug.WriteLine($"სერვის ანგარიშით დაკავშირების შეცდომა: {ex.Message}")
+            MessageBox.Show($"სერვის ანგარიშით დაკავშირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
 
         ' მენიუს მენეჯერის ინიციალიზაცია
         menuMgr = New MenuManager(mainMenu)
@@ -86,30 +111,34 @@ Public Class Form1
         Try
             If Not viewModel.IsAuthorized Then
                 Try
-                    ' 1) Google OAuth ავტორიზაცია
+                    ' 1) Google OAuth ავტორიზაცია - ეს არის მომხმარებლის ავტორიზაცია
                     Await authService.AuthorizeAsync(New String() {
                     Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoEmail,
-                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile,
-                    Google.Apis.Sheets.v4.SheetsService.Scope.SpreadsheetsReadonly,
-                    Google.Apis.Sheets.v4.SheetsService.Scope.Spreadsheets
+                    Google.Apis.Oauth2.v2.Oauth2Service.Scope.UserinfoProfile
                 })
 
-                    ' 2) ინიციალიზება სერვისების ავტორიზაციის შემდეგ
-                    dataService = New GoogleSheetsDataService(authService.Credential, spreadsheetId)
-                    userService = New UserService(dataService)
+                    ' ახალი: სერვისი მომხმარებლის პროფილის მისაღებად
+                    Dim oauthService = New Google.Apis.Oauth2.v2.Oauth2Service(
+                    New Google.Apis.Services.BaseClientService.Initializer() With {
+                        .HttpClientInitializer = authService.Credential,
+                        .ApplicationName = "Scheduler_v8.8a"
+                    })
 
-                    ' 3) მომხმარებლის პროფილის მიღება
-                    Dim userProfile = Await userService.GetUserProfile(authService.Credential)
+                    ' მომხმარებლის ინფორმაციის წამოღება
+                    Dim userInfo = Await oauthService.Userinfo.Get().ExecuteAsync()
 
-                    ' 4) ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
-                    viewModel.Email = userProfile.Email
-                    viewModel.Role = userProfile.Role
+                    ' მომხმარებლის როლის წამოღება
+                    Dim role = dataService.GetOrCreateUserRole(userInfo.Email)
+
+                    ' ViewModel განახლება -> იწვევს OnViewModelPropertyChanged
+                    viewModel.Email = userInfo.Email
+                    viewModel.Role = role
                     viewModel.IsAuthorized = True
 
-                    ' 5) HomeViewModel-ის განახლება
-                    homeViewModel.UserName = If(String.IsNullOrEmpty(userProfile.Name), userProfile.Email, userProfile.Name)
+                    ' HomeViewModel-ის განახლება
+                    homeViewModel.UserName = If(String.IsNullOrEmpty(userInfo.Name), userInfo.Email, userInfo.Name)
 
-                    ' 6) UI განახლება
+                    ' UI განახლება
                     ShowHome()
                 Catch ex As Exception
                     MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -229,11 +258,11 @@ Public Class Form1
         homeControl.BringToFront()
         Debug.WriteLine($"homeControl გახდა წინ: IsDisposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
 
-        ' ინსტრუმენტების ხილვადობის განახლება - მნიშვნელოვანია ამ ადგილას!
+        ' ინსტრუმენტების ხილვადობის განახლება
         SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
 
-        ' თუ ავტორიზებულია მომხმარებელი, ვცდილობთ განვაახლოთ მონაცემები
-        If viewModel.IsAuthorized AndAlso dataService IsNot Nothing Then
+        ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას, რადგან dataService უკვე ინიციალიზებულია სერვის ანგარიშით
+        If dataService IsNot Nothing Then
             Try
                 ' ახალი მეთოდი: დატვირთვა ასინქრონულად
                 LoadHomeDataAsync()
