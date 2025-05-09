@@ -275,7 +275,7 @@ Public Class UC_Home
 
         ' ბარათის ზომები და დაშორებები
         Const CARD_WIDTH As Integer = 250
-        Const CARD_HEIGHT As Integer = 140   ' გაზრდილი სიმაღლე
+        Const CARD_HEIGHT As Integer = 180   ' ოდნავ გაზრდილი სიმაღლე
         Const CARD_MARGIN As Integer = 15
         Const HEADER_HEIGHT As Integer = 24
 
@@ -294,8 +294,8 @@ Public Class UC_Home
         Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, AllSessions.Count - 1)
 
         Debug.WriteLine($"ShowCurrentPageCards: გვერდი {CurrentPage + 1}/{TotalPages}, " &
-        $"დიაპაზონი: {startIndex}-{endIndex}, " &
-        $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
+                    $"დიაპაზონი: {startIndex}-{endIndex}, " &
+                    $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
 
         ' ვადაგადაცილებული სესიების ბარათები
         Dim xPos As Integer = CARD_MARGIN
@@ -304,6 +304,12 @@ Public Class UC_Home
 
         For i As Integer = startIndex To endIndex
             Dim session = AllSessions(i)
+
+            ' დებაგინფო სესიის შესახებ
+            Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
+                       $"ბენეფიციარი={session.BeneficiaryName} {session.BeneficiarySurname}, " &
+                       $"თარიღი={session.FormattedDateTime}, " &
+                       $"სტატუსი={session.Status}")
 
             ' შევქმნათ ბარათი
             Dim card As New Panel()
@@ -314,7 +320,7 @@ Public Class UC_Home
 
             ' მოვუმრგვალოთ კუთხეები ბარათს
             Dim path As New Drawing2D.GraphicsPath()
-            Dim cornerRadius As Integer = 8
+            Dim cornerRadius As Integer = 10
             path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
             path.AddArc(card.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
             path.AddArc(card.Width - cornerRadius * 2, card.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
@@ -337,6 +343,7 @@ Public Class UC_Home
             headerPath.AddLine(0, headerPanel.Height, 0, cornerRadius)
             headerPath.CloseFigure()
             headerPanel.Region = New Region(headerPath)
+            card.Controls.Add(headerPanel)
 
             ' თარიღი თეთრი ფონტით header-ში
             Dim lblDateTime As New Label()
@@ -356,57 +363,59 @@ Public Class UC_Home
             lblId.ForeColor = Color.White
             headerPanel.Controls.Add(lblId)
 
-            ' დავამატოთ header-ი ბარათზე
-            card.Controls.Add(headerPanel)
-
-            ' ===== ხელით მოვიპოვოთ ინფორმაცია სვეტების მიხედვით =====
-            Dim beneficiaryFirstName As String = ""
-            Dim beneficiarySurname As String = ""
-
-            ' ხელით მოვიპოვოთ სახელი (D სვეტი - ინდექსი 3) და გვარი (E სვეტი - ინდექსი 4)
-            ' ვიცით რომ SessionModel ტიპშივეა პრობლემა, სიფრთხილით გავაკეთოთ შესწორება
-            If String.IsNullOrEmpty(session.BeneficiarySurname) Then
-                ' გამოვიყენოთ SessionModel-ის ველები
-                beneficiaryFirstName = session.BeneficiaryName.ToUpper() ' მთავრული ასოებით
-                beneficiarySurname = "".ToUpper() ' ცარიელი, მთავრული ასოებით
-            Else
-                beneficiaryFirstName = session.BeneficiaryName.ToUpper() ' მთავრული ასოებით, სწორი ველი
-                beneficiarySurname = session.BeneficiarySurname.ToUpper() ' მთავრული ასოებით, ეს გადასწორდა ზემოთ
-            End If
-
             ' ბენეფიციარის სახელი და გვარი - ბოლდით და მთავრული ასოებით
+            ' მთავრული ქართული შრიფტი
+            Dim georgianFonts As String() = {"Sylfaen", "BPG Glaho", "Arial Unicode MS", "DejaVu Sans", "FreeSerif", "Tahoma"}
+            Dim georgianFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი
+
+            ' ვიპოვოთ რომელიმე ქართული ფონტი
+            For Each fontName In georgianFonts
+                Try
+                    Using testFont As New Font(fontName, 10)
+                        georgianFont = fontName
+                        Debug.WriteLine($"ShowCurrentPageCards: მოიძებნა ქართული ფონტი: {fontName}")
+                        Exit For
+                    End Using
+                Catch
+                    ' ეს ფონტი ვერ მოიძებნა, შემდეგს ვცდით
+                    Debug.WriteLine($"ShowCurrentPageCards: ვერ მოიძებნა ფონტი: {fontName}")
+                End Try
+            Next
+
             Dim lblBeneficiary As New Label()
-            lblBeneficiary.Text = $"{beneficiaryFirstName} {beneficiarySurname}"
+            ' გარდავქმნათ ტექსტი დიდ ასოებად
+            Dim beneficiaryText As String = $"{session.BeneficiaryName.ToUpper()} {session.BeneficiarySurname.ToUpper()}"
+            lblBeneficiary.Text = beneficiaryText
             lblBeneficiary.Location = New Point(8, HEADER_HEIGHT + 8)
-            lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
-            lblBeneficiary.Font = New Font(lblBeneficiary.Font, FontStyle.Bold)
+            lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 24) ' ოდნავ უფრო მაღალი
+            lblBeneficiary.Font = New Font(georgianFont, 10, FontStyle.Bold)
             card.Controls.Add(lblBeneficiary)
 
             ' თერაპევტის სახელი
             Dim lblTherapist As New Label()
             lblTherapist.Text = session.TherapistName
-            lblTherapist.Location = New Point(8, HEADER_HEIGHT + 30)
+            lblTherapist.Location = New Point(8, HEADER_HEIGHT + 36)
             lblTherapist.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblTherapist)
 
             ' თერაპიის ტიპი
             Dim lblTherapyType As New Label()
             lblTherapyType.Text = session.TherapyType
-            lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 52)
+            lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 60)
             lblTherapyType.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblTherapyType)
 
             ' სივრცე
             Dim lblSpace As New Label()
             lblSpace.Text = session.Space
-            lblSpace.Location = New Point(8, HEADER_HEIGHT + 74)
+            lblSpace.Location = New Point(8, HEADER_HEIGHT + 84)
             lblSpace.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblSpace)
 
             ' დაფინანსება
             Dim lblFunding As New Label()
             lblFunding.Text = session.Funding
-            lblFunding.Location = New Point(8, HEADER_HEIGHT + 96)
+            lblFunding.Location = New Point(8, HEADER_HEIGHT + 108)
             lblFunding.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblFunding)
 
@@ -417,31 +426,33 @@ Public Class UC_Home
 
             Dim lblOverdue As New Label()
             lblOverdue.Text = overdueText
-            lblOverdue.Location = New Point(8, HEADER_HEIGHT + 118) ' ბოლო რიგი
+            lblOverdue.Location = New Point(8, HEADER_HEIGHT + 132) ' ბოლო რიგი
             lblOverdue.AutoSize = True
             lblOverdue.ForeColor = Color.DarkRed
             card.Controls.Add(lblOverdue)
 
-            ' დავამატოთ რედაქტირების ღილაკი თუ მომხმარებელი ავტორიზებულია
+            ' რედაქტირების ღილაკი - მხოლოდ თუ ავტორიზებულია
             If IsAuthorizedUser AndAlso (UserRoleValue = "1" OrElse UserRoleValue = "2" OrElse UserRoleValue = "3") Then
                 Dim btnEdit As New Button()
                 btnEdit.Text = "✎" ' ფანქრის სიმბოლო
                 btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
-                btnEdit.Size = New Size(28, 28)
-                btnEdit.Location = New Point(CARD_WIDTH - 35, HEADER_HEIGHT + 113) ' ბოლო რიგში
+                btnEdit.ForeColor = Color.White
+                btnEdit.BackColor = Color.FromArgb(220, 0, 0)
+                btnEdit.Size = New Size(30, 30) ' მრგვალი ზომა
+                btnEdit.Location = New Point(CARD_WIDTH - 40, HEADER_HEIGHT + 123) ' აწეული 5 პიქსელით
                 btnEdit.FlatStyle = FlatStyle.Flat
                 btnEdit.FlatAppearance.BorderSize = 0
-                btnEdit.BackColor = Color.FromArgb(220, 0, 0)
-                btnEdit.ForeColor = Color.White
                 btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
-                AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
 
-                ' მოვუმრგვალოთ კუთხეები ღილაკს
+                ' მრგვალი ფორმის ღილაკი
                 Dim btnPath As New Drawing2D.GraphicsPath()
                 btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
                 btnEdit.Region = New Region(btnPath)
 
+                AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
                 card.Controls.Add(btnEdit)
+
+                Debug.WriteLine($"ShowCurrentPageCards: ღილაკი დაემატა ბარათზე, პოზიცია: X={btnEdit.Location.X}, Y={btnEdit.Location.Y}")
             End If
 
             ' დავამატოთ ბარათი GroupBox-ზე
