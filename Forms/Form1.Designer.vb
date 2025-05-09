@@ -1,9 +1,9 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class Form1
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -20,14 +20,13 @@ Partial Class Form1
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form1))
         Me.mainMenu = New System.Windows.Forms.MenuStrip()
         Me.BtnLogin = New System.Windows.Forms.Button()
         Me.LUser = New System.Windows.Forms.Label()
         Me.pnlMain = New System.Windows.Forms.Panel()
-        Me.btnDebug = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'mainMenu
@@ -69,15 +68,6 @@ Partial Class Form1
         Me.pnlMain.Size = New System.Drawing.Size(994, 426)
         Me.pnlMain.TabIndex = 3
         '
-        'btnDebug
-        '
-        Me.btnDebug.Location = New System.Drawing.Point(576, 1)
-        Me.btnDebug.Name = "btnDebug"
-        Me.btnDebug.Size = New System.Drawing.Size(75, 23)
-        Me.btnDebug.TabIndex = 4
-        Me.btnDebug.Text = "Button1"
-        Me.btnDebug.UseVisualStyleBackColor = True
-        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -85,7 +75,6 @@ Partial Class Form1
         Me.BackgroundImage = CType(resources.GetObject("$this.BackgroundImage"), System.Drawing.Image)
         Me.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.ClientSize = New System.Drawing.Size(994, 450)
-        Me.Controls.Add(Me.btnDebug)
         Me.Controls.Add(Me.pnlMain)
         Me.Controls.Add(Me.LUser)
         Me.Controls.Add(Me.BtnLogin)
@@ -103,5 +92,4 @@ Partial Class Form1
     Friend WithEvents BtnLogin As Button
     Friend WithEvents LUser As Label
     Friend WithEvents pnlMain As Panel
-    Friend WithEvents btnDebug As Button
 End Class

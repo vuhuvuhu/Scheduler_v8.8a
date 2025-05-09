@@ -40,9 +40,9 @@ Partial Class UC_Home
         Me.GBTools = New System.Windows.Forms.GroupBox()
         Me.BtnRefresh = New System.Windows.Forms.Button()
         Me.BtnAddAray = New System.Windows.Forms.Button()
-        Me.Button1 = New System.Windows.Forms.Button()
-        Me.Button2 = New System.Windows.Forms.Button()
-        Me.Label1 = New System.Windows.Forms.Label()
+        Me.BtnPrev = New System.Windows.Forms.Button()
+        Me.BtnNext = New System.Windows.Forms.Button()
+        Me.LPage = New System.Windows.Forms.Label()
         Me.GBGreeting.SuspendLayout()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.GBNow.SuspendLayout()
@@ -226,56 +226,56 @@ Partial Class UC_Home
         Me.BtnAddAray.TabIndex = 0
         Me.BtnAddAray.UseVisualStyleBackColor = False
         '
-        'Button1
+        'BtnPrev
         '
-        Me.Button1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.Button1.AutoEllipsis = True
-        Me.Button1.BackColor = System.Drawing.Color.Transparent
-        Me.Button1.BackgroundImage = CType(resources.GetObject("Button1.BackgroundImage"), System.Drawing.Image)
-        Me.Button1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.Button1.Cursor = System.Windows.Forms.Cursors.Default
-        Me.Button1.FlatAppearance.BorderSize = 0
-        Me.Button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button1.Location = New System.Drawing.Point(3, 473)
-        Me.Button1.Name = "Button1"
-        Me.Button1.Size = New System.Drawing.Size(30, 30)
-        Me.Button1.TabIndex = 5
-        Me.Button1.UseVisualStyleBackColor = False
+        Me.BtnPrev.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.BtnPrev.AutoEllipsis = True
+        Me.BtnPrev.BackColor = System.Drawing.Color.Transparent
+        Me.BtnPrev.BackgroundImage = CType(resources.GetObject("BtnPrev.BackgroundImage"), System.Drawing.Image)
+        Me.BtnPrev.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnPrev.Cursor = System.Windows.Forms.Cursors.Default
+        Me.BtnPrev.FlatAppearance.BorderSize = 0
+        Me.BtnPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.BtnPrev.Location = New System.Drawing.Point(3, 473)
+        Me.BtnPrev.Name = "BtnPrev"
+        Me.BtnPrev.Size = New System.Drawing.Size(30, 30)
+        Me.BtnPrev.TabIndex = 5
+        Me.BtnPrev.UseVisualStyleBackColor = False
         '
-        'Button2
+        'BtnNext
         '
-        Me.Button2.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.Button2.AutoEllipsis = True
-        Me.Button2.BackColor = System.Drawing.Color.Transparent
-        Me.Button2.BackgroundImage = CType(resources.GetObject("Button2.BackgroundImage"), System.Drawing.Image)
-        Me.Button2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.Button2.Cursor = System.Windows.Forms.Cursors.Default
-        Me.Button2.FlatAppearance.BorderSize = 0
-        Me.Button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button2.Location = New System.Drawing.Point(84, 473)
-        Me.Button2.Name = "Button2"
-        Me.Button2.Size = New System.Drawing.Size(30, 30)
-        Me.Button2.TabIndex = 1
-        Me.Button2.UseVisualStyleBackColor = False
+        Me.BtnNext.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.BtnNext.AutoEllipsis = True
+        Me.BtnNext.BackColor = System.Drawing.Color.Transparent
+        Me.BtnNext.BackgroundImage = CType(resources.GetObject("BtnNext.BackgroundImage"), System.Drawing.Image)
+        Me.BtnNext.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnNext.Cursor = System.Windows.Forms.Cursors.Default
+        Me.BtnNext.FlatAppearance.BorderSize = 0
+        Me.BtnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.BtnNext.Location = New System.Drawing.Point(84, 473)
+        Me.BtnNext.Name = "BtnNext"
+        Me.BtnNext.Size = New System.Drawing.Size(30, 30)
+        Me.BtnNext.TabIndex = 1
+        Me.BtnNext.UseVisualStyleBackColor = False
         '
-        'Label1
+        'LPage
         '
-        Me.Label1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.Label1.AutoSize = True
-        Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label1.Location = New System.Drawing.Point(39, 482)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(39, 13)
-        Me.Label1.TabIndex = 6
-        Me.Label1.Text = "Label1"
+        Me.LPage.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.LPage.AutoSize = True
+        Me.LPage.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.LPage.Location = New System.Drawing.Point(39, 482)
+        Me.LPage.Name = "LPage"
+        Me.LPage.Size = New System.Drawing.Size(39, 13)
+        Me.LPage.TabIndex = 6
+        Me.LPage.Text = "Label1"
         '
         'UC_Home
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.Controls.Add(Me.Label1)
-        Me.Controls.Add(Me.Button2)
-        Me.Controls.Add(Me.Button1)
+        Me.Controls.Add(Me.LPage)
+        Me.Controls.Add(Me.BtnNext)
+        Me.Controls.Add(Me.BtnPrev)
         Me.Controls.Add(Me.GBTools)
         Me.Controls.Add(Me.GBRedTasks)
         Me.Controls.Add(Me.GroupBox1)
@@ -312,7 +312,7 @@ Partial Class UC_Home
     Friend WithEvents GBTools As GroupBox
     Friend WithEvents BtnRefresh As Button
     Friend WithEvents BtnAddAray As Button
-    Friend WithEvents Button1 As Button
-    Friend WithEvents Button2 As Button
-    Friend WithEvents Label1 As Label
+    Friend WithEvents BtnPrev As Button
+    Friend WithEvents BtnNext As Button
+    Friend WithEvents LPage As Label
 End Class

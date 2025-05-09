@@ -351,6 +351,8 @@ Public Class Form1
     ''' <summary>
     ''' HomeViewModel-ისთვის მონაცემების ასინქრონული დატვირთვა
     ''' </summary>
+    ' შევცვალოთ Form1.vb-ში LoadHomeDataAsync მეთოდის ბოლო ნაწილი, 465-ე ხაზზე:
+
     Private Async Sub LoadHomeDataAsync()
         Try
             ' დავიცადოთ დატვირთვამდე
@@ -371,9 +373,9 @@ Public Class Form1
                                    ' პირველი 3 ვადაგადაცილებული სესიის დებაგინგი
                                    For i As Integer = 0 To Math.Min(2, overdueSessions.Count - 1)
                                        Debug.WriteLine($"LoadHomeDataAsync: ვადაგადაცილებული სესია #{i + 1} - " &
-                                                  $"ID={overdueSessions(i).Id}, " &
-                                                  $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
-                                                  $"სტატუსი='{overdueSessions(i).Status}'")
+                                              $"ID={overdueSessions(i).Id}, " &
+                                              $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
+                                              $"სტატუსი='{overdueSessions(i).Status}'")
                                    Next
 
                                    Dim birthdays = dataService.GetUpcomingBirthdays(7)
@@ -404,9 +406,9 @@ Public Class Form1
                                                      ' ვადაგადაცილებული სესიების ბარათების შექმნა
                                                      If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
                                                          Debug.WriteLine($"LoadHomeDataAsync: ვიძახებთ PopulateOverdueSessions - " &
-                                                                    $"სესიების რაოდენობა: {overdueSessions.Count}, " &
-                                                                    $"homeControl.Visible: {homeControl.Visible}, " &
-                                                                    $"homeControl.IsHandleCreated: {homeControl.IsHandleCreated}")
+                                                                $"სესიების რაოდენობა: {overdueSessions.Count}, " &
+                                                                $"homeControl.Visible: {homeControl.Visible}, " &
+                                                                $"homeControl.IsHandleCreated: {homeControl.IsHandleCreated}")
 
                                                          ' შევამოწმოთ თუ ეს "ლაივ" homeControl ობიექტია და არა გასუფთავებული მიმართვა
                                                          Dim isHomeControlVisible As Boolean = False
@@ -419,8 +421,8 @@ Public Class Form1
 
                                                          ' PopulateOverdueSessions-ის გამოძახება, თუ ის მოქმედი homeControl-ია
                                                          homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
-                                                                                         viewModel.IsAuthorized,
-                                                                                         viewModel.Role)
+                                                                                     viewModel.IsAuthorized,
+                                                                                     viewModel.Role)
 
                                                          Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
                                                      Else
@@ -461,9 +463,11 @@ Public Class Form1
             Debug.WriteLine($"LoadHomeDataAsync: საერთო შეცდომა: {ex.Message}")
             Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {ex.StackTrace}")
         End Try
-        If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
-            homeControl.TestDirectControls()
-        End If
+
+        ' წავშალეთ ან დავაკომენტარეთ შემდეგი ხაზები:
+        ' If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
+        '     homeControl.TestDirectControls()
+        ' End If
     End Sub
     ''' <summary>
     ''' როლის ცვლილებისას ხილვადობის მართვა
@@ -501,7 +505,7 @@ Public Class Form1
         End If
     End Sub
     ' დებაგის ღილაკის დაჭერაზე რეაქცია
-    Private Sub btnDebug_Click_1(sender As Object, e As EventArgs) Handles btnDebug.Click
+    Private Sub btnDebug_Click_1(sender As Object, e As EventArgs)
         Try
             ' შევამოწმოთ გვაქვს თუ არა dataService
             If dataService Is Nothing Then

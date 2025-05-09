@@ -295,8 +295,8 @@ Namespace Scheduler_v8_8a.Models
                 session.Id = sessionId
 
                 ' ბენეფიციარის სახელი და გვარი (ინდექსები 2 და 3)
-                session.BeneficiaryName = If(rowData.Count > 2, rowData(2).ToString(), String.Empty)
-                session.BeneficiarySurname = If(rowData.Count > 3, rowData(3).ToString(), String.Empty)
+                session.BeneficiaryName = If(rowData.Count > 3, rowData(3).ToString(), String.Empty)
+                session.BeneficiarySurname = If(rowData.Count > 4, rowData(4).ToString(), String.Empty)
 
                 ' თარიღი F სვეტიდან (ინდექსი 5)
                 Dim dateTimeStr = If(rowData.Count > 5, rowData(5).ToString().Trim(), String.Empty)
@@ -324,18 +324,18 @@ Namespace Scheduler_v8_8a.Models
 
                 ' დარჩენილი მონაცემების ინიციალიზაცია
                 session.Duration = If(rowData.Count > 6 AndAlso Integer.TryParse(rowData(6).ToString(), Nothing), Integer.Parse(rowData(6).ToString()), 60)
-                session.TherapistName = If(rowData.Count > 7, rowData(7).ToString(), String.Empty)
-                session.TherapyType = If(rowData.Count > 8, rowData(8).ToString(), String.Empty)
-                session.Space = If(rowData.Count > 9, rowData(9).ToString(), String.Empty)
-                session.Price = If(rowData.Count > 10 AndAlso Decimal.TryParse(rowData(10).ToString(), Nothing), Decimal.Parse(rowData(10).ToString()), 0)
-                session.Funding = If(rowData.Count > 11, rowData(11).ToString(), String.Empty)
+                session.TherapistName = If(rowData.Count > 8, rowData(8).ToString(), String.Empty)
+                session.TherapyType = If(rowData.Count > 9, rowData(9).ToString(), String.Empty)
+                session.Space = If(rowData.Count > 10, rowData(10).ToString(), String.Empty)
+                session.Price = If(rowData.Count > 11 AndAlso Decimal.TryParse(rowData(11).ToString(), Nothing), Decimal.Parse(rowData(10).ToString()), 0)
+                session.Funding = If(rowData.Count > 13, rowData(13).ToString(), String.Empty)
 
                 ' სტატუსი M სვეტიდან (ინდექსი 12)
                 session.Status = If(rowData.Count > 12, rowData(12).ToString().Trim(), "დაგეგმილი")
                 'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სტატუსი='{session.Status}'")
 
                 ' კომენტარი უკანასკნელი სვეტიდან N (ინდექსი 13)
-                session.Comments = If(rowData.Count > 13, rowData(13).ToString(), String.Empty)
+                session.Comments = If(rowData.Count > 14, rowData(14).ToString(), String.Empty)
 
                 Return session
             Catch ex As Exception
