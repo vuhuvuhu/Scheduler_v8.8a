@@ -227,37 +227,32 @@ Public Class UC_Home
     ''' </summary>
     Private Sub CalculateCardsPerPage()
         Try
-            ' ბარათის ზომები და დაშორებები
-            Const CARD_WIDTH As Integer = 240  ' არსებულ ზომას ვტოვებთ
-            Const CARD_HEIGHT As Integer = 160 ' არსებულ ზომას ვტოვებთ
-            Const CARD_MARGIN As Integer = 10  ' არსებულ ზომას ვტოვებთ
-            Const BOTTOM_MARGIN As Integer = 50 ' ქვედა მარჯინი პაგინაციისთვის
+            ' ბარათის ზომები და დაშორებები - ზუსტად იგივე კონსტანტები რაც ShowCurrentPageCards-ში
+            Const CARD_WIDTH As Integer = 250
+            Const CARD_HEIGHT As Integer = 185
+            Const CARD_MARGIN As Integer = 15
 
-            ' გამოვთვალოთ რამდენი ბარათი დაეტევა ერთ მწკრივში - არსებული კოდი
-            Dim availableWidth As Integer = GBRedTasks.ClientSize.Width - (2 * CARD_MARGIN) - 5
+            ' გამოვთვალოთ რამდენი ბარათი დაეტევა ერთ მწკრივში
+            Dim availableWidth As Integer = GBRedTasks.ClientSize.Width - (2 * CARD_MARGIN)
             Dim cardsPerRow As Integer = Math.Max(1, availableWidth \ (CARD_WIDTH + CARD_MARGIN))
 
-            ' გამოვთვალოთ რამდენი მწკრივი დაეტევა - არსებული კოდი
-            Dim availableHeight As Integer = GBRedTasks.ClientSize.Height - 60
-            Dim rowsPerPage As Integer = Math.Max(1, availableHeight \ (CARD_HEIGHT + CARD_MARGIN))
+            ' მარტივი მიდგომა - ფიქსირებული 2 მწკრივი, რაც ნამდვილად ეტევა
+            Dim rowsPerPage As Integer = 2
 
-            ' უსაფრთხოების ზომა - თუ ძალიან ცოტა სივრცეა, შევამციროთ მწკრივების რაოდენობა - ახალი კოდი
-            ' რათა არ მოხდეს ბარათების მოჭრა
-            If (rowsPerPage * (CARD_HEIGHT + CARD_MARGIN)) > availableHeight - BOTTOM_MARGIN Then
-                rowsPerPage = Math.Max(1, rowsPerPage - 1)
-            End If
+            ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
+            CardsPerPage = cardsPerRow * rowsPerPage
 
-            ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე - არსებული კოდი
-            CardsPerPage = Math.Max(1, cardsPerRow * rowsPerPage)
-
-            ' საერთო გვერდების რაოდენობა - არსებული კოდი
+            ' საერთო გვერდების რაოდენობა
             TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
 
-            Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}, " &
-                      $"CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
+            Debug.WriteLine($"CalculateCardsPerPage: GBRedTasks.Size={GBRedTasks.Size}")
+            Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}")
+            Debug.WriteLine($"CalculateCardsPerPage: CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
+            Debug.WriteLine($"CalculateCardsPerPage: AllSessions.Count={AllSessions.Count}")
+
         Catch ex As Exception
             Debug.WriteLine($"CalculateCardsPerPage: შეცდომა - {ex.Message}")
-            CardsPerPage = 6 ' ნაგულისხმები მნიშვნელობა შეცდომის შემთხვევაში
+            CardsPerPage = 8 ' ნაგულისხმები მნიშვნელობა
             TotalPages = Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage))
         End Try
     End Sub
