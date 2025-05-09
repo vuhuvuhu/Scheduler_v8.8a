@@ -48,10 +48,12 @@ Public Class UC_Home
         GBNow.BackColor = Color.FromArgb(200, Color.White)
         GBTools.BackColor = Color.FromArgb(200, Color.White)
         GBRedTasks.BackColor = Color.FromArgb(200, Color.White)
-
+        GB_Today.BackColor = Color.FromArgb(200, Color.White)
+        GBActiveTasks.BackColor = Color.FromArgb(200, Color.White)
+        GBBD.BackColor = Color.FromArgb(200, Color.White)
         ' პაგინაციის ღილაკების მომზადება
-        BtnPrev.Text = "◄"
-        BtnNext.Text = "►"
+
+
         BtnPrev.Enabled = False  ' საწყის მდგომარეობაში უკან ღილაკი გამორთულია
         LPage.Text = ""
 
@@ -64,6 +66,9 @@ Public Class UC_Home
         ' საწყისი მდგომარეობაში ინსტრუმენტები დამალულია
         SetToolsVisibility(False)
 
+        ' განვაახლოთ დღევანდელი სტატისტიკა
+        UpdateTodayStatistics()
+        UpdateOverdueStatistics()
         ' Resize ივენთის მიბმა
         AddHandler Me.Resize, AddressOf UC_Home_Resize
     End Sub
@@ -134,7 +139,268 @@ Public Class UC_Home
             End If
         End If
     End Sub
+    ''' <summary>
+    ''' განაახლებს დღევანდელი სესიების სტატისტიკის ლეიბლებს
+    ''' </summary>
+    Private Sub UpdateTodayStatistics()
+        Try
+            ' შევამოწმოთ, არის თუ არა მონაცემები ხელმისაწვდომი
+            If AllSessions Is Nothing Then
+                Debug.WriteLine("UpdateTodayStatistics: AllSessions არის Nothing")
+                Return
+            End If
 
+            ' მიმდინარე თარიღი თარიღის კომპონენტით (დრო 00:00)
+            Dim today As DateTime = DateTime.Today
+
+            ' გავფილტროთ მხოლოდ დღევანდელი სესიები
+            Dim todaySessions As New List(Of SessionModel)
+            For Each session As SessionModel In AllSessions
+                If session.DateTime.Date = today Then
+                    todaySessions.Add(session)
+                End If
+            Next
+
+            Debug.WriteLine("UpdateTodayStatistics: ნაპოვნია " & todaySessions.Count & " დღევანდელი სესია")
+
+            ' დავითვალოთ სტატისტიკა
+            Dim totalSessions As Integer = todaySessions.Count
+
+            ' შესრულებული სესიები (სტატუსით "შესრულებული")
+            Dim completedSessions As Integer = 0
+            For Each session As SessionModel In todaySessions
+                If session.Status.Trim().ToLower() = "შესრულებული" Then
+                    completedSessions += 1
+                End If
+            Next
+
+            ' დაგეგმილი სესიები (სტატუსით "დაგეგმილი")
+            Dim plannedSessions As Integer = 0
+            For Each session As SessionModel In todaySessions
+                If session.Status.Trim().ToLower() = "დაგეგმილი" Then
+                    plannedSessions += 1
+                End If
+            Next
+
+            ' უნიკალური ბენეფიციარების რაოდენობა
+            Dim beneficiarySet As New HashSet(Of String)
+            For Each session As SessionModel In todaySessions
+                Dim fullName As String = session.BeneficiaryName & " " & session.BeneficiarySurname
+                beneficiarySet.Add(fullName)
+            Next
+            Dim uniqueBeneficiaries As Integer = beneficiarySet.Count
+
+            ' უნიკალური პერსონალის რაოდენობა (თერაპევტები)
+            Dim therapistSet As New HashSet(Of String)
+            For Each session As SessionModel In todaySessions
+                If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
+                    therapistSet.Add(session.TherapistName)
+                End If
+            Next
+            Dim uniqueTherapists As Integer = therapistSet.Count
+
+            ' განვაახლოთ ლეიბლები - დიზაინის შეუცვლელად
+            LSe.Text = totalSessions.ToString()
+            LDone.Text = completedSessions.ToString()
+            LNDone.Text = plannedSessions.ToString()
+            LBenes.Text = uniqueBeneficiaries.ToString()
+            LPers.Text = uniqueTherapists.ToString()
+
+            Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
+                      "სულ: " & totalSessions & ", " &
+                      "შესრულებული: " & completedSessions & ", " &
+                      "დაგეგმილი: " & plannedSessions & ", " &
+                      "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
+                      "პერსონალი: " & uniqueTherapists)
+
+        Catch ex As Exception
+            Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' განაახლებს GBBD გრუპბოქსს მოახლოებული დაბადების დღეებით
+    ''' </summary>
+    Public Sub UpdateUpcomingBirthdays()
+        Try
+            Debug.WriteLine("UpdateUpcomingBirthdays: დაიწყო მოახლოებული დაბადების დღეების ჩვენება")
+
+            ' გავასუფთავოთ GBBD გრუპბოქსი
+            GBBD.Controls.Clear()
+
+            ' მივიღოთ მონაცემები Google Sheets-დან
+            Dim personalData As IList(Of IList(Of Object)) = Nothing
+
+            ' ვიყენებთ გლობალურად ხელმისაწვდომ dataService-ს
+            If dataService IsNot Nothing Then
+                personalData = dataService.GetData("DB-Personal!B2:E")
+                Debug.WriteLine($"UpdateUpcomingBirthdays: მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი DB-Personal ფურცლიდან")
+            Else
+                Debug.WriteLine("UpdateUpcomingBirthdays: dataService არის Nothing")
+                Return
+            End If
+
+            ' შევამოწმოთ გვაქვს თუ არა მონაცემები
+            If personalData Is Nothing OrElse personalData.Count = 0 Then
+                Dim lblNoData As New Label()
+                lblNoData.Text = "მოახლოებული დაბადების დღეები არ არის"
+                lblNoData.AutoSize = True
+                lblNoData.Location = New Point(10, 20)
+                GBBD.Controls.Add(lblNoData)
+                Debug.WriteLine("UpdateUpcomingBirthdays: მონაცემები არ მოიძებნა")
+                Return
+            End If
+
+            ' დღევანდელი თარიღი
+            Dim today As DateTime = DateTime.Today
+
+            ' მოახლოებული დაბადების დღეების სია
+            Dim upcomingBirthdays As New List(Of Object())
+
+            ' გავფილტროთ რეკორდები
+            For Each row As IList(Of Object) In personalData
+                ' შევამოწმოთ აქვს თუ არა მწკრივს საკმარისი სვეტები
+                If row.Count < 4 Then
+                    Continue For
+                End If
+
+                ' ამოვიღოთ მონაცემები
+                Dim firstName As String = row(0).ToString()
+                Dim lastName As String = row(1).ToString()
+
+                ' შევამოწმოთ, არის თუ არა დაბადების თარიღი შევსებული
+                If row(2) Is Nothing OrElse String.IsNullOrEmpty(row(2).ToString()) Then
+                    Continue For
+                End If
+
+                ' შევამოწმოთ შეგვიძლია თუ არა დაბადების თარიღის პარსინგი
+                Dim birthDateStr As String = row(2).ToString()
+                Dim birthDate As DateTime
+
+                ' ვცდილობთ მოვახდინოთ თარიღის პარსინგი (dd.MM.yyyy ფორმატში)
+                If Not DateTime.TryParseExact(birthDateStr, "dd.MM.yyyy",
+                                        Globalization.CultureInfo.InvariantCulture,
+                                        Globalization.DateTimeStyles.None, birthDate) Then
+                    Continue For
+                End If
+
+                ' დავადგინოთ შემდეგი დაბადების დღის თარიღი
+                Dim nextBirthday As DateTime = New DateTime(today.Year, birthDate.Month, birthDate.Day)
+
+                ' თუ დაბადების დღე უკვე გავიდა წელს, გადავიდეთ მომავალ წელზე
+                If nextBirthday < today Then
+                    nextBirthday = nextBirthday.AddYears(1)
+                End If
+
+                ' დავითვალოთ რამდენი დღე რჩება
+                Dim daysLeft As Integer = (nextBirthday - today).Days
+
+                ' თუ დაბადების დღემდე 7 დღეზე ნაკლები რჩება, დავამატოთ სიაში
+                If daysLeft <= 7 Then
+                    upcomingBirthdays.Add(New Object() {firstName, lastName, daysLeft})
+                End If
+            Next
+
+            ' დავალაგოთ დაბადების დღეები მოახლოების მიხედვით
+            upcomingBirthdays.Sort(Function(x, y) DirectCast(x(2), Integer).CompareTo(DirectCast(y(2), Integer)))
+
+            Debug.WriteLine($"UpdateUpcomingBirthdays: ნაპოვნია {upcomingBirthdays.Count} მოახლოებული დაბადების დღე")
+
+            ' თუ მოახლოებული დაბადების დღეები არ არის
+            If upcomingBirthdays.Count = 0 Then
+                Dim lblNoBirthdays As New Label()
+                lblNoBirthdays.Text = "მოახლოებული დაბადების დღეები არ არის"
+                lblNoBirthdays.AutoSize = True
+                lblNoBirthdays.Location = New Point(10, 20)
+                GBBD.Controls.Add(lblNoBirthdays)
+                Return
+            End If
+
+            ' შევქმნათ ლეიბლები თითოეული დაბადების დღისთვის
+            Dim yPos As Integer = 20
+
+            For Each birthdayData As Object() In upcomingBirthdays
+                Dim firstName As String = birthdayData(0).ToString()
+                Dim lastName As String = birthdayData(1).ToString()
+                Dim daysLeft As Integer = DirectCast(birthdayData(2), Integer)
+
+                ' ტექსტი: "სახელი გვარი დარჩა [n] დღე"
+                Dim daysText As String = "დღე"
+                If daysLeft <> 1 Then
+                    daysText = "დღე" ' ქართულად არ იცვლება დღეების მრავლობითი ფორმა
+                End If
+
+                Dim birthdayText As String = $"{firstName} {lastName} დარჩა {daysLeft} {daysText}"
+
+                ' ლეიბლის შექმნა
+                Dim lblBirthday As New Label()
+                lblBirthday.Text = birthdayText
+                lblBirthday.AutoSize = True
+                lblBirthday.Location = New Point(10, yPos)
+
+                ' დღეს თუ აქვს დაბადების დღე, გამოვყოთ წითლად
+                If daysLeft = 0 Then
+                    lblBirthday.ForeColor = Color.Red
+                    lblBirthday.Font = New Font(lblBirthday.Font, FontStyle.Bold)
+                End If
+
+                ' დავამატოთ ლეიბლი
+                GBBD.Controls.Add(lblBirthday)
+
+                ' გადავიდეთ შემდეგ პოზიციაზე
+                yPos += 20
+            Next
+
+            Debug.WriteLine("UpdateUpcomingBirthdays: მოახლოებული დაბადების დღეები წარმატებით დაემატა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateUpcomingBirthdays: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
+    ''' განაახლებს ვადაგადაცილებული სესიების სტატისტიკის ლეიბლებს
+    ''' </summary>
+    Private Sub UpdateOverdueStatistics()
+        Try
+            ' შევამოწმოთ, არის თუ არა მონაცემები ხელმისაწვდომი
+            If AllSessions Is Nothing Then
+                Debug.WriteLine("UpdateOverdueStatistics: AllSessions არის Nothing")
+                Return
+            End If
+
+            ' მიმდინარე თარიღი
+            Dim today As DateTime = DateTime.Today
+
+            ' ვთვლით ყველა ვადაგადაცილებულ სესიას
+            Dim allOverdueSessions As Integer = 0
+
+            ' ვთვლით დღევანდელ ვადაგადაცილებულ სესიებს
+            Dim todayOverdueSessions As Integer = 0
+
+            For Each session As SessionModel In AllSessions
+                ' ვიყენებთ SessionModel-ის IsOverdue თვისებას
+                ' რათა გავარკვიოთ არის თუ არა სესია ვადაგადაცილებული
+                If session.IsOverdue Then
+                    allOverdueSessions += 1
+
+                    ' ვამოწმებთ არის თუ არა დღევანდელი
+                    If session.DateTime.Date = today Then
+                        todayOverdueSessions += 1
+                    End If
+                End If
+            Next
+
+            ' განვაახლოთ ლეიბლები - დიზაინის შეუცვლელად
+            LNeerReaction.Text = allOverdueSessions.ToString()
+            LNeedReactionToday.Text = todayOverdueSessions.ToString()
+
+            Debug.WriteLine("UpdateOverdueStatistics: სტატისტიკა განახლდა - " &
+                       "ყველა ვადაგადაცილებული: " & allOverdueSessions & ", " &
+                       "დღევანდელი ვადაგადაცილებული: " & todayOverdueSessions)
+
+        Catch ex As Exception
+            Debug.WriteLine("UpdateOverdueStatistics: შეცდომა - " & ex.Message)
+        End Try
+    End Sub
     ''' <summary>
     ''' ViewModel-ის PropertyChanged ივენთის დამმუშავებელი
     ''' </summary>
@@ -144,7 +410,7 @@ Public Class UC_Home
             Me.Invoke(Sub() ViewModel_PropertyChanged(sender, e))
             Return
         End If
-
+        UpdateTodayStatistics()
         ' შესაბამისი თვისების განახლება UI-ში
         Select Case e.PropertyName
             Case NameOf(viewModel.UserName)
@@ -167,6 +433,11 @@ Public Class UC_Home
         ' ViewModel-ის RefreshData მეთოდის გამოძახება
         ' მონაცემების ჩატვირთვა (დაბადების დღეები, სესიები, დავალებები)
         viewModel.RefreshData()
+        ' განვაახლოთ დღევანდელი სტატისტიკა
+        UpdateTodayStatistics()
+        UpdateOverdueStatistics()
+        ' მოახლოებული დაბადების დღეების განახლება
+        UpdateUpcomingBirthdays()
     End Sub
 
     ''' <summary>
@@ -236,8 +507,18 @@ Public Class UC_Home
             Dim availableWidth As Integer = GBRedTasks.ClientSize.Width - (2 * CARD_MARGIN)
             Dim cardsPerRow As Integer = Math.Max(1, availableWidth \ (CARD_WIDTH + CARD_MARGIN))
 
-            ' მარტივი მიდგომა - ფიქსირებული 2 მწკრივი, რაც ნამდვილად ეტევა
-            Dim rowsPerPage As Integer = 2
+            ' გამოვთვალოთ რამდენი მწკრივი დაეტევა
+            ' პაგინაციის ღილაკებისთვის დარჩება ადგილი ბოლოში, მაგრამ არ შეიცვლება მათი მდებარეობა
+            Dim paginationHeight As Integer = 50 ' სავარაუდო სიმაღლე პაგინაციის ღილაკებისთვის
+            Dim availableHeight As Integer = GBRedTasks.ClientSize.Height - paginationHeight - (2 * CARD_MARGIN)
+
+            ' გამოვითვალოთ რამდენი მწკრივი ჩაეტევა
+            Dim rowsPerPage As Integer = Math.Max(1, availableHeight \ (CARD_HEIGHT + CARD_MARGIN))
+
+            ' უსაფრთხოებისთვის, თუ დათვლილი მწკრივების სიმაღლე აჭარბებს ხელმისაწვდომ სიმაღლეს
+            If (rowsPerPage * (CARD_HEIGHT + CARD_MARGIN)) > availableHeight Then
+                rowsPerPage = Math.Max(1, rowsPerPage - 1)
+            End If
 
             ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
             CardsPerPage = cardsPerRow * rowsPerPage
@@ -246,6 +527,7 @@ Public Class UC_Home
             TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
 
             Debug.WriteLine($"CalculateCardsPerPage: GBRedTasks.Size={GBRedTasks.Size}")
+            Debug.WriteLine($"CalculateCardsPerPage: availableWidth={availableWidth}, availableHeight={availableHeight}")
             Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}")
             Debug.WriteLine($"CalculateCardsPerPage: CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
             Debug.WriteLine($"CalculateCardsPerPage: AllSessions.Count={AllSessions.Count}")
@@ -277,9 +559,9 @@ Public Class UC_Home
         End If
 
         ' პაგინაციის კონტროლების დამატება
-        GBRedTasks.Controls.Add(BtnPrev)
-        GBRedTasks.Controls.Add(LPage)
-        GBRedTasks.Controls.Add(BtnNext)
+        'GBRedTasks.Controls.Add(BtnPrev)
+        'GBRedTasks.Controls.Add(LPage)
+        'GBRedTasks.Controls.Add(BtnNext)
 
         ' ბარათის ზომები და დაშორებები - დავაბრუნეთ ორიგინალური ზომები
         Const CARD_WIDTH As Integer = 250
@@ -497,14 +779,14 @@ Public Class UC_Home
         Next
 
         ' განვაახლოთ პაგინაციის ღილაკების მდებარეობა
-        BtnPrev.Location = New Point(10, GBRedTasks.Height - 40)
-        LPage.Location = New Point(50, GBRedTasks.Height - 35)
-        BtnNext.Location = New Point(100, GBRedTasks.Height - 40)
+        'BtnPrev.Location = New Point(10, GBRedTasks.Height - 40)
+        'LPage.Location = New Point(50, GBRedTasks.Height - 35)
+        'BtnNext.Location = New Point(100, GBRedTasks.Height - 40)
 
         ' წინა პლანზე გამოტანა
-        BtnPrev.BringToFront()
-        LPage.BringToFront()
-        BtnNext.BringToFront()
+        'BtnPrev.BringToFront()
+        'LPage.BringToFront()
+        'BtnNext.BringToFront()
     End Sub
 
     ''' <summary>
@@ -557,6 +839,27 @@ Public Class UC_Home
             IsAuthorizedUser = isAuthorized
             UserRoleValue = userRole
 
+            ' მნიშვნელოვანი: განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები აქვე
+            ' რადგან სესიები უკვე გვაქვს
+            Dim allOverdueSessions As Integer = If(sessions Is Nothing, 0, sessions.Count)
+
+            ' დღევანდელი ვადაგადაცილებული სესიები
+            Dim today As DateTime = DateTime.Today
+            Dim todayOverdueSessions As Integer = 0
+
+            If sessions IsNot Nothing Then
+                For Each session In sessions
+                    If session.DateTime.Date = today Then
+                        todayOverdueSessions += 1
+                    End If
+                Next
+            End If
+
+            ' განვაახლოთ ლეიბლები
+            LNeerReaction.Text = allOverdueSessions.ToString()
+            LNeedReactionToday.Text = todayOverdueSessions.ToString()
+            Debug.WriteLine($"UC_Home.PopulateOverdueSessions: სტატისტიკა განახლდა - სულ: {allOverdueSessions}, დღევანდელი: {todayOverdueSessions}")
+
             ' გავასუფთავოთ ძველი სესიები და ჩავსვათ ახალი
             AllSessions = New List(Of SessionModel)()
 
@@ -571,18 +874,15 @@ Public Class UC_Home
             If AllSessions Is Nothing OrElse AllSessions.Count = 0 Then
                 ' გასუფთავება ძველი ბარათებისგან
                 GBRedTasks.Controls.Clear()
-
                 Dim lblNoSessions As New Label()
                 lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
                 lblNoSessions.AutoSize = True
                 lblNoSessions.Location = New Point(10, 20)
                 GBRedTasks.Controls.Add(lblNoSessions)
-
                 ' პაგინაციის კონტროლები გამოვრთოთ
                 BtnPrev.Enabled = False
                 BtnNext.Enabled = False
                 LPage.Text = ""
-
                 Debug.WriteLine("UC_Home.PopulateOverdueSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
                 Return
             End If
@@ -604,7 +904,6 @@ Public Class UC_Home
             MessageBox.Show($"შეცდომა ვადაგადაცილებული სესიების ასახვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
     ''' <summary>
     ''' რედაქტირების ღილაკზე დაჭერის დამმუშავებელი
     ''' </summary>

@@ -35,7 +35,7 @@ Partial Class UC_Home
         Me.GBBD = New System.Windows.Forms.GroupBox()
         Me.GB_Today = New System.Windows.Forms.GroupBox()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
-        Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.GBActiveTasks = New System.Windows.Forms.GroupBox()
         Me.GBRedTasks = New System.Windows.Forms.GroupBox()
         Me.GBTools = New System.Windows.Forms.GroupBox()
         Me.BtnRefresh = New System.Windows.Forms.Button()
@@ -43,9 +43,25 @@ Partial Class UC_Home
         Me.BtnPrev = New System.Windows.Forms.Button()
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.LPage = New System.Windows.Forms.Label()
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.Label5 = New System.Windows.Forms.Label()
+        Me.LSe = New System.Windows.Forms.Label()
+        Me.LDone = New System.Windows.Forms.Label()
+        Me.LNDone = New System.Windows.Forms.Label()
+        Me.LBenes = New System.Windows.Forms.Label()
+        Me.LPers = New System.Windows.Forms.Label()
+        Me.Label6 = New System.Windows.Forms.Label()
+        Me.Label7 = New System.Windows.Forms.Label()
+        Me.LNeedReactionToday = New System.Windows.Forms.Label()
+        Me.LNeerReaction = New System.Windows.Forms.Label()
         Me.GBGreeting.SuspendLayout()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.GBNow.SuspendLayout()
+        Me.GB_Today.SuspendLayout()
+        Me.GBActiveTasks.SuspendLayout()
         Me.GBTools.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -139,8 +155,8 @@ Partial Class UC_Home
         '
         'GBBD
         '
-        Me.GBBD.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.GBBD.Location = New System.Drawing.Point(776, 298)
+        Me.GBBD.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GBBD.Location = New System.Drawing.Point(776, 367)
         Me.GBBD.Name = "GBBD"
         Me.GBBD.Size = New System.Drawing.Size(238, 100)
         Me.GBBD.TabIndex = 2
@@ -150,6 +166,16 @@ Partial Class UC_Home
         'GB_Today
         '
         Me.GB_Today.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GB_Today.Controls.Add(Me.LPers)
+        Me.GB_Today.Controls.Add(Me.LBenes)
+        Me.GB_Today.Controls.Add(Me.LNDone)
+        Me.GB_Today.Controls.Add(Me.LDone)
+        Me.GB_Today.Controls.Add(Me.LSe)
+        Me.GB_Today.Controls.Add(Me.Label5)
+        Me.GB_Today.Controls.Add(Me.Label4)
+        Me.GB_Today.Controls.Add(Me.Label3)
+        Me.GB_Today.Controls.Add(Me.Label2)
+        Me.GB_Today.Controls.Add(Me.Label1)
         Me.GB_Today.Location = New System.Drawing.Point(776, 86)
         Me.GB_Today.Name = "GB_Today"
         Me.GB_Today.Size = New System.Drawing.Size(238, 100)
@@ -162,15 +188,20 @@ Partial Class UC_Home
         Me.Timer1.Enabled = True
         Me.Timer1.Interval = 1000
         '
-        'GroupBox1
+        'GBActiveTasks
         '
-        Me.GroupBox1.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.GroupBox1.Location = New System.Drawing.Point(776, 192)
-        Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(238, 100)
-        Me.GroupBox1.TabIndex = 3
-        Me.GroupBox1.TabStop = False
-        Me.GroupBox1.Text = "აქტიური საქმეები"
+        Me.GBActiveTasks.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GBActiveTasks.Controls.Add(Me.LNeedReactionToday)
+        Me.GBActiveTasks.Controls.Add(Me.Label7)
+        Me.GBActiveTasks.Controls.Add(Me.Label6)
+        Me.GBActiveTasks.Controls.Add(Me.LNeerReaction)
+        Me.GBActiveTasks.Location = New System.Drawing.Point(776, 192)
+        Me.GBActiveTasks.Name = "GBActiveTasks"
+        Me.GBActiveTasks.Size = New System.Drawing.Size(238, 169)
+        Me.GBActiveTasks.TabIndex = 3
+        Me.GBActiveTasks.TabStop = False
+        Me.GBActiveTasks.Text = "აქტიური საქმეები"
         '
         'GBRedTasks
         '
@@ -228,7 +259,7 @@ Partial Class UC_Home
         '
         'BtnPrev
         '
-        Me.BtnPrev.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.BtnPrev.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.BtnPrev.AutoEllipsis = True
         Me.BtnPrev.BackColor = System.Drawing.Color.Transparent
         Me.BtnPrev.BackgroundImage = CType(resources.GetObject("BtnPrev.BackgroundImage"), System.Drawing.Image)
@@ -236,7 +267,7 @@ Partial Class UC_Home
         Me.BtnPrev.Cursor = System.Windows.Forms.Cursors.Default
         Me.BtnPrev.FlatAppearance.BorderSize = 0
         Me.BtnPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.BtnPrev.Location = New System.Drawing.Point(3, 473)
+        Me.BtnPrev.Location = New System.Drawing.Point(659, 473)
         Me.BtnPrev.Name = "BtnPrev"
         Me.BtnPrev.Size = New System.Drawing.Size(30, 30)
         Me.BtnPrev.TabIndex = 5
@@ -244,7 +275,7 @@ Partial Class UC_Home
         '
         'BtnNext
         '
-        Me.BtnNext.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.BtnNext.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.BtnNext.AutoEllipsis = True
         Me.BtnNext.BackColor = System.Drawing.Color.Transparent
         Me.BtnNext.BackgroundImage = CType(resources.GetObject("BtnNext.BackgroundImage"), System.Drawing.Image)
@@ -252,7 +283,7 @@ Partial Class UC_Home
         Me.BtnNext.Cursor = System.Windows.Forms.Cursors.Default
         Me.BtnNext.FlatAppearance.BorderSize = 0
         Me.BtnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.BtnNext.Location = New System.Drawing.Point(84, 473)
+        Me.BtnNext.Location = New System.Drawing.Point(740, 473)
         Me.BtnNext.Name = "BtnNext"
         Me.BtnNext.Size = New System.Drawing.Size(30, 30)
         Me.BtnNext.TabIndex = 1
@@ -260,14 +291,154 @@ Partial Class UC_Home
         '
         'LPage
         '
-        Me.LPage.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.LPage.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.LPage.AutoSize = True
         Me.LPage.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.LPage.Location = New System.Drawing.Point(39, 482)
+        Me.LPage.Location = New System.Drawing.Point(695, 482)
         Me.LPage.Name = "LPage"
         Me.LPage.Size = New System.Drawing.Size(39, 13)
         Me.LPage.TabIndex = 6
         Me.LPage.Text = "Label1"
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.BackColor = System.Drawing.Color.Transparent
+        Me.Label1.Location = New System.Drawing.Point(6, 16)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(196, 13)
+        Me.Label1.TabIndex = 0
+        Me.Label1.Text = "ჩანიშნული სეანსების რაოდენობა:"
+        '
+        'Label2
+        '
+        Me.Label2.AutoSize = True
+        Me.Label2.BackColor = System.Drawing.Color.Transparent
+        Me.Label2.Location = New System.Drawing.Point(6, 29)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(94, 13)
+        Me.Label2.TabIndex = 1
+        Me.Label2.Text = "შესრულებული:"
+        '
+        'Label3
+        '
+        Me.Label3.AutoSize = True
+        Me.Label3.BackColor = System.Drawing.Color.Transparent
+        Me.Label3.Location = New System.Drawing.Point(6, 42)
+        Me.Label3.Name = "Label3"
+        Me.Label3.Size = New System.Drawing.Size(104, 13)
+        Me.Label3.TabIndex = 2
+        Me.Label3.Text = "შესასრულებელი:"
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.BackColor = System.Drawing.Color.Transparent
+        Me.Label4.Location = New System.Drawing.Point(6, 55)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(94, 13)
+        Me.Label4.TabIndex = 3
+        Me.Label4.Text = "ბენეფიციარები:"
+        '
+        'Label5
+        '
+        Me.Label5.AutoSize = True
+        Me.Label5.BackColor = System.Drawing.Color.Transparent
+        Me.Label5.Location = New System.Drawing.Point(6, 68)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(83, 13)
+        Me.Label5.TabIndex = 4
+        Me.Label5.Text = "თერაპევტები:"
+        '
+        'LSe
+        '
+        Me.LSe.AutoSize = True
+        Me.LSe.BackColor = System.Drawing.Color.Transparent
+        Me.LSe.Location = New System.Drawing.Point(199, 16)
+        Me.LSe.Name = "LSe"
+        Me.LSe.Size = New System.Drawing.Size(25, 13)
+        Me.LSe.TabIndex = 5
+        Me.LSe.Text = "123"
+        '
+        'LDone
+        '
+        Me.LDone.AutoSize = True
+        Me.LDone.BackColor = System.Drawing.Color.Transparent
+        Me.LDone.Location = New System.Drawing.Point(199, 29)
+        Me.LDone.Name = "LDone"
+        Me.LDone.Size = New System.Drawing.Size(25, 13)
+        Me.LDone.TabIndex = 6
+        Me.LDone.Text = "123"
+        '
+        'LNDone
+        '
+        Me.LNDone.AutoSize = True
+        Me.LNDone.BackColor = System.Drawing.Color.Transparent
+        Me.LNDone.Location = New System.Drawing.Point(199, 42)
+        Me.LNDone.Name = "LNDone"
+        Me.LNDone.Size = New System.Drawing.Size(25, 13)
+        Me.LNDone.TabIndex = 7
+        Me.LNDone.Text = "123"
+        '
+        'LBenes
+        '
+        Me.LBenes.AutoSize = True
+        Me.LBenes.BackColor = System.Drawing.Color.Transparent
+        Me.LBenes.Location = New System.Drawing.Point(199, 55)
+        Me.LBenes.Name = "LBenes"
+        Me.LBenes.Size = New System.Drawing.Size(25, 13)
+        Me.LBenes.TabIndex = 8
+        Me.LBenes.Text = "123"
+        '
+        'LPers
+        '
+        Me.LPers.AutoSize = True
+        Me.LPers.BackColor = System.Drawing.Color.Transparent
+        Me.LPers.Location = New System.Drawing.Point(199, 68)
+        Me.LPers.Name = "LPers"
+        Me.LPers.Size = New System.Drawing.Size(25, 13)
+        Me.LPers.TabIndex = 9
+        Me.LPers.Text = "123"
+        '
+        'Label6
+        '
+        Me.Label6.AutoSize = True
+        Me.Label6.BackColor = System.Drawing.Color.Transparent
+        Me.Label6.Location = New System.Drawing.Point(6, 16)
+        Me.Label6.Name = "Label6"
+        Me.Label6.Size = New System.Drawing.Size(133, 13)
+        Me.Label6.TabIndex = 1
+        Me.Label6.Text = "რეაგირებას მოითხოვს:"
+        '
+        'Label7
+        '
+        Me.Label7.AutoSize = True
+        Me.Label7.BackColor = System.Drawing.Color.Transparent
+        Me.Label7.Location = New System.Drawing.Point(6, 29)
+        Me.Label7.Name = "Label7"
+        Me.Label7.Size = New System.Drawing.Size(148, 13)
+        Me.Label7.TabIndex = 2
+        Me.Label7.Text = "მათ შორის დღევანდელი:"
+        '
+        'LNeedReactionToday
+        '
+        Me.LNeedReactionToday.AutoSize = True
+        Me.LNeedReactionToday.BackColor = System.Drawing.Color.Transparent
+        Me.LNeedReactionToday.Location = New System.Drawing.Point(199, 29)
+        Me.LNeedReactionToday.Name = "LNeedReactionToday"
+        Me.LNeedReactionToday.Size = New System.Drawing.Size(25, 13)
+        Me.LNeedReactionToday.TabIndex = 11
+        Me.LNeedReactionToday.Text = "123"
+        '
+        'LNeerReaction
+        '
+        Me.LNeerReaction.AutoSize = True
+        Me.LNeerReaction.BackColor = System.Drawing.Color.Transparent
+        Me.LNeerReaction.Location = New System.Drawing.Point(199, 16)
+        Me.LNeerReaction.Name = "LNeerReaction"
+        Me.LNeerReaction.Size = New System.Drawing.Size(25, 13)
+        Me.LNeerReaction.TabIndex = 10
+        Me.LNeerReaction.Text = "123"
         '
         'UC_Home
         '
@@ -278,7 +449,7 @@ Partial Class UC_Home
         Me.Controls.Add(Me.BtnPrev)
         Me.Controls.Add(Me.GBTools)
         Me.Controls.Add(Me.GBRedTasks)
-        Me.Controls.Add(Me.GroupBox1)
+        Me.Controls.Add(Me.GBActiveTasks)
         Me.Controls.Add(Me.GB_Today)
         Me.Controls.Add(Me.GBBD)
         Me.Controls.Add(Me.GBNow)
@@ -290,6 +461,10 @@ Partial Class UC_Home
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).EndInit()
         Me.GBNow.ResumeLayout(False)
         Me.GBNow.PerformLayout()
+        Me.GB_Today.ResumeLayout(False)
+        Me.GB_Today.PerformLayout()
+        Me.GBActiveTasks.ResumeLayout(False)
+        Me.GBActiveTasks.PerformLayout()
         Me.GBTools.ResumeLayout(False)
         Me.ResumeLayout(False)
         Me.PerformLayout()
@@ -307,7 +482,7 @@ Partial Class UC_Home
     Friend WithEvents LDate As Label
     Friend WithEvents LTime As Label
     Friend WithEvents Timer1 As Timer
-    Friend WithEvents GroupBox1 As GroupBox
+    Friend WithEvents GBActiveTasks As GroupBox
     Friend WithEvents GBRedTasks As GroupBox
     Friend WithEvents GBTools As GroupBox
     Friend WithEvents BtnRefresh As Button
@@ -315,4 +490,18 @@ Partial Class UC_Home
     Friend WithEvents BtnPrev As Button
     Friend WithEvents BtnNext As Button
     Friend WithEvents LPage As Label
+    Friend WithEvents Label2 As Label
+    Friend WithEvents Label1 As Label
+    Friend WithEvents LPers As Label
+    Friend WithEvents LBenes As Label
+    Friend WithEvents LNDone As Label
+    Friend WithEvents LDone As Label
+    Friend WithEvents LSe As Label
+    Friend WithEvents Label5 As Label
+    Friend WithEvents Label4 As Label
+    Friend WithEvents Label3 As Label
+    Friend WithEvents LNeedReactionToday As Label
+    Friend WithEvents Label7 As Label
+    Friend WithEvents LNeerReaction As Label
+    Friend WithEvents Label6 As Label
 End Class
