@@ -228,35 +228,43 @@ Public Class UC_Home
     Private Sub CalculateCardsPerPage()
         Try
             ' ბარათის ზომები და დაშორებები
-            Const CARD_WIDTH As Integer = 250
-            Const CARD_HEIGHT As Integer = 140
-            Const CARD_MARGIN As Integer = 15
+            Const CARD_WIDTH As Integer = 240  ' არსებულ ზომას ვტოვებთ
+            Const CARD_HEIGHT As Integer = 160 ' არსებულ ზომას ვტოვებთ
+            Const CARD_MARGIN As Integer = 10  ' არსებულ ზომას ვტოვებთ
+            Const BOTTOM_MARGIN As Integer = 50 ' ქვედა მარჯინი პაგინაციისთვის
 
-            ' გამოვთვალოთ რამდენი ბარათი დაეტევა ერთ მწკრივში
-            Dim availableWidth As Integer = GBRedTasks.Width - (2 * CARD_MARGIN)
+            ' გამოვთვალოთ რამდენი ბარათი დაეტევა ერთ მწკრივში - არსებული კოდი
+            Dim availableWidth As Integer = GBRedTasks.ClientSize.Width - (2 * CARD_MARGIN) - 5
             Dim cardsPerRow As Integer = Math.Max(1, availableWidth \ (CARD_WIDTH + CARD_MARGIN))
 
-            ' გამოვთვალოთ რამდენი მწკრივი დაეტევა
-            Dim availableHeight As Integer = GBRedTasks.Height - 50 ' გამოვაკლოთ ადგილი შეტყობინებებისთვის
+            ' გამოვთვალოთ რამდენი მწკრივი დაეტევა - არსებული კოდი
+            Dim availableHeight As Integer = GBRedTasks.ClientSize.Height - 60
             Dim rowsPerPage As Integer = Math.Max(1, availableHeight \ (CARD_HEIGHT + CARD_MARGIN))
 
-            ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
-            CardsPerPage = cardsPerRow * rowsPerPage
+            ' უსაფრთხოების ზომა - თუ ძალიან ცოტა სივრცეა, შევამციროთ მწკრივების რაოდენობა - ახალი კოდი
+            ' რათა არ მოხდეს ბარათების მოჭრა
+            If (rowsPerPage * (CARD_HEIGHT + CARD_MARGIN)) > availableHeight - BOTTOM_MARGIN Then
+                rowsPerPage = Math.Max(1, rowsPerPage - 1)
+            End If
 
-            ' საერთო გვერდების რაოდენობა
-            TotalPages = Math.Ceiling(AllSessions.Count / CardsPerPage)
+            ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე - არსებული კოდი
+            CardsPerPage = Math.Max(1, cardsPerRow * rowsPerPage)
+
+            ' საერთო გვერდების რაოდენობა - არსებული კოდი
+            TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
 
             Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}, " &
-                          $"CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
+                      $"CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
         Catch ex As Exception
             Debug.WriteLine($"CalculateCardsPerPage: შეცდომა - {ex.Message}")
             CardsPerPage = 6 ' ნაგულისხმები მნიშვნელობა შეცდომის შემთხვევაში
-            TotalPages = Math.Ceiling(AllSessions.Count / CardsPerPage)
+            TotalPages = Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage))
         End Try
     End Sub
 
     ''' <summary>
-    ''' აჩვენებს მიმდინარე გვერდის ბარათებს
+    ''' აჩვენებს მიმდინარე გვერდის ბარათებს - განახლებული ვერსია 
+    ''' ღილაკის ფერის და ფორმის დაბრუნებით და ვადაგადაცილებული დღეების ჩვენებით
     ''' </summary>
     Private Sub ShowCurrentPageCards()
         ' გასუფთავება ძველი ბარათებისგან
@@ -273,20 +281,25 @@ Public Class UC_Home
             Return
         End If
 
-        ' ბარათის ზომები და დაშორებები
+        ' პაგინაციის კონტროლების დამატება
+        GBRedTasks.Controls.Add(BtnPrev)
+        GBRedTasks.Controls.Add(LPage)
+        GBRedTasks.Controls.Add(BtnNext)
+
+        ' ბარათის ზომები და დაშორებები - დავაბრუნეთ ორიგინალური ზომები
         Const CARD_WIDTH As Integer = 250
-        Const CARD_HEIGHT As Integer = 180   ' ოდნავ გაზრდილი სიმაღლე
+        Const CARD_HEIGHT As Integer = 185  ' გაზრდილი სიმაღლე 
         Const CARD_MARGIN As Integer = 15
         Const HEADER_HEIGHT As Integer = 24
 
         ' გამოვთვალოთ რამდენი ბარათი დაეტევა ერთ მწკრივში
-        Dim availableWidth As Integer = GBRedTasks.Width - (2 * CARD_MARGIN)
+        Dim availableWidth As Integer = GBRedTasks.ClientSize.Width - (2 * CARD_MARGIN) - 5
         Dim cardsPerRow As Integer = Math.Max(1, availableWidth \ (CARD_WIDTH + CARD_MARGIN))
 
         ' დავაკორექტიროთ ჰორიზონტალური დაშორება თუ კი საჭიროა
         Dim horizontalSpacing As Integer = CARD_MARGIN
         If cardsPerRow > 1 Then
-            horizontalSpacing = (availableWidth - (cardsPerRow * CARD_WIDTH)) \ (cardsPerRow - 1)
+            horizontalSpacing = Math.Max(CARD_MARGIN, (availableWidth - (cardsPerRow * CARD_WIDTH)) \ (cardsPerRow - 1))
         End If
 
         ' გვერდზე ბარათების დიაპაზონი
@@ -294,8 +307,8 @@ Public Class UC_Home
         Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, AllSessions.Count - 1)
 
         Debug.WriteLine($"ShowCurrentPageCards: გვერდი {CurrentPage + 1}/{TotalPages}, " &
-                    $"დიაპაზონი: {startIndex}-{endIndex}, " &
-                    $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
+                $"დიაპაზონი: {startIndex}-{endIndex}, " &
+                $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
 
         ' ვადაგადაცილებული სესიების ბარათები
         Dim xPos As Integer = CARD_MARGIN
@@ -306,10 +319,10 @@ Public Class UC_Home
             Dim session = AllSessions(i)
 
             ' დებაგინფო სესიის შესახებ
-            Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
-                       $"ბენეფიციარი={session.BeneficiaryName} {session.BeneficiarySurname}, " &
-                       $"თარიღი={session.FormattedDateTime}, " &
-                       $"სტატუსი={session.Status}")
+            'Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
+            '$"ბენეფიციარი={session.BeneficiaryName} {session.BeneficiarySurname}, " &
+            '$"თარიღი={session.FormattedDateTime}, " &
+            '$"სტატუსი={session.Status}")
 
             ' შევქმნათ ბარათი
             Dim card As New Panel()
@@ -363,63 +376,73 @@ Public Class UC_Home
             lblId.ForeColor = Color.White
             headerPanel.Controls.Add(lblId)
 
-            ' ბენეფიციარის სახელი და გვარი - ბოლდით და მთავრული ასოებით
+            ' ბენეფიციარის სახელი და გვარი - მთავრული ასოებით
             ' მთავრული ქართული შრიფტი
-            Dim georgianFonts As String() = {"Sylfaen", "BPG Glaho", "Arial Unicode MS", "DejaVu Sans", "FreeSerif", "Tahoma"}
-            Dim georgianFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი
+            Dim mtavruliFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი თუ ვერ მოიძებნა მოთხოვნილი
 
-            ' ვიპოვოთ რომელიმე ქართული ფონტი
-            For Each fontName In georgianFonts
-                Try
-                    Using testFont As New Font(fontName, 10)
-                        georgianFont = fontName
-                        Debug.WriteLine($"ShowCurrentPageCards: მოიძებნა ქართული ფონტი: {fontName}")
-                        Exit For
-                    End Using
-                Catch
-                    ' ეს ფონტი ვერ მოიძებნა, შემდეგს ვცდით
-                    Debug.WriteLine($"ShowCurrentPageCards: ვერ მოიძებნა ფონტი: {fontName}")
-                End Try
-            Next
+            ' ვცადოთ ვიპოვოთ მოთხოვნილი ფონტი
+            Try
+                Using testFont As New Font("KA_LITERATURULI_MT", 10)
+                    mtavruliFont = "KA_LITERATURULI_MT"
+                    Debug.WriteLine("ShowCurrentPageCards: მოიძებნა KA_LITERATURULI_MT ფონტი")
+                End Using
+            Catch
+                ' თუ მოთხოვნილი ფონტი ვერ მოიძებნა, შევამოწმოთ ალტერნატიული ფონტები
+                Dim altFonts As String() = {"BPG_Nino_Mtavruli", "ALK_Tall_Mtavruli", "Sylfaen"}
+                For Each fontName In altFonts
+                    Try
+                        Using testFont As New Font(fontName, 10)
+                            mtavruliFont = fontName
+                            Debug.WriteLine($"ShowCurrentPageCards: მოიძებნა ალტერნატიული ფონტი: {fontName}")
+                            Exit For
+                        End Using
+                    Catch
+                        ' ეს ფონტი ვერ მოიძებნა, შემდეგს ვცდით
+                        Debug.WriteLine($"ShowCurrentPageCards: ვერ მოიძებნა ფონტი: {fontName}")
+                    End Try
+                Next
+            End Try
 
+            ' ბენეფიციარის სახელის ლეიბლი - მთავრული ასოებით
             Dim lblBeneficiary As New Label()
-            ' გარდავქმნათ ტექსტი დიდ ასოებად
+            ' გარდავქმნათ ტექსტი დიდ ასოებად - ToUpper() გამოიყენება მთავრული ასოებისთვის
             Dim beneficiaryText As String = $"{session.BeneficiaryName.ToUpper()} {session.BeneficiarySurname.ToUpper()}"
             lblBeneficiary.Text = beneficiaryText
             lblBeneficiary.Location = New Point(8, HEADER_HEIGHT + 8)
-            lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 24) ' ოდნავ უფრო მაღალი
-            lblBeneficiary.Font = New Font(georgianFont, 10, FontStyle.Bold)
+            lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 30) ' გაზრდილი სიმაღლე
+            lblBeneficiary.Font = New Font(mtavruliFont, 10, FontStyle.Bold) ' მთავრული ფონტი
+            lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter ' ცენტრში მოთავსება
             card.Controls.Add(lblBeneficiary)
 
             ' თერაპევტის სახელი
             Dim lblTherapist As New Label()
-            lblTherapist.Text = session.TherapistName
-            lblTherapist.Location = New Point(8, HEADER_HEIGHT + 36)
+            lblTherapist.Text = $"{session.TherapistName}"
+            lblTherapist.Location = New Point(8, HEADER_HEIGHT + 42) ' ქვემოთ ჩაწეული
             lblTherapist.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblTherapist)
 
             ' თერაპიის ტიპი
             Dim lblTherapyType As New Label()
-            lblTherapyType.Text = session.TherapyType
-            lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 60)
+            lblTherapyType.Text = $"{session.TherapyType}"
+            lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 64) ' ქვემოთ ჩაწეული
             lblTherapyType.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblTherapyType)
 
             ' სივრცე
             Dim lblSpace As New Label()
-            lblSpace.Text = session.Space
-            lblSpace.Location = New Point(8, HEADER_HEIGHT + 84)
+            lblSpace.Text = $"{session.Space}"
+            lblSpace.Location = New Point(8, HEADER_HEIGHT + 86) ' ქვემოთ ჩაწეული
             lblSpace.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblSpace)
 
             ' დაფინანსება
             Dim lblFunding As New Label()
-            lblFunding.Text = session.Funding
-            lblFunding.Location = New Point(8, HEADER_HEIGHT + 108)
+            lblFunding.Text = $"{session.Funding}"
+            lblFunding.Location = New Point(8, HEADER_HEIGHT + 108) ' ქვემოთ ჩაწეული
             lblFunding.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
             card.Controls.Add(lblFunding)
 
-            ' ვადაგადაცილების დღეები
+            ' ვადაგადაცილების დღეები - დავამატეთ ვადაგადაცილების შესახებ ინფორმაცია
             Dim overdueText As String = "ვადაგადაცილება: "
             Dim daysOverdue As Integer = Math.Abs((DateTime.Today - session.DateTime.Date).Days)
             overdueText += $"{daysOverdue} დღე"
@@ -429,30 +452,38 @@ Public Class UC_Home
             lblOverdue.Location = New Point(8, HEADER_HEIGHT + 132) ' ბოლო რიგი
             lblOverdue.AutoSize = True
             lblOverdue.ForeColor = Color.DarkRed
+            lblOverdue.Font = New Font(lblOverdue.Font.FontFamily, 9, FontStyle.Regular) ' Bold სტილი
             card.Controls.Add(lblOverdue)
 
-            ' რედაქტირების ღილაკი - მხოლოდ თუ ავტორიზებულია
+            ' რედაქტირების ღილაკი - დავაბრუნეთ ორიგინალური ფერი და სტილი
             If IsAuthorizedUser AndAlso (UserRoleValue = "1" OrElse UserRoleValue = "2" OrElse UserRoleValue = "3") Then
                 Dim btnEdit As New Button()
                 btnEdit.Text = "✎" ' ფანქრის სიმბოლო
                 btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
                 btnEdit.ForeColor = Color.White
-                btnEdit.BackColor = Color.FromArgb(220, 0, 0)
-                btnEdit.Size = New Size(30, 30) ' მრგვალი ზომა
-                btnEdit.Location = New Point(CARD_WIDTH - 40, HEADER_HEIGHT + 123) ' აწეული 5 პიქსელით
-                btnEdit.FlatStyle = FlatStyle.Flat
+                btnEdit.BackColor = Color.FromArgb(220, 0, 0) ' მუქი წითელი - ორიგინალური ფერი
+                btnEdit.Size = New Size(30, 30) ' ორიგინალური ზომა
+                btnEdit.Location = New Point(CARD_WIDTH - 40, HEADER_HEIGHT + 123) ' ორიგინალური პოზიცია
+                btnEdit.FlatStyle = FlatStyle.Flat ' ორიგინალური სტილი
                 btnEdit.FlatAppearance.BorderSize = 0
                 btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
+                btnEdit.Cursor = Cursors.Hand ' ხელის კურსორი
 
                 ' მრგვალი ფორმის ღილაკი
                 Dim btnPath As New Drawing2D.GraphicsPath()
                 btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
                 btnEdit.Region = New Region(btnPath)
 
+                ' ღილაკის მიბმა ფუნქციაზე
                 AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+
+                ' ღილაკის დამატება ბარათზე
                 card.Controls.Add(btnEdit)
 
-                Debug.WriteLine($"ShowCurrentPageCards: ღილაკი დაემატა ბარათზე, პოზიცია: X={btnEdit.Location.X}, Y={btnEdit.Location.Y}")
+                ' წინა პლანზე გამოტანა - მნიშვნელოვანია
+                btnEdit.BringToFront()
+
+                Debug.WriteLine($"ShowCurrentPageCards: ღილაკი დაემატა ბარათზე, ID={session.Id}")
             End If
 
             ' დავამატოთ ბარათი GroupBox-ზე
@@ -469,6 +500,16 @@ Public Class UC_Home
                 xPos += CARD_WIDTH + horizontalSpacing
             End If
         Next
+
+        ' განვაახლოთ პაგინაციის ღილაკების მდებარეობა
+        BtnPrev.Location = New Point(10, GBRedTasks.Height - 40)
+        LPage.Location = New Point(50, GBRedTasks.Height - 35)
+        BtnNext.Location = New Point(100, GBRedTasks.Height - 40)
+
+        ' წინა პლანზე გამოტანა
+        BtnPrev.BringToFront()
+        LPage.BringToFront()
+        BtnNext.BringToFront()
     End Sub
 
     ''' <summary>
@@ -579,6 +620,33 @@ Public Class UC_Home
         ' აქ იქნება სესიის რედაქტირების ლოგიკა
         MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
         ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
+    End Sub
+
+    ''' <summary>
+    ''' ტესტური მეთოდი კონტროლების ხილვადობის დიაგნოსტიკისთვის
+    ''' </summary>
+    Public Sub TestDirectControls()
+        Try
+            Debug.WriteLine("UC_Home.TestDirectControls: დაიწყო კონტროლების ტესტირება")
+
+            ' კონტროლების მდგომარეობის შემოწმება
+            Debug.WriteLine($"GBRedTasks ხილვადობა: {GBRedTasks.Visible}, " &
+                          $"ზომები: {GBRedTasks.Width}x{GBRedTasks.Height}, " &
+                          $"კონტროლების რაოდენობა: {GBRedTasks.Controls.Count}")
+
+            ' პაგინაციის კონტროლების შემოწმება
+            Debug.WriteLine($"BtnPrev ხილვადობა: {BtnPrev.Visible}, მდგომარეობა: {BtnPrev.Enabled}")
+            Debug.WriteLine($"BtnNext ხილვადობა: {BtnNext.Visible}, მდგომარეობა: {BtnNext.Enabled}")
+            Debug.WriteLine($"LPage ხილვადობა: {LPage.Visible}, ტექსტი: {LPage.Text}")
+
+            ' სესიების ინფორმაცია
+            Debug.WriteLine($"AllSessions რაოდენობა: {AllSessions.Count}, " &
+                          $"CardsPerPage: {CardsPerPage}, " &
+                          $"CurrentPage: {CurrentPage}, " &
+                          $"TotalPages: {TotalPages}")
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Home.TestDirectControls: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 
     ' ViewModel-ის თვისებების წაკითხვის მეთოდები UI-დან
