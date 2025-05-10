@@ -34,8 +34,22 @@ Partial Class UC_Home
         Me.LTime = New System.Windows.Forms.Label()
         Me.GBBD = New System.Windows.Forms.GroupBox()
         Me.GB_Today = New System.Windows.Forms.GroupBox()
+        Me.LPers = New System.Windows.Forms.Label()
+        Me.LBenes = New System.Windows.Forms.Label()
+        Me.LNDone = New System.Windows.Forms.Label()
+        Me.LDone = New System.Windows.Forms.Label()
+        Me.LSe = New System.Windows.Forms.Label()
+        Me.Label5 = New System.Windows.Forms.Label()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.Label1 = New System.Windows.Forms.Label()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.GBActiveTasks = New System.Windows.Forms.GroupBox()
+        Me.LNeedReactionToday = New System.Windows.Forms.Label()
+        Me.Label7 = New System.Windows.Forms.Label()
+        Me.Label6 = New System.Windows.Forms.Label()
+        Me.LNeerReaction = New System.Windows.Forms.Label()
         Me.GBRedTasks = New System.Windows.Forms.GroupBox()
         Me.GBTools = New System.Windows.Forms.GroupBox()
         Me.BtnRefresh = New System.Windows.Forms.Button()
@@ -43,20 +57,6 @@ Partial Class UC_Home
         Me.BtnPrev = New System.Windows.Forms.Button()
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.LPage = New System.Windows.Forms.Label()
-        Me.Label1 = New System.Windows.Forms.Label()
-        Me.Label2 = New System.Windows.Forms.Label()
-        Me.Label3 = New System.Windows.Forms.Label()
-        Me.Label4 = New System.Windows.Forms.Label()
-        Me.Label5 = New System.Windows.Forms.Label()
-        Me.LSe = New System.Windows.Forms.Label()
-        Me.LDone = New System.Windows.Forms.Label()
-        Me.LNDone = New System.Windows.Forms.Label()
-        Me.LBenes = New System.Windows.Forms.Label()
-        Me.LPers = New System.Windows.Forms.Label()
-        Me.Label6 = New System.Windows.Forms.Label()
-        Me.Label7 = New System.Windows.Forms.Label()
-        Me.LNeedReactionToday = New System.Windows.Forms.Label()
-        Me.LNeerReaction = New System.Windows.Forms.Label()
         Me.GBGreeting.SuspendLayout()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.GBNow.SuspendLayout()
@@ -183,6 +183,106 @@ Partial Class UC_Home
         Me.GB_Today.TabStop = False
         Me.GB_Today.Text = "დღეს"
         '
+        'LPers
+        '
+        Me.LPers.AutoSize = True
+        Me.LPers.BackColor = System.Drawing.Color.Transparent
+        Me.LPers.Location = New System.Drawing.Point(199, 68)
+        Me.LPers.Name = "LPers"
+        Me.LPers.Size = New System.Drawing.Size(25, 13)
+        Me.LPers.TabIndex = 9
+        Me.LPers.Text = "123"
+        '
+        'LBenes
+        '
+        Me.LBenes.AutoSize = True
+        Me.LBenes.BackColor = System.Drawing.Color.Transparent
+        Me.LBenes.Location = New System.Drawing.Point(199, 55)
+        Me.LBenes.Name = "LBenes"
+        Me.LBenes.Size = New System.Drawing.Size(25, 13)
+        Me.LBenes.TabIndex = 8
+        Me.LBenes.Text = "123"
+        '
+        'LNDone
+        '
+        Me.LNDone.AutoSize = True
+        Me.LNDone.BackColor = System.Drawing.Color.Transparent
+        Me.LNDone.Location = New System.Drawing.Point(199, 42)
+        Me.LNDone.Name = "LNDone"
+        Me.LNDone.Size = New System.Drawing.Size(25, 13)
+        Me.LNDone.TabIndex = 7
+        Me.LNDone.Text = "123"
+        '
+        'LDone
+        '
+        Me.LDone.AutoSize = True
+        Me.LDone.BackColor = System.Drawing.Color.Transparent
+        Me.LDone.Location = New System.Drawing.Point(199, 29)
+        Me.LDone.Name = "LDone"
+        Me.LDone.Size = New System.Drawing.Size(25, 13)
+        Me.LDone.TabIndex = 6
+        Me.LDone.Text = "123"
+        '
+        'LSe
+        '
+        Me.LSe.AutoSize = True
+        Me.LSe.BackColor = System.Drawing.Color.Transparent
+        Me.LSe.Location = New System.Drawing.Point(199, 16)
+        Me.LSe.Name = "LSe"
+        Me.LSe.Size = New System.Drawing.Size(25, 13)
+        Me.LSe.TabIndex = 5
+        Me.LSe.Text = "123"
+        '
+        'Label5
+        '
+        Me.Label5.AutoSize = True
+        Me.Label5.BackColor = System.Drawing.Color.Transparent
+        Me.Label5.Location = New System.Drawing.Point(6, 68)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(83, 13)
+        Me.Label5.TabIndex = 4
+        Me.Label5.Text = "თერაპევტები:"
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.BackColor = System.Drawing.Color.Transparent
+        Me.Label4.Location = New System.Drawing.Point(6, 55)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(94, 13)
+        Me.Label4.TabIndex = 3
+        Me.Label4.Text = "ბენეფიციარები:"
+        '
+        'Label3
+        '
+        Me.Label3.AutoSize = True
+        Me.Label3.BackColor = System.Drawing.Color.Transparent
+        Me.Label3.Location = New System.Drawing.Point(6, 42)
+        Me.Label3.Name = "Label3"
+        Me.Label3.Size = New System.Drawing.Size(104, 13)
+        Me.Label3.TabIndex = 2
+        Me.Label3.Text = "შესასრულებელი:"
+        '
+        'Label2
+        '
+        Me.Label2.AutoSize = True
+        Me.Label2.BackColor = System.Drawing.Color.Transparent
+        Me.Label2.Location = New System.Drawing.Point(6, 29)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(94, 13)
+        Me.Label2.TabIndex = 1
+        Me.Label2.Text = "შესრულებული:"
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.BackColor = System.Drawing.Color.Transparent
+        Me.Label1.Location = New System.Drawing.Point(6, 16)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(196, 13)
+        Me.Label1.TabIndex = 0
+        Me.Label1.Text = "ჩანიშნული სეანსების რაოდენობა:"
+        '
         'Timer1
         '
         Me.Timer1.Enabled = True
@@ -202,6 +302,46 @@ Partial Class UC_Home
         Me.GBActiveTasks.TabIndex = 3
         Me.GBActiveTasks.TabStop = False
         Me.GBActiveTasks.Text = "აქტიური საქმეები"
+        '
+        'LNeedReactionToday
+        '
+        Me.LNeedReactionToday.AutoSize = True
+        Me.LNeedReactionToday.BackColor = System.Drawing.Color.Transparent
+        Me.LNeedReactionToday.Location = New System.Drawing.Point(199, 29)
+        Me.LNeedReactionToday.Name = "LNeedReactionToday"
+        Me.LNeedReactionToday.Size = New System.Drawing.Size(25, 13)
+        Me.LNeedReactionToday.TabIndex = 11
+        Me.LNeedReactionToday.Text = "123"
+        '
+        'Label7
+        '
+        Me.Label7.AutoSize = True
+        Me.Label7.BackColor = System.Drawing.Color.Transparent
+        Me.Label7.Location = New System.Drawing.Point(6, 29)
+        Me.Label7.Name = "Label7"
+        Me.Label7.Size = New System.Drawing.Size(148, 13)
+        Me.Label7.TabIndex = 2
+        Me.Label7.Text = "მათ შორის დღევანდელი:"
+        '
+        'Label6
+        '
+        Me.Label6.AutoSize = True
+        Me.Label6.BackColor = System.Drawing.Color.Transparent
+        Me.Label6.Location = New System.Drawing.Point(6, 16)
+        Me.Label6.Name = "Label6"
+        Me.Label6.Size = New System.Drawing.Size(133, 13)
+        Me.Label6.TabIndex = 1
+        Me.Label6.Text = "რეაგირებას მოითხოვს:"
+        '
+        'LNeerReaction
+        '
+        Me.LNeerReaction.AutoSize = True
+        Me.LNeerReaction.BackColor = System.Drawing.Color.Transparent
+        Me.LNeerReaction.Location = New System.Drawing.Point(199, 16)
+        Me.LNeerReaction.Name = "LNeerReaction"
+        Me.LNeerReaction.Size = New System.Drawing.Size(25, 13)
+        Me.LNeerReaction.TabIndex = 10
+        Me.LNeerReaction.Text = "123"
         '
         'GBRedTasks
         '
@@ -299,146 +439,6 @@ Partial Class UC_Home
         Me.LPage.Size = New System.Drawing.Size(39, 13)
         Me.LPage.TabIndex = 6
         Me.LPage.Text = "Label1"
-        '
-        'Label1
-        '
-        Me.Label1.AutoSize = True
-        Me.Label1.BackColor = System.Drawing.Color.Transparent
-        Me.Label1.Location = New System.Drawing.Point(6, 16)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(196, 13)
-        Me.Label1.TabIndex = 0
-        Me.Label1.Text = "ჩანიშნული სეანსების რაოდენობა:"
-        '
-        'Label2
-        '
-        Me.Label2.AutoSize = True
-        Me.Label2.BackColor = System.Drawing.Color.Transparent
-        Me.Label2.Location = New System.Drawing.Point(6, 29)
-        Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(94, 13)
-        Me.Label2.TabIndex = 1
-        Me.Label2.Text = "შესრულებული:"
-        '
-        'Label3
-        '
-        Me.Label3.AutoSize = True
-        Me.Label3.BackColor = System.Drawing.Color.Transparent
-        Me.Label3.Location = New System.Drawing.Point(6, 42)
-        Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(104, 13)
-        Me.Label3.TabIndex = 2
-        Me.Label3.Text = "შესასრულებელი:"
-        '
-        'Label4
-        '
-        Me.Label4.AutoSize = True
-        Me.Label4.BackColor = System.Drawing.Color.Transparent
-        Me.Label4.Location = New System.Drawing.Point(6, 55)
-        Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(94, 13)
-        Me.Label4.TabIndex = 3
-        Me.Label4.Text = "ბენეფიციარები:"
-        '
-        'Label5
-        '
-        Me.Label5.AutoSize = True
-        Me.Label5.BackColor = System.Drawing.Color.Transparent
-        Me.Label5.Location = New System.Drawing.Point(6, 68)
-        Me.Label5.Name = "Label5"
-        Me.Label5.Size = New System.Drawing.Size(83, 13)
-        Me.Label5.TabIndex = 4
-        Me.Label5.Text = "თერაპევტები:"
-        '
-        'LSe
-        '
-        Me.LSe.AutoSize = True
-        Me.LSe.BackColor = System.Drawing.Color.Transparent
-        Me.LSe.Location = New System.Drawing.Point(199, 16)
-        Me.LSe.Name = "LSe"
-        Me.LSe.Size = New System.Drawing.Size(25, 13)
-        Me.LSe.TabIndex = 5
-        Me.LSe.Text = "123"
-        '
-        'LDone
-        '
-        Me.LDone.AutoSize = True
-        Me.LDone.BackColor = System.Drawing.Color.Transparent
-        Me.LDone.Location = New System.Drawing.Point(199, 29)
-        Me.LDone.Name = "LDone"
-        Me.LDone.Size = New System.Drawing.Size(25, 13)
-        Me.LDone.TabIndex = 6
-        Me.LDone.Text = "123"
-        '
-        'LNDone
-        '
-        Me.LNDone.AutoSize = True
-        Me.LNDone.BackColor = System.Drawing.Color.Transparent
-        Me.LNDone.Location = New System.Drawing.Point(199, 42)
-        Me.LNDone.Name = "LNDone"
-        Me.LNDone.Size = New System.Drawing.Size(25, 13)
-        Me.LNDone.TabIndex = 7
-        Me.LNDone.Text = "123"
-        '
-        'LBenes
-        '
-        Me.LBenes.AutoSize = True
-        Me.LBenes.BackColor = System.Drawing.Color.Transparent
-        Me.LBenes.Location = New System.Drawing.Point(199, 55)
-        Me.LBenes.Name = "LBenes"
-        Me.LBenes.Size = New System.Drawing.Size(25, 13)
-        Me.LBenes.TabIndex = 8
-        Me.LBenes.Text = "123"
-        '
-        'LPers
-        '
-        Me.LPers.AutoSize = True
-        Me.LPers.BackColor = System.Drawing.Color.Transparent
-        Me.LPers.Location = New System.Drawing.Point(199, 68)
-        Me.LPers.Name = "LPers"
-        Me.LPers.Size = New System.Drawing.Size(25, 13)
-        Me.LPers.TabIndex = 9
-        Me.LPers.Text = "123"
-        '
-        'Label6
-        '
-        Me.Label6.AutoSize = True
-        Me.Label6.BackColor = System.Drawing.Color.Transparent
-        Me.Label6.Location = New System.Drawing.Point(6, 16)
-        Me.Label6.Name = "Label6"
-        Me.Label6.Size = New System.Drawing.Size(133, 13)
-        Me.Label6.TabIndex = 1
-        Me.Label6.Text = "რეაგირებას მოითხოვს:"
-        '
-        'Label7
-        '
-        Me.Label7.AutoSize = True
-        Me.Label7.BackColor = System.Drawing.Color.Transparent
-        Me.Label7.Location = New System.Drawing.Point(6, 29)
-        Me.Label7.Name = "Label7"
-        Me.Label7.Size = New System.Drawing.Size(148, 13)
-        Me.Label7.TabIndex = 2
-        Me.Label7.Text = "მათ შორის დღევანდელი:"
-        '
-        'LNeedReactionToday
-        '
-        Me.LNeedReactionToday.AutoSize = True
-        Me.LNeedReactionToday.BackColor = System.Drawing.Color.Transparent
-        Me.LNeedReactionToday.Location = New System.Drawing.Point(199, 29)
-        Me.LNeedReactionToday.Name = "LNeedReactionToday"
-        Me.LNeedReactionToday.Size = New System.Drawing.Size(25, 13)
-        Me.LNeedReactionToday.TabIndex = 11
-        Me.LNeedReactionToday.Text = "123"
-        '
-        'LNeerReaction
-        '
-        Me.LNeerReaction.AutoSize = True
-        Me.LNeerReaction.BackColor = System.Drawing.Color.Transparent
-        Me.LNeerReaction.Location = New System.Drawing.Point(199, 16)
-        Me.LNeerReaction.Name = "LNeerReaction"
-        Me.LNeerReaction.Size = New System.Drawing.Size(25, 13)
-        Me.LNeerReaction.TabIndex = 10
-        Me.LNeerReaction.Text = "123"
         '
         'UC_Home
         '
