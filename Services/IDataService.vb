@@ -74,6 +74,11 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         ''' <returns>ვადაგადაცილებული სესიების მოდელების სია</returns>
         Function GetOverdueSessions() As List(Of Models.SessionModel)
+        ''' <summary>
+        ''' წამოიღებს ყველა სესიას
+        ''' </summary>
+        ''' <returns>სესიების მოდელების სია</returns>
+        Function GetAllSessions() As List(Of Models.SessionModel)
     End Interface
 
 End Namespace

@@ -484,19 +484,22 @@ Public Class UC_Home
             ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
             CardsPerPage = cardsPerRow * rowsPerPage
 
+            ' მოვძებნოთ ვადაგადაცილებული სესიები
+            Dim overdueSessions = AllSessions.Where(Function(s) s.IsOverdue).ToList()
+
             ' საერთო გვერდების რაოდენობა
-            TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
+            TotalPages = Math.Max(1, Math.Ceiling(overdueSessions.Count / CDbl(CardsPerPage)))
 
             Debug.WriteLine($"CalculateCardsPerPage: GBRedTasks.Size={GBRedTasks.Size}")
             Debug.WriteLine($"CalculateCardsPerPage: availableWidth={availableWidth}, availableHeight={availableHeight}")
             Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}")
             Debug.WriteLine($"CalculateCardsPerPage: CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
-            Debug.WriteLine($"CalculateCardsPerPage: AllSessions.Count={AllSessions.Count}")
+            Debug.WriteLine($"CalculateCardsPerPage: overdueSessions.Count={overdueSessions.Count}")
 
         Catch ex As Exception
             Debug.WriteLine($"CalculateCardsPerPage: შეცდომა - {ex.Message}")
             CardsPerPage = 8 ' ნაგულისხმები მნიშვნელობა
-            TotalPages = Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage))
+            TotalPages = Math.Ceiling(AllSessions.Where(Function(s) s.IsOverdue).Count() / CDbl(CardsPerPage))
         End Try
     End Sub
 
@@ -519,10 +522,18 @@ Public Class UC_Home
             Return
         End If
 
-        ' პაგინაციის კონტროლების დამატება
-        'GBRedTasks.Controls.Add(BtnPrev)
-        'GBRedTasks.Controls.Add(LPage)
-        'GBRedTasks.Controls.Add(BtnNext)
+        ' მოვძებნოთ ვადაგადაცილებული სესიები
+        Dim overdueSessions = AllSessions.Where(Function(s) s.IsOverdue).ToList()
+
+        If overdueSessions.Count = 0 Then
+            Dim lblNoSessions As New Label()
+            lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
+            lblNoSessions.AutoSize = True
+            lblNoSessions.Location = New Point(10, 20)
+            GBRedTasks.Controls.Add(lblNoSessions)
+            Debug.WriteLine("ShowCurrentPageCards: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
+            Return
+        End If
 
         ' ბარათის ზომები და დაშორებები - დავაბრუნეთ ორიგინალური ზომები
         Const CARD_WIDTH As Integer = 250
@@ -542,11 +553,11 @@ Public Class UC_Home
 
         ' გვერდზე ბარათების დიაპაზონი
         Dim startIndex As Integer = CurrentPage * CardsPerPage
-        Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, AllSessions.Count - 1)
+        Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, overdueSessions.Count - 1)
 
         Debug.WriteLine($"ShowCurrentPageCards: გვერდი {CurrentPage + 1}/{TotalPages}, " &
-                $"დიაპაზონი: {startIndex}-{endIndex}, " &
-                $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
+            $"დიაპაზონი: {startIndex}-{endIndex}, " &
+            $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
 
         ' ვადაგადაცილებული სესიების ბარათები
         Dim xPos As Integer = CARD_MARGIN
@@ -554,7 +565,7 @@ Public Class UC_Home
         Dim cardCount As Integer = 0
 
         For i As Integer = startIndex To endIndex
-            Dim session = AllSessions(i)
+            Dim session = overdueSessions(i)
 
             ' დებაგინფო სესიის შესახებ
             'Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
@@ -875,6 +886,79 @@ Public Class UC_Home
         ' აქ იქნება სესიის რედაქტირების ლოგიკა
         MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
         ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
+    End Sub
+    ''' <summary>
+    ''' ინიციალიზაციას უკეთებს ყველა სესიას და ვადაგადაცილებულ სესიებს
+    ''' </summary>
+    Public Sub InitializeSessions(allSessions As List(Of SessionModel), overdueSessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
+        Try
+            Debug.WriteLine($"UC_Home.InitializeSessions: დაიწყო, ყველა სესიის რაოდენობა: {allSessions.Count}, ვადაგადაცილებულების რაოდენობა: {overdueSessions.Count}")
+
+            ' შევინახოთ მომხმარებლის მდგომარეობა
+            IsAuthorizedUser = isAuthorized
+            UserRoleValue = userRole
+
+            ' შევინახოთ ყველა სესია
+            Me.AllSessions = New List(Of SessionModel)()
+            For Each session In allSessions
+                Me.AllSessions.Add(session)
+            Next
+
+            ' განვაახლოთ დღევანდელი სტატისტიკა
+            UpdateTodayStatistics()
+
+            ' მნიშვნელოვანი: განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები
+            Dim allOverdueSessions As Integer = overdueSessions.Count
+
+            ' დღევანდელი ვადაგადაცილებული სესიები
+            Dim today As DateTime = DateTime.Today
+            Dim todayOverdueSessions As Integer = 0
+
+            For Each session In overdueSessions
+                If session.DateTime.Date = today Then
+                    todayOverdueSessions += 1
+                End If
+            Next
+
+            ' განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები
+            LNeerReaction.Text = allOverdueSessions.ToString()
+            LNeedReactionToday.Text = todayOverdueSessions.ToString()
+            Debug.WriteLine($"UC_Home.InitializeSessions: ვადაგადაცილებული სტატისტიკა განახლდა - სულ: {allOverdueSessions}, დღევანდელი: {todayOverdueSessions}")
+
+            ' თუ ვადაგადაცილებული სესიები არ არის, დავამატოთ შეტყობინება
+            If overdueSessions.Count = 0 Then
+                ' გასუფთავება ძველი ბარათებისგან
+                GBRedTasks.Controls.Clear()
+                Dim lblNoSessions As New Label()
+                lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
+                lblNoSessions.AutoSize = True
+                lblNoSessions.Location = New Point(10, 20)
+                GBRedTasks.Controls.Add(lblNoSessions)
+
+                ' პაგინაციის კონტროლები გამოვრთოთ
+                BtnPrev.Enabled = False
+                BtnNext.Enabled = False
+                LPage.Text = ""
+                Debug.WriteLine("UC_Home.InitializeSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
+                Return
+            End If
+
+            ' დავადგინოთ რამდენი ბარათი ეტევა თითო გვერდზე
+            CalculateCardsPerPage()
+
+            ' დავრწმუნდეთ რომ მიმდინარე გვერდი ვალიდურია
+            CurrentPage = Math.Min(CurrentPage, Math.Max(0, TotalPages - 1))
+
+            ' ვაჩვენოთ ვადაგადაცილებული სესიების ბარათები
+            ShowCurrentPageCards()
+
+            ' განვაახლოთ პაგინაციის კონტროლები
+            UpdatePaginationControls()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Home.InitializeSessions: შეცდომა - {ex.Message}")
+            MessageBox.Show($"შეცდომა სესიების ინიციალიზაციისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>

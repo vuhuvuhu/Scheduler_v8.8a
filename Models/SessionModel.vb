@@ -381,26 +381,20 @@ Namespace Scheduler_v8_8a.Models
         ''' </summary>
         Public ReadOnly Property IsOverdue As Boolean
             Get
-                ' მიმდინარე თარიღი - მხოლოდ თარიღის კომპონენტი (დრო 00:00)
-                Dim currentDate = DateTime.Today
-
-                ' სესიის თარიღი (მხოლოდ თარიღის ნაწილი, დროის გარეშე)
-                Dim sessionDate = Me.DateTime.Date
-
                 ' სტატუსის შემოწმება - მხოლოდ "დაგეგმილი" სტატუსისთვის
                 Dim normalizedStatus = Me.Status.Trim().ToLower()
                 Dim isPlanned = (normalizedStatus = "დაგეგმილი" OrElse normalizedStatus = "დაგეგმილი ")
 
-                ' შევადაროთ თარიღები - სესია უნდა იყოს წარსულში
-                Dim isPastDue = sessionDate < currentDate
+                ' შევადაროთ სრული თარიღები დროსთან ერთად - სესია უნდა იყოს წარსულში
+                Dim isPastDue = Me.DateTime < DateTime.Now
 
                 ' ვადაგადაცილებულია, თუ:
                 ' 1. სტატუსი არის "დაგეგმილი" და
-                ' 2. სესიის თარიღი უკვე გასულია
+                ' 2. სესიის დრო უკვე გასულია
                 Dim result = isPlanned AndAlso isPastDue
 
                 'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}' (ნორმალიზებული='{normalizedStatus}'), isPlanned={isPlanned}")
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={sessionDate:dd.MM.yyyy}, დღეს={currentDate:dd.MM.yyyy}, isPastDue={isPastDue}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={Me.DateTime:dd.MM.yyyy HH:mm}, დღეს={DateTime.Now:dd.MM.yyyy HH:mm}, isPastDue={isPastDue}")
                 'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
 
                 Return result

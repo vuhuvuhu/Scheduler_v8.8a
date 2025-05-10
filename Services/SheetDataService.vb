@@ -421,5 +421,30 @@ Namespace Scheduler_v8_8a.Services
 
             Return overdueSessions
         End Function
+        ''' <summary>
+        ''' წამოიღებს ყველა სესიას
+        ''' </summary>
+        Public Function GetAllSessions() As List(Of Models.SessionModel) Implements IDataService.GetAllSessions
+            Dim allSessions As New List(Of Models.SessionModel)()
+            Dim rows = GetData(sessionsRange)
+
+            If rows IsNot Nothing Then
+                For Each row In rows
+                    Try
+                        ' მინიმუმ 12 სვეტი გვჭირდება (სტატუსის ჩათვლით)
+                        If row.Count < 12 Then Continue For
+
+                        ' სესიის ობიექტის შექმნა
+                        Dim session = SessionModel.FromSheetRow(row)
+                        allSessions.Add(session)
+                    Catch ex As Exception
+                        ' ვაგრძელებთ შემდეგი მწკრივით
+                        Continue For
+                    End Try
+                Next
+            End If
+
+            Return allSessions
+        End Function
     End Class
 End Namespace
