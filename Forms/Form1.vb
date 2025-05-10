@@ -45,6 +45,11 @@ Public Class Form1
 
         ' მენიუს მენეჯერის ინიციალიზაცია
         menuMgr = New MenuManager(mainMenu)
+        ' UC_Home-ის შექმნისას SheetDataService-ის მიბმა
+        homeControl = New UC_Home(homeViewModel)
+        homeControl.Dock = DockStyle.Fill
+        homeControl.SetDataService(dataService) ' ახალი ხაზი
+        pnlMain.Controls.Add(homeControl)
     End Sub
 
     ''' <summary>

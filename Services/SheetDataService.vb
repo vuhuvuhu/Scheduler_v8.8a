@@ -1,7 +1,8 @@
 ﻿' ===========================================
 ' 📄 Services/SheetDataService.vb
 ' -------------------------------------------
-' შეცვლილი კლასი, რომელიც იყენებს GoogleServiceAccountClient-ს
+' გაუმჯობესებული ვერსია, რომელიც უზრუნველყოფს მონაცემების ქეშირებას
+' და API-ს გამოძახებების რაოდენობის კონტროლს
 ' ===========================================
 Imports Google.Apis.Auth.OAuth2
 Imports Google.Apis.Sheets.v4
@@ -11,17 +12,38 @@ Namespace Scheduler_v8_8a.Services
 
     ''' <summary>
     ''' SheetDataService - მონაცემთა წაკითხვა და ჩაწერა სერვის აკაუნტის გამოყენებით
+    ''' API-ს მოთხოვნების რაოდენობის შეზღუდვით და მონაცემების ქეშირებით
     ''' </summary>
     Public Class SheetDataService
         Implements IDataService
 
         Private ReadOnly serviceClient As GoogleServiceAccountClient
+
+        ' მუდმივები ხშირად გამოყენებული დიაპაზონებისთვის
         Private Const usersRange As String = "DB-Users!B2:C"
         Private Const appendRange As String = "DB-Users!B:C"
         Private Const defaultRole As String = "6"
         Private Const sessionsRange As String = "DB-Schedule!A2:O"
         Private Const birthdaysRange As String = "DB-Personal!B2:G"
         Private Const tasksRange As String = "DB-Tasks!B2:M"
+
+        ' ქეშირების ცვლადები
+        Private cachedTodaySessions As List(Of SessionModel) = Nothing
+        Private cachedSessionsTime As DateTime = DateTime.MinValue
+        Private cachedOverdueSessions As List(Of SessionModel) = Nothing
+        Private cachedOverdueTime As DateTime = DateTime.MinValue
+        Private cachedPendingSessions As List(Of SessionModel) = Nothing
+        Private cachedPendingTime As DateTime = DateTime.MinValue
+        Private cachedBirthdays As List(Of BirthdayModel) = Nothing
+        Private cachedBirthdaysTime As DateTime = DateTime.MinValue
+
+        ' მოთხოვნების შეზღუდვის პარამეტრები - ქეშის ვადა წუთებში
+        Private Const CacheExpirationMinutes As Integer = 5
+
+        ' უკანასკნელი API მოთხოვნის დრო
+        Private lastApiCallTime As DateTime = DateTime.MinValue
+        ' მინიმალური დრო API მოთხოვნებს შორის (მილიწამებში)
+        Private Const MinApiCallIntervalMs As Integer = 1000
 
         ''' <summary>
         ''' კონსტრუქტორი: შექმნის სერვის კლიენტს
@@ -39,9 +61,35 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' მონაცემების მიღება მითითებული დიაპაზონიდან
+        ''' შეამოწმებს საჭიროა თუ არა ქეშის განახლება
+        ''' </summary>
+        ''' <param name="cachedTime">ქეშის შენახვის დრო</param>
+        ''' <returns>True თუ ქეშის განახლება საჭიროა</returns>
+        Private Function IsCacheExpired(cachedTime As DateTime) As Boolean
+            Return DateTime.Now.Subtract(cachedTime).TotalMinutes >= CacheExpirationMinutes
+        End Function
+
+        ''' <summary>
+        ''' API-ს მოთხოვნების შეზღუდვა გარკვეული ინტერვალით
+        ''' </summary>
+        Private Sub ThrottleApiCall()
+            Dim timeSinceLastCall = DateTime.Now.Subtract(lastApiCallTime).TotalMilliseconds
+
+            ' თუ ბოლო მოთხოვნიდან საკმარისი დრო არ გასულა, დაველოდოთ
+            If timeSinceLastCall < MinApiCallIntervalMs Then
+                Dim waitTime = CInt(MinApiCallIntervalMs - timeSinceLastCall)
+                System.Threading.Thread.Sleep(waitTime)
+            End If
+
+            ' განვაახლოთ API მოთხოვნის დრო
+            lastApiCallTime = DateTime.Now
+        End Sub
+
+        ''' <summary>
+        ''' მონაცემების მიღება მითითებული დიაპაზონიდან შეზღუდვის გათვალისწინებით
         ''' </summary>
         Public Function GetData(range As String) As IList(Of IList(Of Object)) Implements IDataService.GetData
+            ThrottleApiCall()
             Return serviceClient.ReadRange(range)
         End Function
 
@@ -49,14 +97,55 @@ Namespace Scheduler_v8_8a.Services
         ''' მონაცემების დამატება მითითებულ დიაპაზონში
         ''' </summary>
         Public Sub AppendData(range As String, values As IList(Of Object)) Implements IDataService.AppendData
+            ThrottleApiCall()
             serviceClient.AppendValues(range, values)
+
+            ' ქეშის გაუქმება შესაბამისი დიაპაზონისთვის
+            InvalidateCacheForRange(range)
         End Sub
 
         ''' <summary>
         ''' მონაცემების განახლება მითითებულ დიაპაზონში
         ''' </summary>
         Public Sub UpdateData(range As String, values As IList(Of Object)) Implements IDataService.UpdateData
+            ThrottleApiCall()
             serviceClient.UpdateValues(range, values)
+
+            ' ქეშის გაუქმება შესაბამისი დიაპაზონისთვის
+            InvalidateCacheForRange(range)
+        End Sub
+
+        ''' <summary>
+        ''' ქეშის გაუქმება კონკრეტული დიაპაზონისთვის
+        ''' </summary>
+        Private Sub InvalidateCacheForRange(range As String)
+            If range.Contains("DB-Schedule") Then
+                cachedTodaySessions = Nothing
+                cachedSessionsTime = DateTime.MinValue
+                cachedOverdueSessions = Nothing
+                cachedOverdueTime = DateTime.MinValue
+                cachedPendingSessions = Nothing
+                cachedPendingTime = DateTime.MinValue
+            ElseIf range.Contains("DB-Personal") Then
+                cachedBirthdays = Nothing
+                cachedBirthdaysTime = DateTime.MinValue
+            End If
+        End Sub
+
+        ''' <summary>
+        ''' მთლიანი ქეშის გაუქმება - განახლების ღილაკისთვის 
+        ''' </summary>
+        Public Sub InvalidateAllCache()
+            cachedTodaySessions = Nothing
+            cachedSessionsTime = DateTime.MinValue
+            cachedOverdueSessions = Nothing
+            cachedOverdueTime = DateTime.MinValue
+            cachedPendingSessions = Nothing
+            cachedPendingTime = DateTime.MinValue
+            cachedBirthdays = Nothing
+            cachedBirthdaysTime = DateTime.MinValue
+
+            Debug.WriteLine("SheetDataService: მთლიანი ქეში გაუქმებულია (ხელით განახლება)")
         End Sub
 
         ''' <summary>
@@ -94,9 +183,63 @@ Namespace Scheduler_v8_8a.Services
         End Function
 
         ''' <summary>
-        ''' წამოიღებს მოახლოებულ დაბადების დღეებს
+        ''' დღევანდელი სესიების მიღება ქეშირებით
+        ''' </summary>
+        Public Function GetTodaySessions() As List(Of Models.SessionModel) Implements IDataService.GetTodaySessions
+            ' თუ ქეში ვალიდურია, გამოვიყენოთ ის
+            If cachedTodaySessions IsNot Nothing AndAlso Not IsCacheExpired(cachedSessionsTime) Then
+                Debug.WriteLine("GetTodaySessions: გამოყენებულია ქეშირებული მონაცემები")
+                Return cachedTodaySessions
+            End If
+
+            Try
+                Dim sessions As New List(Of Models.SessionModel)()
+                Dim rows = GetData(sessionsRange)
+
+                ' მიმდინარე თარიღი - მხოლოდ თარიღის კომპონენტი (დრო 00:00)
+                Dim today = DateTime.Today
+
+                If rows IsNot Nothing Then
+                    For Each row As IList(Of Object) In rows
+                        Try
+                            ' შევქმნათ სესიის ობიექტი
+                            Dim session = SessionModel.FromSheetRow(row)
+
+                            ' შევამოწმოთ არის თუ არა დღევანდელი
+                            If session.DateTime.Date = today Then
+                                sessions.Add(session)
+                            End If
+
+                        Catch ex As Exception
+                            ' ცარიელი ან არასწორი მწკრივის შემთხვევაში გავაგრძელოთ
+                            Continue For
+                        End Try
+                    Next
+                End If
+
+                ' ქეშის განახლება
+                cachedTodaySessions = sessions
+                cachedSessionsTime = DateTime.Now
+
+                Debug.WriteLine($"GetTodaySessions: ნაპოვნია {sessions.Count} დღევანდელი სესია")
+                Return sessions
+
+            Catch ex As Exception
+                Debug.WriteLine($"GetTodaySessions: შეცდომა - {ex.Message}")
+                Return New List(Of Models.SessionModel)()
+            End Try
+        End Function
+
+        ''' <summary>
+        ''' წამოიღებს მოახლოებულ დაბადების დღეებს ქეშირებით
         ''' </summary>
         Public Function GetUpcomingBirthdays(Optional days As Integer = 7) As List(Of Models.BirthdayModel) Implements IDataService.GetUpcomingBirthdays
+            ' თუ ქეში ვალიდურია, გამოვიყენოთ ის
+            If cachedBirthdays IsNot Nothing AndAlso Not IsCacheExpired(cachedBirthdaysTime) Then
+                Debug.WriteLine("GetUpcomingBirthdays: გამოყენებულია ქეშირებული მონაცემები")
+                Return cachedBirthdays.Where(Function(b) b.DaysUntilBirthday <= days).ToList()
+            End If
+
             Try
                 Dim birthdays As New List(Of Models.BirthdayModel)()
                 Dim rows = GetData("DB-Personal!B2:E") ' B-დან E-მდე სვეტები - სახელი, გვარი, ტელეფონი, დაბადების თარიღი
@@ -144,29 +287,20 @@ Namespace Scheduler_v8_8a.Services
                                         birthDate = New DateTime(today.Year, birthDate.Month, birthDate.Day)
                                     End If
 
-                                    ' შემდეგი დაბადების დღის გამოთვლა
-                                    Dim nextBirthday As DateTime = New DateTime(today.Year, birthDate.Month, birthDate.Day)
+                                    ' შევქმნათ დაბადების დღის მოდელი
+                                    Dim birthday As New BirthdayModel()
+                                    birthday.Id = i + 1
+                                    birthday.PersonName = firstName
+                                    birthday.PersonSurname = lastName
+                                    birthday.BirthDate = birthDate
 
-                                    ' თუ დაბადების დღე უკვე გავიდა წელს, გადავიდეთ მომავალ წელზე
-                                    If nextBirthday < today Then
-                                        nextBirthday = nextBirthday.AddYears(1)
-                                    End If
+                                    ' დავამატოთ ყველა დაბადების თარიღი, ქეშისთვის
+                                    birthdays.Add(birthday)
 
-                                    ' დარჩენილი დღეების რაოდენობა
-                                    Dim daysLeft = (nextBirthday - today).Days
+                                    Debug.WriteLine($"GetUpcomingBirthdays: დაემატა დაბადების დღე - ID={birthday.Id}, " &
+                                             $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
+                                             $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩა={birthday.DaysUntilBirthday} დღე")
 
-                                    ' დავამატოთ სიაში, თუ დარჩა 7 დღე ან ნაკლები
-                                    If daysLeft <= days Then
-                                        Dim birthday As New BirthdayModel()
-                                        birthday.Id = i + 1
-                                        birthday.PersonName = firstName
-                                        birthday.PersonSurname = lastName
-                                        birthday.BirthDate = birthDate
-
-                                        birthdays.Add(birthday)
-                                        Debug.WriteLine($"GetUpcomingBirthdays: დაემატა დაბადების დღე - {firstName} {lastName}, " &
-                                             $"თარიღი={birthDate:dd.MM.yyyy}, დარჩენილია {daysLeft} დღე")
-                                    End If
                                 Else
                                     Debug.WriteLine($"GetUpcomingBirthdays: ვერ მოხერხდა დაბადების თარიღის '{birthDateStr}' პარსინგი")
                                 End If
@@ -180,8 +314,15 @@ Namespace Scheduler_v8_8a.Services
                 ' დავალაგოთ დაბადების დღეები დღეების რაოდენობის მიხედვით
                 birthdays = birthdays.OrderBy(Function(b) b.DaysUntilBirthday).ToList()
 
-                Debug.WriteLine($"GetUpcomingBirthdays: საბოლოოდ ნაპოვნია {birthdays.Count} დაბადების დღე")
-                Return birthdays
+                ' შევინახოთ ქეშში
+                cachedBirthdays = birthdays
+                cachedBirthdaysTime = DateTime.Now
+
+                ' დავაბრუნოთ მხოლოდ ის დაბადების დღეები, რომლებიც მოთხოვნილ დღეებში ჯდება
+                Dim filteredBirthdays = birthdays.Where(Function(b) b.DaysUntilBirthday <= days).ToList()
+
+                Debug.WriteLine($"GetUpcomingBirthdays: საბოლოოდ ნაპოვნია {filteredBirthdays.Count} დაბადების დღე")
+                Return filteredBirthdays
 
             Catch ex As Exception
                 Debug.WriteLine($"GetUpcomingBirthdays: საერთო შეცდომა: {ex.Message}")
@@ -190,9 +331,15 @@ Namespace Scheduler_v8_8a.Services
         End Function
 
         ''' <summary>
-        ''' წამოიღებს მოლოდინში არსებულ სესიებს
+        ''' წამოიღებს მოლოდინში არსებულ სესიებს ქეშირებით
         ''' </summary>
         Public Function GetPendingSessions() As List(Of Models.SessionModel) Implements IDataService.GetPendingSessions
+            ' თუ ქეში ვალიდურია, გამოვიყენოთ ის
+            If cachedPendingSessions IsNot Nothing AndAlso Not IsCacheExpired(cachedPendingTime) Then
+                Debug.WriteLine("GetPendingSessions: გამოყენებულია ქეშირებული მონაცემები")
+                Return cachedPendingSessions
+            End If
+
             Dim sessions As New List(Of Models.SessionModel)()
             Dim rows = GetData(sessionsRange)
 
@@ -217,6 +364,10 @@ Namespace Scheduler_v8_8a.Services
             ' დავალაგოთ სესიები თარიღის მიხედვით
             sessions = sessions.OrderBy(Function(s) s.DateTime).ToList()
 
+            ' შევინახოთ ქეშში
+            cachedPendingSessions = sessions
+            cachedPendingTime = DateTime.Now
+
             Return sessions
         End Function
 
@@ -229,9 +380,15 @@ Namespace Scheduler_v8_8a.Services
         End Function
 
         ''' <summary>
-        ''' წამოიღებს ვადაგადაცილებულ სესიებს
+        ''' წამოიღებს ვადაგადაცილებულ სესიებს ქეშირებით
         ''' </summary>
         Public Function GetOverdueSessions() As List(Of Models.SessionModel) Implements IDataService.GetOverdueSessions
+            ' თუ ქეში ვალიდურია, გამოვიყენოთ ის
+            If cachedOverdueSessions IsNot Nothing AndAlso Not IsCacheExpired(cachedOverdueTime) Then
+                Debug.WriteLine("GetOverdueSessions: გამოყენებულია ქეშირებული მონაცემები")
+                Return cachedOverdueSessions
+            End If
+
             Dim overdueSessions As New List(Of Models.SessionModel)()
             Dim rows = GetData(sessionsRange)
 
@@ -258,39 +415,11 @@ Namespace Scheduler_v8_8a.Services
             ' დავალაგოთ თარიღის მიხედვით
             overdueSessions = overdueSessions.OrderBy(Function(s) s.DateTime).ToList()
 
+            ' შევინახოთ ქეშში
+            cachedOverdueSessions = overdueSessions
+            cachedOverdueTime = DateTime.Now
+
             Return overdueSessions
         End Function
-        ''' <summary>
-        ''' წამოიღებს დღევანდელი სესიების სიას
-        ''' </summary>
-        Public Function GetTodaySessions() As List(Of Models.SessionModel) Implements IDataService.GetTodaySessions
-            Dim todaySessions As New List(Of Models.SessionModel)()
-            Dim rows = GetData(sessionsRange)
-            Dim today As DateTime = DateTime.Today
-
-            If rows IsNot Nothing Then
-                For Each row In rows
-                    Try
-                        ' მინიმუმ 6 სვეტი გვჭირდება
-                        If row.Count < 6 Then Continue For
-
-                        ' სესიის ობიექტის შექმნა
-                        Dim session = Models.SessionModel.FromSheetRow(row)
-
-                        ' ვფილტრავთ მხოლოდ დღევანდელი სესიებით
-                        If session.DateTime.Date = today Then
-                            todaySessions.Add(session)
-                        End If
-                    Catch ex As Exception
-                        ' გავაგრძელოთ შემდეგი ჩანაწერით
-                        Continue For
-                    End Try
-                Next
-            End If
-
-            Debug.WriteLine($"SheetDataService.GetTodaySessions: ნაპოვნია {todaySessions.Count} დღევანდელი სესია")
-            Return todaySessions
-        End Function
     End Class
-
 End Namespace

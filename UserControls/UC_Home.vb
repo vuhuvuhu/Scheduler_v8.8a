@@ -32,11 +32,19 @@ Public Class UC_Home
     ''' </summary>
     ''' <param name="homeVm">HomeViewModel ობიექტი</param>
     Public Sub New(homeVm As HomeViewModel)
-        ' ViewModel-ის შენახვა
-        viewModel = homeVm
-
         ' UI ელემენტების ინიციალიზაცია
         InitializeComponent()
+
+        ' ViewModel შემოწმება - თუ null-ია, შევქმნათ ახალი
+        If homeVm IsNot Nothing Then
+            viewModel = homeVm
+        Else
+            ' homeVm არის null, შევქმნათ ახალი ინსტანცია
+            viewModel = New HomeViewModel()
+            Debug.WriteLine("UC_Home: გადმოცემული viewModel არის null, შეიქმნა ახალი ინსტანცია")
+        End If
+
+        ' UI კომპონენტების ინიციალიზაცია
         GBTools.Visible = False
         GBTools.Enabled = False
 
@@ -53,9 +61,8 @@ Public Class UC_Home
         GB_Today.BackColor = Color.FromArgb(200, Color.White)
         GBActiveTasks.BackColor = Color.FromArgb(200, Color.White)
         GBBD.BackColor = Color.FromArgb(200, Color.White)
+
         ' პაგინაციის ღილაკების მომზადება
-
-
         BtnPrev.Enabled = False  ' საწყის მდგომარეობაში უკან ღილაკი გამორთულია
         LPage.Text = ""
 
@@ -95,17 +102,17 @@ Public Class UC_Home
     End Sub
 
     ''' <summary>
-    ''' Timer-ის მოვლენის დამმუშავებელი - ანახლებს დროს
+    ''' Timer-ის მოვლენის უმარტივესი დამმუშავებელი - მხოლოდ საათის განახლება
     ''' </summary>
     Private Sub Timer1_Tick(sender As Object, e As EventArgs)
         Try
-            ' ViewModel-ში დროის განახლება - დავრწმუნდეთ რომ ar ხდება Exception-ი
-            viewModel.UpdateTime()
+            ' უბრალოდ მიმდინარე დროის ჩვენება
+            Dim now = DateTime.Now
+            LTime.Text = now.ToString("HH:mm:ss")
 
-            ' UI ელემენტების განახლება ViewModels-დან
-            UpdateTimeDisplay()
+            ' გამოვაჩინოთ დებაგ შეტყობინება დროის განახლების შესახებ
+            'Debug.WriteLine($"Timer1_Tick: დრო განახლდა - {now.ToString("HH:mm:ss")}")
         Catch ex As Exception
-            ' შეცდომის დამუშავება - შესაძლოა Timer გამოვრთოთ თუ მუდმივად არის შეცდომა
             Debug.WriteLine($"Timer1_Tick შეცდომა: {ex.Message}")
         End Try
     End Sub
@@ -114,15 +121,24 @@ Public Class UC_Home
     ''' UI ელემენტების მიბმა ViewModel-ზე
     ''' </summary>
     Private Sub BindToViewModel()
-        ' მიბმა ViewModel-ის PropertyChanged ივენთზე
-        AddHandler viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
+        ' დავრწმუნდეთ, რომ viewModel არ არის null
+        If viewModel IsNot Nothing Then
+            ' მიბმა ViewModel-ის PropertyChanged ივენთზე
+            AddHandler viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
 
-        ' მისალმების დაყენება
-        LUserName.Text = viewModel.UserName
-        LWish.Text = viewModel.Greeting
+            ' მისალმების დაყენება
+            LUserName.Text = viewModel.UserName
+            LWish.Text = viewModel.Greeting
 
-        ' დროის დაყენება
-        UpdateTimeDisplay()
+            ' დროის დაყენება
+            UpdateTimeDisplay()
+        Else
+            Debug.WriteLine("BindToViewModel: viewModel არის null, ვერ ხერხდება დაბაინდვა")
+
+            ' დავაყენოთ საწყისი მნიშვნელობები
+            LUserName.Text = "მომხმარებელო"
+            LWish.Text = "დილა მშვიდობისა"
+        End If
     End Sub
     ''' <summary>
     ''' მიუთითებს მონაცემთა სერვისს
@@ -378,7 +394,18 @@ Public Class UC_Home
     ''' Refresh ღილაკის Click ივენთის დამმუშავებელი
     ''' </summary>
     Private Sub BtnRefresh_Click(sender As Object, e As EventArgs) Handles BtnRefresh.Click
-        ' მონაცემების ხელახლა ჩატვირთვა
+        Debug.WriteLine("BtnRefresh_Click: განახლების მოთხოვნა მიღებულია")
+
+        ' გაუქმება ყველა ქეშის, თუ შესაძლებელია
+        If dataService IsNot Nothing AndAlso TypeOf dataService Is SheetDataService Then
+            Try
+                DirectCast(dataService, SheetDataService).InvalidateAllCache()
+            Catch ex As Exception
+                Debug.WriteLine($"BtnRefresh_Click: შეცდომა ქეშის გაუქმებისას - {ex.Message}")
+            End Try
+        End If
+
+        ' მონაცემების ჩატვირთვა
         LoadData()
     End Sub
 
