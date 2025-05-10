@@ -5,7 +5,7 @@
 ' ===========================================
 Imports System.Windows.Forms
 Imports System.Drawing
-Imports Scheduler_v8_8a.Models
+'Imports Scheduler_v8_8a.Models
 Imports System.Globalization
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
@@ -25,7 +25,8 @@ Public Class UC_Home
     Private AllSessions As List(Of SessionModel) = New List(Of SessionModel)
     Private IsAuthorizedUser As Boolean = False
     Private UserRoleValue As String = ""
-
+    ' მონაცემთა სერვისი
+    Private dataService As Scheduler_v8_8a.Services.IDataService = Nothing
     ''' <summary>
     ''' კონსტრუქტორი: იღებს HomeViewModel-ს Data Binding-ისთვის
     ''' </summary>
@@ -123,7 +124,14 @@ Public Class UC_Home
         ' დროის დაყენება
         UpdateTimeDisplay()
     End Sub
-
+    ''' <summary>
+    ''' მიუთითებს მონაცემთა სერვისს
+    ''' </summary>
+    ''' <param name="service">მონაცემთა სერვისი</param>
+    Public Sub SetDataService(service As Scheduler_v8_8a.Services.IDataService)
+        dataService = service
+        Debug.WriteLine("UC_Home.SetDataService: მითითებულია მონაცემთა სერვისი")
+    End Sub
     ''' <summary>
     ''' დროის ჩვენების განახლება ViewModel-დან
     ''' </summary>
@@ -141,36 +149,26 @@ Public Class UC_Home
             End If
         End If
     End Sub
-    ''' <summary>
-    ''' განაახლებს დღევანდელი სესიების სტატისტიკის ლეიბლებს
-    ''' </summary>
+    ' UC_Home.vb, UpdateTodayStatistics მეთოდი
     Private Sub UpdateTodayStatistics()
         Try
-            ' შევამოწმოთ, არის თუ არა მონაცემები ხელმისაწვდომი
-            If AllSessions Is Nothing Then
-                'Debug.WriteLine("UpdateTodayStatistics: AllSessions არის Nothing")
+            ' შევამოწმოთ, არის თუ არა dataService ხელმისაწვდომი
+            If dataService Is Nothing Then
+                Debug.WriteLine("UpdateTodayStatistics: dataService არის Nothing, შეუძლებელია სტატისტიკის განახლება")
                 Return
             End If
 
-            ' მიმდინარე თარიღი თარიღის კომპონენტით (დრო 00:00)
-            Dim today As DateTime = DateTime.Today
+            ' პირდაპირ წამოვიღოთ დღევანდელი სესიები სერვისიდან 
+            Dim todaySessions = dataService.GetTodaySessions()
 
-            ' გავფილტროთ მხოლოდ დღევანდელი სესიები
-            Dim todaySessions As New List(Of SessionModel)
-            For Each session As SessionModel In AllSessions
-                If session.DateTime.Date = today Then
-                    todaySessions.Add(session)
-                End If
-            Next
+            Debug.WriteLine($"UpdateTodayStatistics: ნაპოვნია {todaySessions.Count} დღევანდელი სესია")
 
-            'Debug.WriteLine("UpdateTodayStatistics: ნაპოვნია " & todaySessions.Count & " დღევანდელი სესია")
-
-            ' დავითვალოთ სტატისტიკა
+            ' სულ დღევანდელი სესიების რაოდენობა
             Dim totalSessions As Integer = todaySessions.Count
 
             ' შესრულებული სესიები (სტატუსით "შესრულებული")
             Dim completedSessions As Integer = 0
-            For Each session As SessionModel In todaySessions
+            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
                 If session.Status.Trim().ToLower() = "შესრულებული" Then
                     completedSessions += 1
                 End If
@@ -178,45 +176,45 @@ Public Class UC_Home
 
             ' დაგეგმილი სესიები (სტატუსით "დაგეგმილი")
             Dim plannedSessions As Integer = 0
-            For Each session As SessionModel In todaySessions
+            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
                 If session.Status.Trim().ToLower() = "დაგეგმილი" Then
                     plannedSessions += 1
                 End If
             Next
 
-            ' უნიკალური ბენეფიციარების რაოდენობა
+            ' უნიკალური ბენეფიციარები
             Dim beneficiarySet As New HashSet(Of String)
-            For Each session As SessionModel In todaySessions
+            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
                 Dim fullName As String = session.BeneficiaryName & " " & session.BeneficiarySurname
                 beneficiarySet.Add(fullName)
             Next
             Dim uniqueBeneficiaries As Integer = beneficiarySet.Count
 
-            ' უნიკალური პერსონალის რაოდენობა (თერაპევტები)
+            ' უნიკალური თერაპევტები
             Dim therapistSet As New HashSet(Of String)
-            For Each session As SessionModel In todaySessions
+            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
                 If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
                     therapistSet.Add(session.TherapistName)
                 End If
             Next
             Dim uniqueTherapists As Integer = therapistSet.Count
 
-            ' განვაახლოთ ლეიბლები - დიზაინის შეუცვლელად
+            ' განვაახლოთ ლეიბლები
             LSe.Text = totalSessions.ToString()
             LDone.Text = completedSessions.ToString()
             LNDone.Text = plannedSessions.ToString()
             LBenes.Text = uniqueBeneficiaries.ToString()
             LPers.Text = uniqueTherapists.ToString()
 
-            'Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
-            '"სულ: " & totalSessions & ", " &
-            '"შესრულებული: " & completedSessions & ", " &
-            '"დაგეგმილი: " & plannedSessions & ", " &
-            '"ბენეფიციარები: " & uniqueBeneficiaries & ", " &
-            '"პერსონალი: " & uniqueTherapists)
+            Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
+                    "სულ: " & totalSessions & ", " &
+                    "შესრულებული: " & completedSessions & ", " &
+                    "დაგეგმილი: " & plannedSessions & ", " &
+                    "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
+                    "პერსონალი: " & uniqueTherapists)
 
         Catch ex As Exception
-            'Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
+            Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
         End Try
     End Sub
     ''' <summary>

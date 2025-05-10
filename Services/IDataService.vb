@@ -46,7 +46,11 @@ Namespace Scheduler_v8_8a.Services
         ''' <param name="email">მომხმარებლის ელ.ფოსტა</param>
         ''' <returns>მომხმარებლის როლი როგორც სტრიქონი</returns>
         Function GetOrCreateUserRole(email As String) As String
-
+        ''' <summary>
+        ''' წამოიღებს ყველა სესიას დღევანდელი სტატისტიკისთვის
+        ''' </summary>
+        ''' <returns>სესიების მოდელების სია</returns>
+        Function GetTodaySessions() As List(Of Models.SessionModel)
         ''' <summary>
         ''' წამოიღებს მოახლოებულ დაბადების დღეებს (X დღეში)
         ''' </summary>

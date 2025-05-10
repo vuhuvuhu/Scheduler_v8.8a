@@ -260,5 +260,37 @@ Namespace Scheduler_v8_8a.Services
 
             Return overdueSessions
         End Function
+        ''' <summary>
+        ''' წამოიღებს დღევანდელი სესიების სიას
+        ''' </summary>
+        Public Function GetTodaySessions() As List(Of Models.SessionModel) Implements IDataService.GetTodaySessions
+            Dim todaySessions As New List(Of Models.SessionModel)()
+            Dim rows = GetData(sessionsRange)
+            Dim today As DateTime = DateTime.Today
+
+            If rows IsNot Nothing Then
+                For Each row In rows
+                    Try
+                        ' მინიმუმ 6 სვეტი გვჭირდება
+                        If row.Count < 6 Then Continue For
+
+                        ' სესიის ობიექტის შექმნა
+                        Dim session = Models.SessionModel.FromSheetRow(row)
+
+                        ' ვფილტრავთ მხოლოდ დღევანდელი სესიებით
+                        If session.DateTime.Date = today Then
+                            todaySessions.Add(session)
+                        End If
+                    Catch ex As Exception
+                        ' გავაგრძელოთ შემდეგი ჩანაწერით
+                        Continue For
+                    End Try
+                Next
+            End If
+
+            Debug.WriteLine($"SheetDataService.GetTodaySessions: ნაპოვნია {todaySessions.Count} დღევანდელი სესია")
+            Return todaySessions
+        End Function
     End Class
+
 End Namespace

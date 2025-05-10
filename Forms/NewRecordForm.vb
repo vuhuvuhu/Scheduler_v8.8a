@@ -7,7 +7,7 @@ Public Class NewRecordForm
     Private ReadOnly dataService As IDataService
     ' ჩანაწერის ტიპი (მაგ: "სესია", "დაბადების დღე", "დავალება")
     Private ReadOnly recordType As String
-
+    Private WithEvents BtnOK As Button
     ' კონსტრუქტორი
     Public Sub New(dataService As IDataService, recordType As String)
         InitializeComponent()

@@ -376,7 +376,7 @@ Namespace Scheduler_v8_8a.Models
 
             Return rowData
         End Function
-        '' <summary>
+        ''' <summary>
         ''' არის თუ არა სესია ვადაგადაცილებული
         ''' </summary>
         Public ReadOnly Property IsOverdue As Boolean

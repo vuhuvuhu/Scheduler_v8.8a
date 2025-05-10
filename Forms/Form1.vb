@@ -332,7 +332,25 @@ Public Class Form1
 
         ' ინსტრუმენტების ხილვადობის განახლება
         SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
+        If homeControl Is Nothing OrElse homeControl.IsDisposed Then
+            Debug.WriteLine("ShowHome: ახალი homeControl-ის შექმნა")
+            homeControl = New UC_Home(homeViewModel)
+            homeControl.Dock = DockStyle.Fill
+            pnlMain.Controls.Add(homeControl)
 
+            ' დავამატოთ მონაცემთა სერვისის მითითება
+            If dataService IsNot Nothing Then
+                homeControl.SetDataService(dataService)
+                Debug.WriteLine("ShowHome: მონაცემთა სერვისი გადაეცა homeControl-ს")
+            Else
+                Debug.WriteLine("ShowHome: dataService არის Nothing, homeControl-ს არ აქვს მონაცემთა წყარო")
+            End If
+        Else
+            ' არსებული homeControl-ისთვისაც განვაახლოთ სერვისი
+            If dataService IsNot Nothing Then
+                homeControl.SetDataService(dataService)
+            End If
+        End If
         ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას
         If dataService IsNot Nothing Then
             Try

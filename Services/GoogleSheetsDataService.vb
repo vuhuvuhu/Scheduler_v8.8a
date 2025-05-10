@@ -495,5 +495,51 @@ Namespace Scheduler_v8_8a.Services
                 Return New List(Of SessionModel)()
             End Try
         End Function
+        ''' <summary>
+        ''' IDataService.GetTodaySessions იმპლემენტაცია
+        ''' </summary>
+        Public Function GetTodaySessions() As List(Of Models.SessionModel) Implements IDataService.GetTodaySessions
+            ' შევამოწმოთ ქეში
+            Dim cacheKey = "today_sessions"
+            Dim cachedSessions As List(Of Models.SessionModel) = Nothing
+
+            If TryGetFromCache(cacheKey, cachedSessions) Then
+                Return cachedSessions
+            End If
+
+            Try
+                Dim todaySessions As New List(Of Models.SessionModel)()
+                Dim rows = GetData(sessionsRange)
+                Dim today As DateTime = DateTime.Today
+
+                Debug.WriteLine($"GetTodaySessions: დაიწყო ძიება. მიღებულია {If(rows Is Nothing, 0, rows.Count)} მწკრივი.")
+
+                If rows IsNot Nothing Then
+                    For Each row As IList(Of Object) In rows
+                        Try
+                            ' შევქმნათ სესიის ობიექტი
+                            Dim session = Models.SessionModel.FromSheetRow(row)
+
+                            ' მხოლოდ დღევანდელი სესიები
+                            If session.DateTime.Date = today Then
+                                todaySessions.Add(session)
+                            End If
+                        Catch ex As Exception
+                            ' გავაგრძელოთ შემდეგი ჩანაწერით
+                            Continue For
+                        End Try
+                    Next
+                End If
+
+                ' ქეშში შენახვა
+                CacheData(cacheKey, todaySessions)
+
+                Debug.WriteLine($"GetTodaySessions: ნაპოვნია {todaySessions.Count} დღევანდელი სესია.")
+                Return todaySessions
+            Catch ex As Exception
+                Debug.WriteLine($"GetTodaySessions: შეცდომა - {ex.Message}")
+                Return New List(Of Models.SessionModel)()
+            End Try
+        End Function
     End Class
 End Namespace
