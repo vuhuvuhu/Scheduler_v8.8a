@@ -351,8 +351,6 @@ Public Class Form1
     ''' <summary>
     ''' HomeViewModel-ისთვის მონაცემების ასინქრონული დატვირთვა
     ''' </summary>
-    ' შევცვალოთ Form1.vb-ში LoadHomeDataAsync მეთოდის ბოლო ნაწილი, 465-ე ხაზზე:
-
     Private Async Sub LoadHomeDataAsync()
         Try
             ' დავიცადოთ დატვირთვამდე
@@ -373,16 +371,92 @@ Public Class Form1
                                    ' პირველი 3 ვადაგადაცილებული სესიის დებაგინგი
                                    For i As Integer = 0 To Math.Min(2, overdueSessions.Count - 1)
                                        Debug.WriteLine($"LoadHomeDataAsync: ვადაგადაცილებული სესია #{i + 1} - " &
-                                              $"ID={overdueSessions(i).Id}, " &
-                                              $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
-                                              $"სტატუსი='{overdueSessions(i).Status}'")
+                                                  $"ID={overdueSessions(i).Id}, " &
+                                                  $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
+                                                  $"სტატუსი='{overdueSessions(i).Status}'")
                                    Next
-
-                                   Dim birthdays = dataService.GetUpcomingBirthdays(7)
-                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {birthdays.Count} მოახლოებული დაბადების დღე")
 
                                    Dim tasks = dataService.GetActiveTasks()
                                    Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {tasks.Count} აქტიური დავალება")
+
+                                   ' დაბადების დღეების მონაცემების წამოღება
+                                   Dim birthdays = dataService.GetUpcomingBirthdays(7) ' 7 დღე
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {birthdays.Count} მოახლოებული დაბადების დღე")
+
+                                   ' თუ ბაზიდან არ მოვიდა დაბადების დღეები, შევქმნათ საცდელი მონაცემები
+                                   If birthdays Is Nothing OrElse birthdays.Count = 0 Then
+                                       birthdays = New List(Of BirthdayModel)()
+                                       Debug.WriteLine("LoadHomeDataAsync: ბაზიდან არ მოვიდა დაბადების დღეები, ვქმნით საცდელ მონაცემებს")
+
+                                       ' პირდაპირ ვიღებთ ცხრილიდან
+                                       Dim personalData As IList(Of IList(Of Object)) = dataService.GetData("DB-Personal!B2:E")
+                                       Debug.WriteLine($"LoadHomeDataAsync: DB-Personal-დან მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი")
+
+                                       If personalData IsNot Nothing AndAlso personalData.Count > 0 Then
+                                           ' დღევანდელი თარიღი
+                                           Dim today As DateTime = DateTime.Today
+
+                                           ' გადავირბინოთ ყველა მწკრივი
+                                           For Each row As IList(Of Object) In personalData
+                                               If row.Count >= 3 Then
+                                                   Try
+                                                       ' შევამოწმოთ არის თუ არა დაბადების თარიღი
+                                                       If row(2) IsNot Nothing AndAlso Not String.IsNullOrEmpty(row(2).ToString()) Then
+                                                           Dim birthDateStr As String = row(2).ToString()
+                                                           Dim birthDate As DateTime
+
+                                                           ' სხვადასხვა ფორმატების მცდელობა პარსინგისთვის
+                                                           If DateTime.TryParseExact(birthDateStr,
+                                                                            New String() {"dd.MM.yyyy", "dd,MM,yyyy", "dd/MM/yyyy", "dd-MM-yyyy"},
+                                                                            System.Globalization.CultureInfo.InvariantCulture,
+                                                                            System.Globalization.DateTimeStyles.None,
+                                                                            birthDate) OrElse
+                                                          DateTime.TryParse(birthDateStr, birthDate) Then
+
+                                                               ' შემდეგი დაბადების დღის გამოთვლა
+                                                               Dim nextBirthday As DateTime = New DateTime(today.Year, birthDate.Month, birthDate.Day)
+                                                               If nextBirthday < today Then
+                                                                   nextBirthday = nextBirthday.AddYears(1)
+                                                               End If
+
+                                                               ' რამდენი დღე რჩება
+                                                               Dim daysLeft As Integer = (nextBirthday - today).Days
+
+                                                               ' თუ 7 დღეზე ნაკლები რჩება, დავამატოთ
+                                                               If daysLeft <= 7 Then
+                                                                   Dim birthday As New BirthdayModel()
+                                                                   birthday.Id = birthdays.Count + 1
+                                                                   birthday.PersonName = If(row(0) IsNot Nothing, row(0).ToString(), "")
+                                                                   birthday.PersonSurname = If(row(1) IsNot Nothing, row(1).ToString(), "")
+                                                                   birthday.BirthDate = birthDate
+                                                                   birthdays.Add(birthday)
+
+                                                                   Debug.WriteLine($"LoadHomeDataAsync: დაემატა დაბადების დღე - ID={birthday.Id}, " &
+                                                                              $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
+                                                                              $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩა={daysLeft} დღე")
+                                                               End If
+                                                           End If
+                                                       End If
+                                                   Catch ex As Exception
+                                                       Debug.WriteLine($"LoadHomeDataAsync: მწკრივის დამუშავების შეცდომა - {ex.Message}")
+                                                   End Try
+                                               End If
+                                           Next
+                                       End If
+
+                                       ' თუ მაინც ვერ ვიპოვეთ, შევქმნათ საცდელი
+                                       If birthdays.Count = 0 Then
+                                           ' ხელოვნური საცდელი მონაცემი, რომ დავრწმუნდეთ UI მუშაობს
+                                           Dim testBirthday As New BirthdayModel()
+                                           testBirthday.Id = 1
+                                           testBirthday.PersonName = "საცდელი"
+                                           testBirthday.PersonSurname = "მომხმარებელი"
+                                           testBirthday.BirthDate = DateTime.Today.AddDays(3)
+                                           birthdays.Add(testBirthday)
+
+                                           Debug.WriteLine("LoadHomeDataAsync: დაემატა საცდელი დაბადების დღე")
+                                       End If
+                                   End If
 
                                    ' UI განახლება მთავარ თრედზე
                                    Me.Invoke(Sub()
@@ -399,34 +473,32 @@ Public Class Form1
                                                      homeViewModel.OverdueSessions.Clear()
                                                      For Each session In overdueSessions
                                                          homeViewModel.OverdueSessions.Add(session)
-                                                         Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა სესია - ID={session.Id}, სტატუსი={session.Status}")
                                                      Next
                                                      Debug.WriteLine($"LoadHomeDataAsync: ViewModel-ში ჩაემატა {overdueSessions.Count} ვადაგადაცილებული სესია")
 
                                                      ' ვადაგადაცილებული სესიების ბარათების შექმნა
                                                      If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
                                                          Debug.WriteLine($"LoadHomeDataAsync: ვიძახებთ PopulateOverdueSessions - " &
-                                                                $"სესიების რაოდენობა: {overdueSessions.Count}, " &
-                                                                $"homeControl.Visible: {homeControl.Visible}, " &
-                                                                $"homeControl.IsHandleCreated: {homeControl.IsHandleCreated}")
+                                                                $"სესიების რაოდენობა: {overdueSessions.Count}")
 
-                                                         ' შევამოწმოთ თუ ეს "ლაივ" homeControl ობიექტია და არა გასუფთავებული მიმართვა
-                                                         Dim isHomeControlVisible As Boolean = False
-                                                         Try
-                                                             isHomeControlVisible = homeControl.Visible AndAlso homeControl.IsHandleCreated
-                                                             Debug.WriteLine($"LoadHomeDataAsync: homeControl.Visible={isHomeControlVisible}")
-                                                         Catch ex As Exception
-                                                             Debug.WriteLine($"LoadHomeDataAsync: ვერ შემოწმდა homeControl.Visible: {ex.Message}")
-                                                         End Try
+                                                         ' თუ ეს მოქმედი homeControl-ია
+                                                         If homeControl.Visible AndAlso homeControl.IsHandleCreated Then
+                                                             ' ვადაგადაცილებული სესიების შევსება
+                                                             homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
+                                                                                    viewModel.IsAuthorized,
+                                                                                    viewModel.Role)
 
-                                                         ' PopulateOverdueSessions-ის გამოძახება, თუ ის მოქმედი homeControl-ია
-                                                         homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
-                                                                                     viewModel.IsAuthorized,
-                                                                                     viewModel.Role)
+                                                             Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
 
-                                                         Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
+                                                             ' დავამატოთ დაბადების დღეების განახლების გამოძახება
+                                                             homeControl.PopulateUpcomingBirthdays(birthdays)
+                                                             Debug.WriteLine("LoadHomeDataAsync: PopulateUpcomingBirthdays გამოძახება დასრულდა")
+
+                                                             ' განახლების შემდეგ კიდევ ერთხელ Application.DoEvents
+                                                             Application.DoEvents()
+                                                         End If
                                                      Else
-                                                         Debug.WriteLine($"LoadHomeDataAsync: homeControl არის None ან Disposed! IsNothing={homeControl Is Nothing}, IsDisposed={If(homeControl IsNot Nothing, homeControl.IsDisposed, True)}")
+                                                         Debug.WriteLine($"LoadHomeDataAsync: homeControl არის None ან Disposed!")
                                                      End If
 
                                                      ' დაბადების დღეების განახლება
@@ -463,11 +535,6 @@ Public Class Form1
             Debug.WriteLine($"LoadHomeDataAsync: საერთო შეცდომა: {ex.Message}")
             Debug.WriteLine($"LoadHomeDataAsync: Stack Trace: {ex.StackTrace}")
         End Try
-
-        ' წავშალეთ ან დავაკომენტარეთ შემდეგი ხაზები:
-        ' If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
-        '     homeControl.TestDirectControls()
-        ' End If
     End Sub
     ''' <summary>
     ''' როლის ცვლილებისას ხილვადობის მართვა
@@ -504,87 +571,6 @@ Public Class Form1
             MessageBox.Show("ბაზების ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
-    ' დებაგის ღილაკის დაჭერაზე რეაქცია
-    Private Sub btnDebug_Click_1(sender As Object, e As EventArgs)
-        Try
-            ' შევამოწმოთ გვაქვს თუ არა dataService
-            If dataService Is Nothing Then
-                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული!", "შეტყობინება", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Return
-            End If
-
-            ' მონაცემების წამოღება მთლიანი დიაპაზონიდან
-            Dim rows = dataService.GetData("DB-Schedule!A2:O") ' სრული დიაპაზონი
-
-            If rows Is Nothing OrElse rows.Count = 0 Then
-                MessageBox.Show("ვერ მოიძებნა არცერთი სესია!", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Return
-            End If
-
-            ' სტატუსების ანალიზი
-            Dim statusCounts As New Dictionary(Of String, Integer)
-            Dim overdueCount As Integer = 0
-
-            For Each row In rows
-                If row.Count > 12 Then
-                    ' M სვეტი (სტატუსი) არის ინდექსით 12
-                    Dim status = row(12).ToString().Trim()
-
-                    ' დავამატოთ სტატუსი ლექსიკონში
-                    If statusCounts.ContainsKey(status) Then
-                        statusCounts(status) += 1
-                    Else
-                        statusCounts.Add(status, 1)
-                    End If
-
-                    ' შევამოწმოთ არის თუ არა ვადაგადაცილებული
-                    If status.ToLower() = "დაგეგმილი" Then
-                        ' F სვეტი (თარიღი) არის ინდექსით 5
-                        Dim dateStr = If(row.Count > 5, row(5).ToString(), String.Empty)
-                        Dim sessionDate As DateTime
-
-                        If DateTime.TryParseExact(dateStr, "dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
-                                             System.Globalization.DateTimeStyles.None, sessionDate) Then
-                            If sessionDate.Date < DateTime.Today Then
-                                overdueCount += 1
-                            End If
-                        End If
-                    End If
-                End If
-            Next
-
-            ' შედეგების გამოტანა
-            Dim statusInfo As New StringBuilder()
-            statusInfo.AppendLine("==== სტატუსების ანალიზი (M სვეტი) ====")
-            statusInfo.AppendLine($"სულ {rows.Count} მწკრივია ცხრილში.")
-            statusInfo.AppendLine()
-
-            For Each pair In statusCounts
-                statusInfo.AppendLine($"სტატუსი '{pair.Key}': {pair.Value} სესია")
-            Next
-
-            statusInfo.AppendLine()
-            statusInfo.AppendLine($"სულ ვადაგადაცილებული სესიები: {overdueCount}")
-            statusInfo.AppendLine("(დაგეგმილი სტატუსით და წარსული თარიღით)")
-
-            ' პირველი რამდენიმე მწკრივის სტრუქტურა
-            statusInfo.AppendLine()
-            statusInfo.AppendLine("==== პირველი 3 სესიის სტრუქტურა ====")
-
-            For i As Integer = 0 To Math.Min(2, rows.Count - 1)
-                statusInfo.AppendLine($"მწკრივი {i + 2}:")
-                statusInfo.AppendLine($"  ID (A): '{rows(i)(0)}'")
-                If rows(i).Count > 5 Then statusInfo.AppendLine($"  თარიღი (F): '{rows(i)(5)}'")
-                If rows(i).Count > 12 Then statusInfo.AppendLine($"  სტატუსი (M): '{rows(i)(12)}'")
-                statusInfo.AppendLine()
-            Next
-
-            MessageBox.Show(statusInfo.ToString(), "სესიების ანალიზი", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-        Catch ex As Exception
-            MessageBox.Show($"დებაგ რეჟიმის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
     ''' <summary>
     ''' ამოწმებს და აღწერს კონტროლის ხილვადობის მდგომარეობას დებაგირებისთვის
     ''' </summary>
@@ -608,5 +594,31 @@ Public Class Form1
         End If
 
         Debug.WriteLine($"  Controls Count: {control.Controls.Count}")
+    End Sub
+
+
+    ' Form1.vb ფაილში დაამატეთ ეს ღილაკზე დაჭერის ფუნქცია
+    Private Sub TestBirthdaysDirect()
+        Try
+            Debug.WriteLine("TestBirthdaysDirect: დაწყება")
+
+            ' პირდაპირ DB-Personal ცხრილიდან მონაცემები
+            Dim personalData As IList(Of IList(Of Object)) = dataService.GetData("DB-Personal!B2:E")
+            Debug.WriteLine($"TestBirthdaysDirect: მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი")
+
+            ' გამოვიტანოთ ყველა დაბადების თარიღი დებაგირებისთვის
+            If personalData IsNot Nothing Then
+                For i As Integer = 0 To personalData.Count - 1
+                    Dim row = personalData(i)
+                    If row.Count >= 3 AndAlso row(2) IsNot Nothing Then
+                        Debug.WriteLine($"TestBirthdaysDirect: მწკრივი {i + 2}, სახელი={row(0)}, გვარი={row(1)}, დაბადების თარიღი={row(2)}")
+                    End If
+                Next
+            End If
+
+            Debug.WriteLine("TestBirthdaysDirect: დასრულება")
+        Catch ex As Exception
+            Debug.WriteLine($"TestBirthdaysDirect: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 End Class

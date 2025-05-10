@@ -8,6 +8,7 @@ Imports System.Drawing
 Imports Scheduler_v8_8a.Models
 Imports System.Globalization
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
 Public Class UC_Home
     Inherits UserControl
@@ -69,6 +70,7 @@ Public Class UC_Home
         ' განვაახლოთ დღევანდელი სტატისტიკა
         UpdateTodayStatistics()
         UpdateOverdueStatistics()
+
         ' Resize ივენთის მიბმა
         AddHandler Me.Resize, AddressOf UC_Home_Resize
     End Sub
@@ -146,7 +148,7 @@ Public Class UC_Home
         Try
             ' შევამოწმოთ, არის თუ არა მონაცემები ხელმისაწვდომი
             If AllSessions Is Nothing Then
-                Debug.WriteLine("UpdateTodayStatistics: AllSessions არის Nothing")
+                'Debug.WriteLine("UpdateTodayStatistics: AllSessions არის Nothing")
                 Return
             End If
 
@@ -161,7 +163,7 @@ Public Class UC_Home
                 End If
             Next
 
-            Debug.WriteLine("UpdateTodayStatistics: ნაპოვნია " & todaySessions.Count & " დღევანდელი სესია")
+            'Debug.WriteLine("UpdateTodayStatistics: ნაპოვნია " & todaySessions.Count & " დღევანდელი სესია")
 
             ' დავითვალოთ სტატისტიკა
             Dim totalSessions As Integer = todaySessions.Count
@@ -206,130 +208,54 @@ Public Class UC_Home
             LBenes.Text = uniqueBeneficiaries.ToString()
             LPers.Text = uniqueTherapists.ToString()
 
-            Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
-                      "სულ: " & totalSessions & ", " &
-                      "შესრულებული: " & completedSessions & ", " &
-                      "დაგეგმილი: " & plannedSessions & ", " &
-                      "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
-                      "პერსონალი: " & uniqueTherapists)
+            'Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
+            '"სულ: " & totalSessions & ", " &
+            '"შესრულებული: " & completedSessions & ", " &
+            '"დაგეგმილი: " & plannedSessions & ", " &
+            '"ბენეფიციარები: " & uniqueBeneficiaries & ", " &
+            '"პერსონალი: " & uniqueTherapists)
 
         Catch ex As Exception
-            Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
+            'Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
         End Try
     End Sub
     ''' <summary>
-    ''' განაახლებს GBBD გრუპბოქსს მოახლოებული დაბადების დღეებით
+    ''' მოახლოებული დაბადების დღეების ჩვენება GBBD გრუპბოქსში
     ''' </summary>
-    Public Sub UpdateUpcomingBirthdays()
+    Public Sub PopulateUpcomingBirthdays(birthdays As List(Of BirthdayModel))
         Try
-            Debug.WriteLine("UpdateUpcomingBirthdays: დაიწყო მოახლოებული დაბადების დღეების ჩვენება")
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: დაიწყო, ვცდილობთ მოახლოებული დაბადების დღეების ჩვენებას")
 
             ' გავასუფთავოთ GBBD გრუპბოქსი
             GBBD.Controls.Clear()
 
-            ' მივიღოთ მონაცემები Google Sheets-დან
-            Dim personalData As IList(Of IList(Of Object)) = Nothing
-
-            ' ვიყენებთ გლობალურად ხელმისაწვდომ dataService-ს
-            If dataService IsNot Nothing Then
-                personalData = dataService.GetData("DB-Personal!B2:E")
-                Debug.WriteLine($"UpdateUpcomingBirthdays: მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი DB-Personal ფურცლიდან")
-            Else
-                Debug.WriteLine("UpdateUpcomingBirthdays: dataService არის Nothing")
-                Return
-            End If
-
             ' შევამოწმოთ გვაქვს თუ არა მონაცემები
-            If personalData Is Nothing OrElse personalData.Count = 0 Then
+            If birthdays Is Nothing OrElse birthdays.Count = 0 Then
+                ' საჩვენებელი ლეიბლი: არ არის დაბადების დღეები
                 Dim lblNoData As New Label()
                 lblNoData.Text = "მოახლოებული დაბადების დღეები არ არის"
                 lblNoData.AutoSize = True
                 lblNoData.Location = New Point(10, 20)
                 GBBD.Controls.Add(lblNoData)
-                Debug.WriteLine("UpdateUpcomingBirthdays: მონაცემები არ მოიძებნა")
+
+                Debug.WriteLine("UC_Home.PopulateUpcomingBirthdays: birthdays სია ცარიელია ან NULL")
                 Return
             End If
 
-            ' დღევანდელი თარიღი
-            Dim today As DateTime = DateTime.Today
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: მიღებულია {birthdays.Count} დაბადების დღე")
 
-            ' მოახლოებული დაბადების დღეების სია
-            Dim upcomingBirthdays As New List(Of Object())
-
-            ' გავფილტროთ რეკორდები
-            For Each row As IList(Of Object) In personalData
-                ' შევამოწმოთ აქვს თუ არა მწკრივს საკმარისი სვეტები
-                If row.Count < 4 Then
-                    Continue For
-                End If
-
-                ' ამოვიღოთ მონაცემები
-                Dim firstName As String = row(0).ToString()
-                Dim lastName As String = row(1).ToString()
-
-                ' შევამოწმოთ, არის თუ არა დაბადების თარიღი შევსებული
-                If row(2) Is Nothing OrElse String.IsNullOrEmpty(row(2).ToString()) Then
-                    Continue For
-                End If
-
-                ' შევამოწმოთ შეგვიძლია თუ არა დაბადების თარიღის პარსინგი
-                Dim birthDateStr As String = row(2).ToString()
-                Dim birthDate As DateTime
-
-                ' ვცდილობთ მოვახდინოთ თარიღის პარსინგი (dd.MM.yyyy ფორმატში)
-                If Not DateTime.TryParseExact(birthDateStr, "dd.MM.yyyy",
-                                        Globalization.CultureInfo.InvariantCulture,
-                                        Globalization.DateTimeStyles.None, birthDate) Then
-                    Continue For
-                End If
-
-                ' დავადგინოთ შემდეგი დაბადების დღის თარიღი
-                Dim nextBirthday As DateTime = New DateTime(today.Year, birthDate.Month, birthDate.Day)
-
-                ' თუ დაბადების დღე უკვე გავიდა წელს, გადავიდეთ მომავალ წელზე
-                If nextBirthday < today Then
-                    nextBirthday = nextBirthday.AddYears(1)
-                End If
-
-                ' დავითვალოთ რამდენი დღე რჩება
-                Dim daysLeft As Integer = (nextBirthday - today).Days
-
-                ' თუ დაბადების დღემდე 7 დღეზე ნაკლები რჩება, დავამატოთ სიაში
-                If daysLeft <= 7 Then
-                    upcomingBirthdays.Add(New Object() {firstName, lastName, daysLeft})
-                End If
-            Next
-
-            ' დავალაგოთ დაბადების დღეები მოახლოების მიხედვით
-            upcomingBirthdays.Sort(Function(x, y) DirectCast(x(2), Integer).CompareTo(DirectCast(y(2), Integer)))
-
-            Debug.WriteLine($"UpdateUpcomingBirthdays: ნაპოვნია {upcomingBirthdays.Count} მოახლოებული დაბადების დღე")
-
-            ' თუ მოახლოებული დაბადების დღეები არ არის
-            If upcomingBirthdays.Count = 0 Then
-                Dim lblNoBirthdays As New Label()
-                lblNoBirthdays.Text = "მოახლოებული დაბადების დღეები არ არის"
-                lblNoBirthdays.AutoSize = True
-                lblNoBirthdays.Location = New Point(10, 20)
-                GBBD.Controls.Add(lblNoBirthdays)
-                Return
-            End If
-
-            ' შევქმნათ ლეიბლები თითოეული დაბადების დღისთვის
+            ' გამოვიტანოთ თითოეული დაბადების დღე უბრალოდ 
             Dim yPos As Integer = 20
+            Dim displayCount As Integer = 0
 
-            For Each birthdayData As Object() In upcomingBirthdays
-                Dim firstName As String = birthdayData(0).ToString()
-                Dim lastName As String = birthdayData(1).ToString()
-                Dim daysLeft As Integer = DirectCast(birthdayData(2), Integer)
+            For Each birthday As BirthdayModel In birthdays
+                Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: დაბადების დღე - ID={birthday.Id}, " &
+                           $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
+                           $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩენილი დღეები={birthday.DaysUntilBirthday}")
 
-                ' ტექსტი: "სახელი გვარი დარჩა [n] დღე"
+                ' ტექსტი: "სახელი გვარი - დარჩა X დღე"
                 Dim daysText As String = "დღე"
-                If daysLeft <> 1 Then
-                    daysText = "დღე" ' ქართულად არ იცვლება დღეების მრავლობითი ფორმა
-                End If
-
-                Dim birthdayText As String = $"{firstName} {lastName} დარჩა {daysLeft} {daysText}"
+                Dim birthdayText As String = $"{birthday.PersonName} {birthday.PersonSurname} - დარჩა {birthday.DaysUntilBirthday} {daysText}"
 
                 ' ლეიბლის შექმნა
                 Dim lblBirthday As New Label()
@@ -337,8 +263,8 @@ Public Class UC_Home
                 lblBirthday.AutoSize = True
                 lblBirthday.Location = New Point(10, yPos)
 
-                ' დღეს თუ აქვს დაბადების დღე, გამოვყოთ წითლად
-                If daysLeft = 0 Then
+                ' თუ დღეს აქვს დაბადების დღე, გამოვყოთ წითლად
+                If birthday.DaysUntilBirthday = 0 Then
                     lblBirthday.ForeColor = Color.Red
                     lblBirthday.Font = New Font(lblBirthday.Font, FontStyle.Bold)
                 End If
@@ -348,12 +274,22 @@ Public Class UC_Home
 
                 ' გადავიდეთ შემდეგ პოზიციაზე
                 yPos += 20
+                displayCount += 1
             Next
 
-            Debug.WriteLine("UpdateUpcomingBirthdays: მოახლოებული დაბადების დღეები წარმატებით დაემატა")
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: წარმატებით გამოჩნდა {displayCount} დაბადების დღე")
 
         Catch ex As Exception
-            Debug.WriteLine($"UpdateUpcomingBirthdays: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: Stack Trace - {ex.StackTrace}")
+
+            ' შეცდომის შემთხვევაში მაინც ვაჩვენოთ შეტყობინება
+            Dim lblError As New Label()
+            lblError.Text = "შეცდომა დაბადების დღეების ჩვენებისას"
+            lblError.AutoSize = True
+            lblError.Location = New Point(10, 20)
+            lblError.ForeColor = Color.Red
+            GBBD.Controls.Add(lblError)
         End Try
     End Sub
     ''' <summary>
@@ -437,7 +373,7 @@ Public Class UC_Home
         UpdateTodayStatistics()
         UpdateOverdueStatistics()
         ' მოახლოებული დაბადების დღეების განახლება
-        UpdateUpcomingBirthdays()
+
     End Sub
 
     ''' <summary>
