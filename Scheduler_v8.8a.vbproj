@@ -102,6 +102,12 @@
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\NewRecordForm.Designer.vb">
+      <DependentUpon>NewRecordForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\NewRecordForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Models\BirthdayModel.vb" />
     <Compile Include="Models\HomeViewModel.vb" />
     <Compile Include="Models\MainViewModel.vb" />
@@ -142,6 +148,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Forms\Form1.resx">
       <DependentUpon>Form1.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\NewRecordForm.resx">
+      <DependentUpon>NewRecordForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
