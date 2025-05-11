@@ -353,6 +353,7 @@ Namespace Scheduler_v8_8a.Models
                 Throw New Exception($"შეცდომა SessionModel-ის შექმნისას: {ex.Message}", ex)
             End Try
         End Function
+        ''' <summary>
         ''' გარდაქმნის SessionModel-ს მწკრივად Google Sheets-ისთვის
         ''' </summary>
         ''' <returns>ობიექტების სია, რომელიც შეიძლება გადაეცეს Sheets API-ს</returns>

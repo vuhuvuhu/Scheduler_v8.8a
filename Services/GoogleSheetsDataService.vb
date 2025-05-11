@@ -455,13 +455,17 @@ Namespace Scheduler_v8_8a.Services
             End Try
         End Function
         ''' <summary>
-        ''' ყველა სესიის წამოღება დებაგირებისთვის
+        ''' IDataService.GetAllSessions იმპლემენტაცია
         ''' </summary>
-        Public Function GetAllSessions() As List(Of SessionModel)
-            Debug.WriteLine("GoogleSheetsDataService.GetAllSessions: დაიწყო დებაგირებისთვის")
+        Public Function GetAllSessions() As List(Of Models.SessionModel) Implements IDataService.GetAllSessions
+            Debug.WriteLine("GoogleSheetsDataService.GetAllSessions: დაიწყო")
+
+            ' გავასუფთავოთ ყველა ქეში, რომ ყოველთვის ახალი მონაცემები მივიღოთ
+            cache.Clear()
 
             Try
-                Dim sessions As New List(Of SessionModel)()
+                ' მივიღოთ ყველა სესია
+                Dim sessions As New List(Of Models.SessionModel)()
                 Dim rows = GetData(sessionsRange)
 
                 Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მოვიპოვეთ {If(rows Is Nothing, 0, rows.Count)} მწკრივი")
@@ -492,7 +496,7 @@ Namespace Scheduler_v8_8a.Services
 
             Catch ex As Exception
                 Debug.WriteLine($"GoogleSheetsDataService.GetAllSessions: მთავარი შეცდომა - {ex.Message}")
-                Return New List(Of SessionModel)()
+                Return New List(Of Models.SessionModel)()
             End Try
         End Function
         ''' <summary>

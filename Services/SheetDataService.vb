@@ -431,7 +431,7 @@ Namespace Scheduler_v8_8a.Services
             If rows IsNot Nothing Then
                 For Each row In rows
                     Try
-                        ' მინიმუმ 12 სვეტი გვჭირდება (სტატუსის ჩათვლით)
+                        ' მინიმუმ 12 სვეტი გვჭირდება
                         If row.Count < 12 Then Continue For
 
                         ' სესიის ობიექტის შექმნა

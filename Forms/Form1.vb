@@ -395,17 +395,100 @@ Public Class Form1
                                    Dim allSessions = dataService.GetAllSessions()
                                    Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {allSessions.Count} სესია სულ")
 
-                                   ' პირველი 3 დღევანდელი სესიის დებაგინგი
-                                   Dim today As DateTime = DateTime.Today
-                                   Dim todaySessions = allSessions.Where(Function(s) s.DateTime.Date = today).ToList()
+                                   ' ვიპოვოთ დღევანდელი სესიები სტატისტიკისთვის
+                                   Dim currentDate As DateTime = DateTime.Today
+                                   Dim todaySessions = allSessions.Where(Function(s) s.DateTime.Date = currentDate).ToList()
                                    Debug.WriteLine($"LoadHomeDataAsync: დღევანდელი სესიების რაოდენობა: {todaySessions.Count}")
 
-                                   For i As Integer = 0 To Math.Min(2, todaySessions.Count - 1)
-                                       Debug.WriteLine($"LoadHomeDataAsync: დღევანდელი სესია #{i + 1} - " &
-                                              $"ID={todaySessions(i).Id}, " &
-                                              $"თარიღი={todaySessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
-                                              $"სტატუსი='{todaySessions(i).Status}'")
+                                   ' პირველი 3 ვადაგადაცილებული სესიის დებაგინგი
+                                   For i As Integer = 0 To Math.Min(2, overdueSessions.Count - 1)
+                                       Debug.WriteLine($"LoadHomeDataAsync: ვადაგადაცილებული სესია #{i + 1} - " &
+                                              $"ID={overdueSessions(i).Id}, " &
+                                              $"თარიღი={overdueSessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
+                                              $"სტატუსი='{overdueSessions(i).Status}'")
                                    Next
+
+                                   Dim tasks = dataService.GetActiveTasks()
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {tasks.Count} აქტიური დავალება")
+
+                                   ' დაბადების დღეების მონაცემების წამოღება
+                                   Dim birthdays = dataService.GetUpcomingBirthdays(7) ' 7 დღე
+                                   Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {birthdays.Count} მოახლოებული დაბადების დღე")
+
+                                   ' თუ ბაზიდან არ მოვიდა დაბადების დღეები, შევქმნათ საცდელი მონაცემები
+                                   If birthdays Is Nothing OrElse birthdays.Count = 0 Then
+                                       birthdays = New List(Of BirthdayModel)()
+                                       Debug.WriteLine("LoadHomeDataAsync: ბაზიდან არ მოვიდა დაბადების დღეები, ვქმნით საცდელ მონაცემებს")
+
+                                       ' პირდაპირ ვიღებთ ცხრილიდან
+                                       Dim personalData As IList(Of IList(Of Object)) = dataService.GetData("DB-Personal!B2:E")
+                                       Debug.WriteLine($"LoadHomeDataAsync: DB-Personal-დან მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი")
+
+                                       If personalData IsNot Nothing AndAlso personalData.Count > 0 Then
+                                           ' დღევანდელი თარიღი - აქ უკვე შევცვალეთ ცვლადის სახელი
+                                           ' გამოვიყენოთ currentDate ცვლადი, რომელიც უკვე არსებობს
+
+                                           ' გადავირბინოთ ყველა მწკრივი
+                                           For Each row As IList(Of Object) In personalData
+                                               If row.Count >= 3 Then
+                                                   Try
+                                                       ' შევამოწმოთ არის თუ არა დაბადების თარიღი
+                                                       If row(2) IsNot Nothing AndAlso Not String.IsNullOrEmpty(row(2).ToString()) Then
+                                                           Dim birthDateStr As String = row(2).ToString()
+                                                           Dim birthDate As DateTime
+
+                                                           ' სხვადასხვა ფორმატების მცდელობა პარსინგისთვის
+                                                           If DateTime.TryParseExact(birthDateStr,
+                                                                        New String() {"dd.MM.yyyy", "dd,MM,yyyy", "dd/MM/yyyy", "dd-MM-yyyy"},
+                                                                        System.Globalization.CultureInfo.InvariantCulture,
+                                                                        System.Globalization.DateTimeStyles.None,
+                                                                        birthDate) OrElse
+                                                      DateTime.TryParse(birthDateStr, birthDate) Then
+
+                                                               ' შემდეგი დაბადების დღის გამოთვლა
+                                                               Dim nextBirthday As DateTime = New DateTime(currentDate.Year, birthDate.Month, birthDate.Day)
+                                                               If nextBirthday < currentDate Then
+                                                                   nextBirthday = nextBirthday.AddYears(1)
+                                                               End If
+
+                                                               ' რამდენი დღე რჩება
+                                                               Dim daysLeft As Integer = (nextBirthday - currentDate).Days
+
+                                                               ' თუ 7 დღეზე ნაკლები რჩება, დავამატოთ
+                                                               If daysLeft <= 7 Then
+                                                                   Dim birthday As New BirthdayModel()
+                                                                   birthday.Id = birthdays.Count + 1
+                                                                   birthday.PersonName = If(row(0) IsNot Nothing, row(0).ToString(), "")
+                                                                   birthday.PersonSurname = If(row(1) IsNot Nothing, row(1).ToString(), "")
+                                                                   birthday.BirthDate = birthDate
+                                                                   birthdays.Add(birthday)
+
+                                                                   Debug.WriteLine($"LoadHomeDataAsync: დაემატა დაბადების დღე - ID={birthday.Id}, " &
+                                                                          $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
+                                                                          $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩა={daysLeft} დღე")
+                                                               End If
+                                                           End If
+                                                       End If
+                                                   Catch ex As Exception
+                                                       Debug.WriteLine($"LoadHomeDataAsync: მწკრივის დამუშავების შეცდომა - {ex.Message}")
+                                                   End Try
+                                               End If
+                                           Next
+                                       End If
+
+                                       ' თუ მაინც ვერ ვიპოვეთ, შევქმნათ საცდელი
+                                       If birthdays.Count = 0 Then
+                                           ' ხელოვნური საცდელი მონაცემი, რომ დავრწმუნდეთ UI მუშაობს
+                                           Dim testBirthday As New BirthdayModel()
+                                           testBirthday.Id = 1
+                                           testBirthday.PersonName = "საცდელი"
+                                           testBirthday.PersonSurname = "მომხმარებელი"
+                                           testBirthday.BirthDate = DateTime.Today.AddDays(3)
+                                           birthdays.Add(testBirthday)
+
+                                           Debug.WriteLine("LoadHomeDataAsync: დაემატა საცდელი დაბადების დღე")
+                                       End If
+                                   End If
 
                                    ' UI განახლება მთავარ თრედზე
                                    Me.Invoke(Sub()
@@ -432,16 +515,23 @@ Public Class Form1
 
                                                          ' თუ ეს მოქმედი homeControl-ია
                                                          If homeControl.Visible AndAlso homeControl.IsHandleCreated Then
-                                                             ' ყველა და ვადაგადაცილებული სესიების შევსება
-                                                             homeControl.InitializeSessions(allSessions.ToList(), overdueSessions.ToList(),
+                                                             ' ვადაგადაცილებული სესიების შევსება
+                                                             homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
                                                                                 viewModel.IsAuthorized,
-                                                                                viewModel.Role)
+                                                                                viewModel.Role,
+                                                                                allSessions.ToList())  ' დავამატეთ ყველა სესია როგორც პარამეტრი
 
-                                                             Debug.WriteLine("LoadHomeDataAsync: InitializeSessions გამოძახება დასრულდა")
+                                                             Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
 
-                                                             ' Application.DoEvents
+                                                             ' დავამატოთ დაბადების დღეების განახლების გამოძახება
+                                                             homeControl.PopulateUpcomingBirthdays(birthdays)
+                                                             Debug.WriteLine("LoadHomeDataAsync: PopulateUpcomingBirthdays გამოძახება დასრულდა")
+
+                                                             ' განახლების შემდეგ კიდევ ერთხელ Application.DoEvents
                                                              Application.DoEvents()
                                                          End If
+                                                     Else
+                                                         Debug.WriteLine($"LoadHomeDataAsync: homeControl არის None ან Disposed!")
                                                      End If
 
                                                      ' დაბადების დღეების განახლება

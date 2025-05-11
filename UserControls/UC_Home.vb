@@ -165,26 +165,36 @@ Public Class UC_Home
             End If
         End If
     End Sub
-    ' UC_Home.vb, UpdateTodayStatistics მეთოდი
+    ''' <summary>
+    ''' განაახლებს დღევანდელი სესიების სტატისტიკის ლეიბლებს
+    ''' </summary>
     Private Sub UpdateTodayStatistics()
         Try
-            ' შევამოწმოთ, არის თუ არა dataService ხელმისაწვდომი
-            If dataService Is Nothing Then
-                Debug.WriteLine("UpdateTodayStatistics: dataService არის Nothing, შეუძლებელია სტატისტიკის განახლება")
+            ' შევამოწმოთ, არის თუ არა მონაცემები ხელმისაწვდომი
+            If AllSessions Is Nothing Then
+                Debug.WriteLine("UpdateTodayStatistics: AllSessions არის Nothing")
                 Return
             End If
 
-            ' პირდაპირ წამოვიღოთ დღევანდელი სესიები სერვისიდან 
-            Dim todaySessions = dataService.GetTodaySessions()
+            ' მიმდინარე თარიღი თარიღის კომპონენტით (დრო 00:00)
+            Dim today As DateTime = DateTime.Today
 
-            Debug.WriteLine($"UpdateTodayStatistics: ნაპოვნია {todaySessions.Count} დღევანდელი სესია")
+            ' გავფილტროთ მხოლოდ დღევანდელი სესიები
+            Dim todaySessions As New List(Of SessionModel)
+            For Each session As SessionModel In AllSessions
+                If session.DateTime.Date = today Then
+                    todaySessions.Add(session)
+                End If
+            Next
 
-            ' სულ დღევანდელი სესიების რაოდენობა
+            Debug.WriteLine("UpdateTodayStatistics: ნაპოვნია " & todaySessions.Count & " დღევანდელი სესია")
+
+            ' დავითვალოთ სტატისტიკა
             Dim totalSessions As Integer = todaySessions.Count
 
             ' შესრულებული სესიები (სტატუსით "შესრულებული")
             Dim completedSessions As Integer = 0
-            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
+            For Each session As SessionModel In todaySessions
                 If session.Status.Trim().ToLower() = "შესრულებული" Then
                     completedSessions += 1
                 End If
@@ -192,30 +202,30 @@ Public Class UC_Home
 
             ' დაგეგმილი სესიები (სტატუსით "დაგეგმილი")
             Dim plannedSessions As Integer = 0
-            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
+            For Each session As SessionModel In todaySessions
                 If session.Status.Trim().ToLower() = "დაგეგმილი" Then
                     plannedSessions += 1
                 End If
             Next
 
-            ' უნიკალური ბენეფიციარები
+            ' უნიკალური ბენეფიციარების რაოდენობა
             Dim beneficiarySet As New HashSet(Of String)
-            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
+            For Each session As SessionModel In todaySessions
                 Dim fullName As String = session.BeneficiaryName & " " & session.BeneficiarySurname
                 beneficiarySet.Add(fullName)
             Next
             Dim uniqueBeneficiaries As Integer = beneficiarySet.Count
 
-            ' უნიკალური თერაპევტები
+            ' უნიკალური პერსონალის რაოდენობა (თერაპევტები)
             Dim therapistSet As New HashSet(Of String)
-            For Each session As Scheduler_v8_8a.Models.SessionModel In todaySessions
+            For Each session As SessionModel In todaySessions
                 If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
                     therapistSet.Add(session.TherapistName)
                 End If
             Next
             Dim uniqueTherapists As Integer = therapistSet.Count
 
-            ' განვაახლოთ ლეიბლები
+            ' განვაახლოთ ლეიბლები - დიზაინის შეუცვლელად
             LSe.Text = totalSessions.ToString()
             LDone.Text = completedSessions.ToString()
             LNDone.Text = plannedSessions.ToString()
@@ -223,11 +233,11 @@ Public Class UC_Home
             LPers.Text = uniqueTherapists.ToString()
 
             Debug.WriteLine("UpdateTodayStatistics: სტატისტიკა განახლდა - " &
-                    "სულ: " & totalSessions & ", " &
-                    "შესრულებული: " & completedSessions & ", " &
-                    "დაგეგმილი: " & plannedSessions & ", " &
-                    "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
-                    "პერსონალი: " & uniqueTherapists)
+            "სულ: " & totalSessions & ", " &
+            "შესრულებული: " & completedSessions & ", " &
+            "დაგეგმილი: " & plannedSessions & ", " &
+            "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
+            "პერსონალი: " & uniqueTherapists)
 
         Catch ex As Exception
             Debug.WriteLine("UpdateTodayStatistics: შეცდომა - " & ex.Message)
@@ -484,22 +494,19 @@ Public Class UC_Home
             ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
             CardsPerPage = cardsPerRow * rowsPerPage
 
-            ' მოვძებნოთ ვადაგადაცილებული სესიები
-            Dim overdueSessions = AllSessions.Where(Function(s) s.IsOverdue).ToList()
-
             ' საერთო გვერდების რაოდენობა
-            TotalPages = Math.Max(1, Math.Ceiling(overdueSessions.Count / CDbl(CardsPerPage)))
+            TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
 
             Debug.WriteLine($"CalculateCardsPerPage: GBRedTasks.Size={GBRedTasks.Size}")
             Debug.WriteLine($"CalculateCardsPerPage: availableWidth={availableWidth}, availableHeight={availableHeight}")
             Debug.WriteLine($"CalculateCardsPerPage: cardsPerRow={cardsPerRow}, rowsPerPage={rowsPerPage}")
             Debug.WriteLine($"CalculateCardsPerPage: CardsPerPage={CardsPerPage}, TotalPages={TotalPages}")
-            Debug.WriteLine($"CalculateCardsPerPage: overdueSessions.Count={overdueSessions.Count}")
+            Debug.WriteLine($"CalculateCardsPerPage: AllSessions.Count={AllSessions.Count}")
 
         Catch ex As Exception
             Debug.WriteLine($"CalculateCardsPerPage: შეცდომა - {ex.Message}")
             CardsPerPage = 8 ' ნაგულისხმები მნიშვნელობა
-            TotalPages = Math.Ceiling(AllSessions.Where(Function(s) s.IsOverdue).Count() / CDbl(CardsPerPage))
+            TotalPages = Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage))
         End Try
     End Sub
 
@@ -522,18 +529,10 @@ Public Class UC_Home
             Return
         End If
 
-        ' მოვძებნოთ ვადაგადაცილებული სესიები
-        Dim overdueSessions = AllSessions.Where(Function(s) s.IsOverdue).ToList()
-
-        If overdueSessions.Count = 0 Then
-            Dim lblNoSessions As New Label()
-            lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
-            lblNoSessions.AutoSize = True
-            lblNoSessions.Location = New Point(10, 20)
-            GBRedTasks.Controls.Add(lblNoSessions)
-            Debug.WriteLine("ShowCurrentPageCards: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
-            Return
-        End If
+        ' პაგინაციის კონტროლების დამატება
+        'GBRedTasks.Controls.Add(BtnPrev)
+        'GBRedTasks.Controls.Add(LPage)
+        'GBRedTasks.Controls.Add(BtnNext)
 
         ' ბარათის ზომები და დაშორებები - დავაბრუნეთ ორიგინალური ზომები
         Const CARD_WIDTH As Integer = 250
@@ -553,11 +552,11 @@ Public Class UC_Home
 
         ' გვერდზე ბარათების დიაპაზონი
         Dim startIndex As Integer = CurrentPage * CardsPerPage
-        Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, overdueSessions.Count - 1)
+        Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, AllSessions.Count - 1)
 
         Debug.WriteLine($"ShowCurrentPageCards: გვერდი {CurrentPage + 1}/{TotalPages}, " &
-            $"დიაპაზონი: {startIndex}-{endIndex}, " &
-            $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
+                $"დიაპაზონი: {startIndex}-{endIndex}, " &
+                $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
 
         ' ვადაგადაცილებული სესიების ბარათები
         Dim xPos As Integer = CARD_MARGIN
@@ -565,7 +564,7 @@ Public Class UC_Home
         Dim cardCount As Integer = 0
 
         For i As Integer = startIndex To endIndex
-            Dim session = overdueSessions(i)
+            Dim session = AllSessions(i)
 
             ' დებაგინფო სესიის შესახებ
             'Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
@@ -803,13 +802,24 @@ Public Class UC_Home
     ''' <summary>
     ''' ვადაგადაცილებული სესიების ბარათების შექმნა და GBRedTasks-ში განთავსება
     ''' </summary>
-    Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
+    Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String, Optional allSessions As List(Of SessionModel) = Nothing)
         Try
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
 
             ' შევინახოთ მომხმარებლის მდგომარეობა
             IsAuthorizedUser = isAuthorized
             UserRoleValue = userRole
+
+            ' შევინახოთ ყველა სესია თუ მოწოდებულია
+            If allSessions IsNot Nothing Then
+                Me.AllSessions = New List(Of SessionModel)()
+                For Each session In allSessions
+                    Me.AllSessions.Add(session)
+                Next
+
+                ' განვაახლოთ დღევანდელი სტატისტიკა
+                UpdateTodayStatistics()
+            End If
 
             ' მნიშვნელოვანი: განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები აქვე
             ' რადგან სესიები უკვე გვაქვს
@@ -831,9 +841,8 @@ Public Class UC_Home
             LNeerReaction.Text = allOverdueSessions.ToString()
             LNeedReactionToday.Text = todayOverdueSessions.ToString()
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: სტატისტიკა განახლდა - სულ: {allOverdueSessions}, დღევანდელი: {todayOverdueSessions}")
-
             ' გავასუფთავოთ ძველი სესიები და ჩავსვათ ახალი
-            AllSessions = New List(Of SessionModel)()
+            allSessions = New List(Of SessionModel)()
 
             ' გადავატაროთ ყველა სესია, მოვიპოვოთ ცხრილიდან არსებული raw data და შევასწოროთ ველები
             If sessions IsNot Nothing Then
@@ -886,79 +895,6 @@ Public Class UC_Home
         ' აქ იქნება სესიის რედაქტირების ლოგიკა
         MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
         ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
-    End Sub
-    ''' <summary>
-    ''' ინიციალიზაციას უკეთებს ყველა სესიას და ვადაგადაცილებულ სესიებს
-    ''' </summary>
-    Public Sub InitializeSessions(allSessions As List(Of SessionModel), overdueSessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
-        Try
-            Debug.WriteLine($"UC_Home.InitializeSessions: დაიწყო, ყველა სესიის რაოდენობა: {allSessions.Count}, ვადაგადაცილებულების რაოდენობა: {overdueSessions.Count}")
-
-            ' შევინახოთ მომხმარებლის მდგომარეობა
-            IsAuthorizedUser = isAuthorized
-            UserRoleValue = userRole
-
-            ' შევინახოთ ყველა სესია
-            Me.AllSessions = New List(Of SessionModel)()
-            For Each session In allSessions
-                Me.AllSessions.Add(session)
-            Next
-
-            ' განვაახლოთ დღევანდელი სტატისტიკა
-            UpdateTodayStatistics()
-
-            ' მნიშვნელოვანი: განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები
-            Dim allOverdueSessions As Integer = overdueSessions.Count
-
-            ' დღევანდელი ვადაგადაცილებული სესიები
-            Dim today As DateTime = DateTime.Today
-            Dim todayOverdueSessions As Integer = 0
-
-            For Each session In overdueSessions
-                If session.DateTime.Date = today Then
-                    todayOverdueSessions += 1
-                End If
-            Next
-
-            ' განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები
-            LNeerReaction.Text = allOverdueSessions.ToString()
-            LNeedReactionToday.Text = todayOverdueSessions.ToString()
-            Debug.WriteLine($"UC_Home.InitializeSessions: ვადაგადაცილებული სტატისტიკა განახლდა - სულ: {allOverdueSessions}, დღევანდელი: {todayOverdueSessions}")
-
-            ' თუ ვადაგადაცილებული სესიები არ არის, დავამატოთ შეტყობინება
-            If overdueSessions.Count = 0 Then
-                ' გასუფთავება ძველი ბარათებისგან
-                GBRedTasks.Controls.Clear()
-                Dim lblNoSessions As New Label()
-                lblNoSessions.Text = "ვადაგადაცილებული სესიები არ არის"
-                lblNoSessions.AutoSize = True
-                lblNoSessions.Location = New Point(10, 20)
-                GBRedTasks.Controls.Add(lblNoSessions)
-
-                ' პაგინაციის კონტროლები გამოვრთოთ
-                BtnPrev.Enabled = False
-                BtnNext.Enabled = False
-                LPage.Text = ""
-                Debug.WriteLine("UC_Home.InitializeSessions: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
-                Return
-            End If
-
-            ' დავადგინოთ რამდენი ბარათი ეტევა თითო გვერდზე
-            CalculateCardsPerPage()
-
-            ' დავრწმუნდეთ რომ მიმდინარე გვერდი ვალიდურია
-            CurrentPage = Math.Min(CurrentPage, Math.Max(0, TotalPages - 1))
-
-            ' ვაჩვენოთ ვადაგადაცილებული სესიების ბარათები
-            ShowCurrentPageCards()
-
-            ' განვაახლოთ პაგინაციის კონტროლები
-            UpdatePaginationControls()
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Home.InitializeSessions: შეცდომა - {ex.Message}")
-            MessageBox.Show($"შეცდომა სესიების ინიციალიზაციისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
     End Sub
 
     ''' <summary>
