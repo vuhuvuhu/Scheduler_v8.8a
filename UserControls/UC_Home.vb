@@ -1178,5 +1178,50 @@ Public Class UC_Home
             Return viewModel.UserName
         End Get
     End Property
+    ''' <summary>
+    ''' BtnAddAray ღილაკზე დაჭერა - ახალი ჩანაწერის ფორმის გამოჩენა
+    ''' შეზღუდვით, რომ მხოლოდ ერთი ფორმა გაიხსნას
+    ''' </summary>
+    Private Sub BtnAddAray_Click(sender As Object, e As EventArgs) Handles BtnAddAray.Click
+        Debug.WriteLine("UC_Home.BtnAddAray_Click: ახალი ჩანაწერის დამატების მოთხოვნა")
 
+        Try
+            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
+            For Each frm As Form In Application.OpenForms
+                If TypeOf frm Is NewRecordForm Then
+                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
+                    Debug.WriteLine("UC_Home.BtnAddAray_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
+                    frm.Focus()
+                    Return
+                End If
+            Next
+
+            ' შევამოწმოთ გვაქვს თუ არა dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Debug.WriteLine("UC_Home.BtnAddAray_Click: dataService არ არის ინიციალიზებული")
+                Return
+            End If
+
+            ' მომხმარებლის email მიღება
+            Dim userEmail As String = "უცნობი"
+            ' მოვძებნოთ მთავარი ფორმა და თუ იქ არის GetUserEmail მეთოდი, გამოვიყენოთ
+            Dim mainForm = TryCast(Application.OpenForms("Form1"), Form1)
+            If mainForm IsNot Nothing AndAlso mainForm.GetType().GetMethod("GetUserEmail") IsNot Nothing Then
+                ' თუ GetUserEmail მეთოდი არსებობს, გამოვიყენოთ
+                userEmail = CType(mainForm.GetType().GetMethod("GetUserEmail").Invoke(mainForm, Nothing), String)
+            End If
+
+            ' ნაგულისხმევად "სესია" ტიპი
+            Dim recordType As String = "სესია"
+
+            ' NewRecordForm-ის გახსნა Add რეჟიმში
+            Dim newRecordForm As New NewRecordForm(dataService, recordType, userEmail, "UC_Home")
+            newRecordForm.Show()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Home.BtnAddAray_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ახალი ჩანაწერის ფორმის გახსნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

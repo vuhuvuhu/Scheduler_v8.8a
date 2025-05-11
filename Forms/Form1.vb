@@ -32,6 +32,10 @@ Public Class Form1
     Private ReadOnly serviceAccountKeyPath As String = Path.Combine(utilsFolder, "google-service-account-key8_7a.json")
     Private ReadOnly secretsFile As String = Path.Combine(utilsFolder, "client_secret_v8_7.json")
     Private ReadOnly tokenStorePath As String = Path.Combine(utilsFolder, "TokenStore")
+    'მეილი გავაპაბლიკოთ
+    Public Function GetUserEmail() As String
+        Return If(viewModel?.Email, "უცნობი")
+    End Function
 
     ''' <summary>
     ''' კონსტრუქტორი: ძირითადი ინიციალიზაცია
