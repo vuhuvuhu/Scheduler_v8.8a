@@ -300,26 +300,50 @@ Namespace Scheduler_v8_8a.Models
 
                 ' თარიღი F სვეტიდან (ინდექსი 5)
                 Dim dateTimeStr = If(rowData.Count > 5, rowData(5).ToString().Trim(), String.Empty)
-                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის თარიღი='{dateTimeStr}'")
+                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის ორიგინალი თარიღი='{dateTimeStr}'")
 
-                ' [არსებული თარიღის დამუშავების კოდი]
+                ' [განახლებული თარიღის დამუშავების კოდი]
                 Try
                     If Not String.IsNullOrWhiteSpace(dateTimeStr) Then
-                        ' დროის დაპარსვა
-                        If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture,
-                                      System.Globalization.DateTimeStyles.None, session.DateTime) Then
-                            'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღი წარმატებით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
-                        Else
-                            'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის პარსინგის შეცდომა: '{dateTimeStr}'")
-                            session.DateTime = DateTime.Now
+                        ' ვცადოთ სხვადასხვა ფორმატები
+                        Dim formats As String() = {"dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm"}
+
+                        Dim parsedDate As DateTime
+                        Dim successfullyParsed As Boolean = False
+
+                        ' ვცადოთ მკაცრი ფორმატები
+                        If DateTime.TryParseExact(dateTimeStr, formats,
+                                      System.Globalization.CultureInfo.InvariantCulture,
+                                      System.Globalization.DateTimeStyles.None,
+                                      parsedDate) Then
+                            session.DateTime = parsedDate
+                            successfullyParsed = True
+                            'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღი წარმატებით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
+                        End If
+
+                        ' თუ მკაცრმა ფორმატმა ვერ გაართვა თავი, ვცადოთ საშუალო მიდგომა
+                        If Not successfullyParsed Then
+                            If DateTime.TryParse(dateTimeStr, parsedDate) Then
+                                session.DateTime = parsedDate
+                                successfullyParsed = True
+                                'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღი საშუალო მეთოდით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
+                            End If
+                        End If
+
+                        ' თუ მაინც ვერ დავამუშავეთ, გამოვიყენოთ default თარიღი (არა მიმდინარე!)
+                        If Not successfullyParsed Then
+                            session.DateTime = New DateTime(1900, 1, 1) ' ძალიან ძველი თარიღი, რომელიც აშკარად არ არის დღევანდელი
+                            'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის პარსინგის შეცდომა: '{dateTimeStr}', ვიყენებთ default: 1900.01.01")
                         End If
                     Else
-                        'Debug.WriteLine("SessionModel.FromSheetRow: თარიღის სტრიქონი ცარიელია")
-                        session.DateTime = DateTime.Now
+                        ' თარიღის სტრიქონი ცარიელია
+                        session.DateTime = New DateTime(1900, 1, 1)
+                        'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის სტრიქონი ცარიელია, ვიყენებთ default: 1900.01.01")
                     End If
                 Catch ex As Exception
-                    'Debug.WriteLine($"SessionModel.FromSheetRow: თარიღის დამუშავების შეცდომა - {ex.Message}")
-                    session.DateTime = DateTime.Now
+                    ' თარიღის დამუშავების შეცდომა
+                    session.DateTime = New DateTime(1900, 1, 1)
+                    'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის დამუშავების შეცდომა: {ex.Message}, ვიყენებთ default: 1900.01.01")
                 End Try
 
                 ' დარჩენილი მონაცემების ინიციალიზაცია
@@ -382,20 +406,31 @@ Namespace Scheduler_v8_8a.Models
         ''' </summary>
         Public ReadOnly Property IsOverdue As Boolean
             Get
+                ' მიმდინარე თარიღი და დრო
+                Dim currentDate = DateTime.Today
+                Dim currentDateTime = DateTime.Now
+
+                ' სესიის თარიღი (მხოლოდ თარიღის ნაწილი, დროის გარეშე)
+                Dim sessionDate = Me.DateTime.Date
+
                 ' სტატუსის შემოწმება - მხოლოდ "დაგეგმილი" სტატუსისთვის
                 Dim normalizedStatus = Me.Status.Trim().ToLower()
                 Dim isPlanned = (normalizedStatus = "დაგეგმილი" OrElse normalizedStatus = "დაგეგმილი ")
 
-                ' შევადაროთ სრული თარიღები დროსთან ერთად - სესია უნდა იყოს წარსულში
-                Dim isPastDue = Me.DateTime < DateTime.Now
+                ' შემოწმება 1: თუ სესიის თარიღი წარსულში - უკვე გასული დღეა
+                Dim isPastDate = sessionDate < currentDate
+
+                ' შემოწმება 2: თუ სესიის თარიღი დღევანდელია, მაგრამ მისი დრო უკვე გასულია
+                Dim isTodayPastTime = (sessionDate = currentDate) AndAlso (Me.DateTime < currentDateTime)
 
                 ' ვადაგადაცილებულია, თუ:
                 ' 1. სტატუსი არის "დაგეგმილი" და
-                ' 2. სესიის დრო უკვე გასულია
-                Dim result = isPlanned AndAlso isPastDue
+                ' 2. ან სესიის თარიღი უკვე გასულია, ან დღევანდელი სესიის დრო გასულია
+                Dim result = isPlanned AndAlso (isPastDate OrElse isTodayPastTime)
 
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}' (ნორმალიზებული='{normalizedStatus}'), isPlanned={isPlanned}")
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={Me.DateTime:dd.MM.yyyy HH:mm}, დღეს={DateTime.Now:dd.MM.yyyy HH:mm}, isPastDue={isPastDue}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}', isPlanned={isPlanned}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={Me.DateTime:dd.MM.yyyy HH:mm}, დღეს={currentDateTime:dd.MM.yyyy HH:mm}")
+                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: isPastDate={isPastDate}, isTodayPastTime={isTodayPastTime}")
                 'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
 
                 Return result

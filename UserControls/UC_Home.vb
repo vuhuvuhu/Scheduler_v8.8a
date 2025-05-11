@@ -27,6 +27,9 @@ Public Class UC_Home
     Private UserRoleValue As String = ""
     ' მონაცემთა სერვისი
     Private dataService As Scheduler_v8_8a.Services.IDataService = Nothing
+
+    Private TodaySessions As List(Of SessionModel) = New List(Of SessionModel)()
+
     ''' <summary>
     ''' კონსტრუქტორი: იღებს HomeViewModel-ს Data Binding-ისთვის
     ''' </summary>
@@ -494,6 +497,7 @@ Public Class UC_Home
             ' გამოვთვალოთ რამდენი ბარათი ეტევა ერთ გვერდზე
             CardsPerPage = cardsPerRow * rowsPerPage
 
+            ' AllSessions უკვე შეიცავს მხოლოდ ვადაგადაცილებულ სესიებს
             ' საერთო გვერდების რაოდენობა
             TotalPages = Math.Max(1, Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage)))
 
@@ -509,7 +513,6 @@ Public Class UC_Home
             TotalPages = Math.Ceiling(AllSessions.Count / CDbl(CardsPerPage))
         End Try
     End Sub
-
     ''' <summary>
     ''' აჩვენებს მიმდინარე გვერდის ბარათებს - განახლებული ვერსია 
     ''' ღილაკის ფერის და ფორმის დაბრუნებით და ვადაგადაცილებული დღეების ჩვენებით
@@ -528,11 +531,6 @@ Public Class UC_Home
             Debug.WriteLine("ShowCurrentPageCards: დაემატა შეტყობინება 'ვადაგადაცილებული სესიები არ არის'")
             Return
         End If
-
-        ' პაგინაციის კონტროლების დამატება
-        'GBRedTasks.Controls.Add(BtnPrev)
-        'GBRedTasks.Controls.Add(LPage)
-        'GBRedTasks.Controls.Add(BtnNext)
 
         ' ბარათის ზომები და დაშორებები - დავაბრუნეთ ორიგინალური ზომები
         Const CARD_WIDTH As Integer = 250
@@ -555,8 +553,8 @@ Public Class UC_Home
         Dim endIndex As Integer = Math.Min(startIndex + CardsPerPage - 1, AllSessions.Count - 1)
 
         Debug.WriteLine($"ShowCurrentPageCards: გვერდი {CurrentPage + 1}/{TotalPages}, " &
-                $"დიაპაზონი: {startIndex}-{endIndex}, " &
-                $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
+            $"დიაპაზონი: {startIndex}-{endIndex}, " &
+            $"cardsPerRow={cardsPerRow}, horizontalSpacing={horizontalSpacing}")
 
         ' ვადაგადაცილებული სესიების ბარათები
         Dim xPos As Integer = CARD_MARGIN
@@ -564,190 +562,190 @@ Public Class UC_Home
         Dim cardCount As Integer = 0
 
         For i As Integer = startIndex To endIndex
-            Dim session = AllSessions(i)
+                Dim session = AllSessions(i)
 
-            ' დებაგინფო სესიის შესახებ
-            'Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
-            '$"ბენეფიციარი={session.BeneficiaryName} {session.BeneficiarySurname}, " &
-            '$"თარიღი={session.FormattedDateTime}, " &
-            '$"სტატუსი={session.Status}")
+                ' დებაგინფო სესიის შესახებ
+                'Debug.WriteLine($"ShowCurrentPageCards: სესია #{i}: ID={session.Id}, " &
+                '$"ბენეფიციარი={session.BeneficiaryName} {session.BeneficiarySurname}, " &
+                '$"თარიღი={session.FormattedDateTime}, " &
+                '$"სტატუსი={session.Status}")
 
-            ' შევქმნათ ბარათი
-            Dim card As New Panel()
-            card.Size = New Size(CARD_WIDTH, CARD_HEIGHT)
-            card.Location = New Point(xPos, yPos)
-            card.BorderStyle = BorderStyle.None
-            card.BackColor = Color.FromArgb(255, 235, 235) ' უფრო ღია წითელი
+                ' შევქმნათ ბარათი
+                Dim card As New Panel()
+                card.Size = New Size(CARD_WIDTH, CARD_HEIGHT)
+                card.Location = New Point(xPos, yPos)
+                card.BorderStyle = BorderStyle.None
+                card.BackColor = Color.FromArgb(255, 235, 235) ' უფრო ღია წითელი
 
-            ' მოვუმრგვალოთ კუთხეები ბარათს
-            Dim path As New Drawing2D.GraphicsPath()
-            Dim cornerRadius As Integer = 10
-            path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
-            path.AddArc(card.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
-            path.AddArc(card.Width - cornerRadius * 2, card.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
-            path.AddArc(0, card.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
-            path.CloseFigure()
-            card.Region = New Region(path)
+                ' მოვუმრგვალოთ კუთხეები ბარათს
+                Dim path As New Drawing2D.GraphicsPath()
+                Dim cornerRadius As Integer = 10
+                path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                path.AddArc(card.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                path.AddArc(card.Width - cornerRadius * 2, card.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
+                path.AddArc(0, card.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
+                path.CloseFigure()
+                card.Region = New Region(path)
 
-            ' ზედა მუქი ზოლი
-            Dim headerPanel As New Panel()
-            headerPanel.Size = New Size(CARD_WIDTH, HEADER_HEIGHT)
-            headerPanel.Location = New Point(0, 0)
-            headerPanel.BackColor = Color.FromArgb(180, 0, 0) ' მუქი წითელი
+                ' ზედა მუქი ზოლი
+                Dim headerPanel As New Panel()
+                headerPanel.Size = New Size(CARD_WIDTH, HEADER_HEIGHT)
+                headerPanel.Location = New Point(0, 0)
+                headerPanel.BackColor = Color.FromArgb(180, 0, 0) ' მუქი წითელი
 
-            ' მოვუმრგვალოთ მხოლოდ ზედა კუთხეები header-ს
-            Dim headerPath As New Drawing2D.GraphicsPath()
-            headerPath.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
-            headerPath.AddArc(headerPanel.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
-            headerPath.AddLine(headerPanel.Width, cornerRadius, headerPanel.Width, headerPanel.Height)
-            headerPath.AddLine(headerPanel.Width, headerPanel.Height, 0, headerPanel.Height)
-            headerPath.AddLine(0, headerPanel.Height, 0, cornerRadius)
-            headerPath.CloseFigure()
-            headerPanel.Region = New Region(headerPath)
-            card.Controls.Add(headerPanel)
+                ' მოვუმრგვალოთ მხოლოდ ზედა კუთხეები header-ს
+                Dim headerPath As New Drawing2D.GraphicsPath()
+                headerPath.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                headerPath.AddArc(headerPanel.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                headerPath.AddLine(headerPanel.Width, cornerRadius, headerPanel.Width, headerPanel.Height)
+                headerPath.AddLine(headerPanel.Width, headerPanel.Height, 0, headerPanel.Height)
+                headerPath.AddLine(0, headerPanel.Height, 0, cornerRadius)
+                headerPath.CloseFigure()
+                headerPanel.Region = New Region(headerPath)
+                card.Controls.Add(headerPanel)
 
-            ' თარიღი თეთრი ფონტით header-ში
-            Dim lblDateTime As New Label()
-            lblDateTime.Text = session.FormattedDateTime
-            lblDateTime.Location = New Point(8, 4)
-            lblDateTime.AutoSize = True
-            lblDateTime.Font = New Font(lblDateTime.Font.FontFamily, 9, FontStyle.Regular)
-            lblDateTime.ForeColor = Color.White
-            headerPanel.Controls.Add(lblDateTime)
+                ' თარიღი თეთრი ფონტით header-ში
+                Dim lblDateTime As New Label()
+                lblDateTime.Text = session.FormattedDateTime
+                lblDateTime.Location = New Point(8, 4)
+                lblDateTime.AutoSize = True
+                lblDateTime.Font = New Font(lblDateTime.Font.FontFamily, 9, FontStyle.Regular)
+                lblDateTime.ForeColor = Color.White
+                headerPanel.Controls.Add(lblDateTime)
 
-            ' ID მარჯვენა კუთხეში header-ში
-            Dim lblId As New Label()
-            lblId.Text = $"#{session.Id}"
-            lblId.Location = New Point(headerPanel.Width - 40, 4)
-            lblId.AutoSize = True
-            lblId.Font = New Font(lblId.Font.FontFamily, 9, FontStyle.Regular)
-            lblId.ForeColor = Color.White
-            headerPanel.Controls.Add(lblId)
+                ' ID მარჯვენა კუთხეში header-ში
+                Dim lblId As New Label()
+                lblId.Text = $"#{session.Id}"
+                lblId.Location = New Point(headerPanel.Width - 40, 4)
+                lblId.AutoSize = True
+                lblId.Font = New Font(lblId.Font.FontFamily, 9, FontStyle.Regular)
+                lblId.ForeColor = Color.White
+                headerPanel.Controls.Add(lblId)
 
-            ' ბენეფიციარის სახელი და გვარი - მთავრული ასოებით
-            ' მთავრული ქართული შრიფტი
-            Dim mtavruliFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი თუ ვერ მოიძებნა მოთხოვნილი
+                ' ბენეფიციარის სახელი და გვარი - მთავრული ასოებით
+                ' მთავრული ქართული შრიფტი
+                Dim mtavruliFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი თუ ვერ მოიძებნა მოთხოვნილი
 
-            ' ვცადოთ ვიპოვოთ მოთხოვნილი ფონტი
-            Try
-                Using testFont As New Font("KA_LITERATURULI_MT", 10)
-                    mtavruliFont = "KA_LITERATURULI_MT"
-                    Debug.WriteLine("ShowCurrentPageCards: მოიძებნა KA_LITERATURULI_MT ფონტი")
-                End Using
-            Catch
-                ' თუ მოთხოვნილი ფონტი ვერ მოიძებნა, შევამოწმოთ ალტერნატიული ფონტები
-                Dim altFonts As String() = {"BPG_Nino_Mtavruli", "ALK_Tall_Mtavruli", "Sylfaen"}
-                For Each fontName In altFonts
-                    Try
-                        Using testFont As New Font(fontName, 10)
-                            mtavruliFont = fontName
-                            Debug.WriteLine($"ShowCurrentPageCards: მოიძებნა ალტერნატიული ფონტი: {fontName}")
-                            Exit For
-                        End Using
-                    Catch
-                        ' ეს ფონტი ვერ მოიძებნა, შემდეგს ვცდით
-                        Debug.WriteLine($"ShowCurrentPageCards: ვერ მოიძებნა ფონტი: {fontName}")
-                    End Try
-                Next
-            End Try
+                ' ვცადოთ ვიპოვოთ მოთხოვნილი ფონტი
+                Try
+                    Using testFont As New Font("KA_LITERATURULI_MT", 10)
+                        mtavruliFont = "KA_LITERATURULI_MT"
+                        Debug.WriteLine("ShowCurrentPageCards: მოიძებნა KA_LITERATURULI_MT ფონტი")
+                    End Using
+                Catch
+                    ' თუ მოთხოვნილი ფონტი ვერ მოიძებნა, შევამოწმოთ ალტერნატიული ფონტები
+                    Dim altFonts As String() = {"BPG_Nino_Mtavruli", "ALK_Tall_Mtavruli", "Sylfaen"}
+                    For Each fontName In altFonts
+                        Try
+                            Using testFont As New Font(fontName, 10)
+                                mtavruliFont = fontName
+                                Debug.WriteLine($"ShowCurrentPageCards: მოიძებნა ალტერნატიული ფონტი: {fontName}")
+                                Exit For
+                            End Using
+                        Catch
+                            ' ეს ფონტი ვერ მოიძებნა, შემდეგს ვცდით
+                            Debug.WriteLine($"ShowCurrentPageCards: ვერ მოიძებნა ფონტი: {fontName}")
+                        End Try
+                    Next
+                End Try
 
-            ' ბენეფიციარის სახელის ლეიბლი - მთავრული ასოებით
-            Dim lblBeneficiary As New Label()
-            ' გარდავქმნათ ტექსტი დიდ ასოებად - ToUpper() გამოიყენება მთავრული ასოებისთვის
-            Dim beneficiaryText As String = $"{session.BeneficiaryName.ToUpper()} {session.BeneficiarySurname.ToUpper()}"
-            lblBeneficiary.Text = beneficiaryText
-            lblBeneficiary.Location = New Point(8, HEADER_HEIGHT + 8)
-            lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 30) ' გაზრდილი სიმაღლე
-            lblBeneficiary.Font = New Font(mtavruliFont, 10, FontStyle.Bold) ' მთავრული ფონტი
-            lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter ' ცენტრში მოთავსება
-            card.Controls.Add(lblBeneficiary)
+                ' ბენეფიციარის სახელის ლეიბლი - მთავრული ასოებით
+                Dim lblBeneficiary As New Label()
+                ' გარდავქმნათ ტექსტი დიდ ასოებად - ToUpper() გამოიყენება მთავრული ასოებისთვის
+                Dim beneficiaryText As String = $"{session.BeneficiaryName.ToUpper()} {session.BeneficiarySurname.ToUpper()}"
+                lblBeneficiary.Text = beneficiaryText
+                lblBeneficiary.Location = New Point(8, HEADER_HEIGHT + 8)
+                lblBeneficiary.Size = New Size(CARD_WIDTH - 16, 30) ' გაზრდილი სიმაღლე
+                lblBeneficiary.Font = New Font(mtavruliFont, 10, FontStyle.Bold) ' მთავრული ფონტი
+                lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter ' ცენტრში მოთავსება
+                card.Controls.Add(lblBeneficiary)
 
-            ' თერაპევტის სახელი
-            Dim lblTherapist As New Label()
-            lblTherapist.Text = $"{session.TherapistName}"
-            lblTherapist.Location = New Point(8, HEADER_HEIGHT + 42) ' ქვემოთ ჩაწეული
-            lblTherapist.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
-            card.Controls.Add(lblTherapist)
+                ' თერაპევტის სახელი
+                Dim lblTherapist As New Label()
+                lblTherapist.Text = $"{session.TherapistName}"
+                lblTherapist.Location = New Point(8, HEADER_HEIGHT + 42) ' ქვემოთ ჩაწეული
+                lblTherapist.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
+                card.Controls.Add(lblTherapist)
 
-            ' თერაპიის ტიპი
-            Dim lblTherapyType As New Label()
-            lblTherapyType.Text = $"{session.TherapyType}"
-            lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 64) ' ქვემოთ ჩაწეული
-            lblTherapyType.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
-            card.Controls.Add(lblTherapyType)
+                ' თერაპიის ტიპი
+                Dim lblTherapyType As New Label()
+                lblTherapyType.Text = $"{session.TherapyType}"
+                lblTherapyType.Location = New Point(8, HEADER_HEIGHT + 64) ' ქვემოთ ჩაწეული
+                lblTherapyType.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
+                card.Controls.Add(lblTherapyType)
 
-            ' სივრცე
-            Dim lblSpace As New Label()
-            lblSpace.Text = $"{session.Space}"
-            lblSpace.Location = New Point(8, HEADER_HEIGHT + 86) ' ქვემოთ ჩაწეული
-            lblSpace.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
-            card.Controls.Add(lblSpace)
+                ' სივრცე
+                Dim lblSpace As New Label()
+                lblSpace.Text = $"{session.Space}"
+                lblSpace.Location = New Point(8, HEADER_HEIGHT + 86) ' ქვემოთ ჩაწეული
+                lblSpace.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
+                card.Controls.Add(lblSpace)
 
-            ' დაფინანსება
-            Dim lblFunding As New Label()
-            lblFunding.Text = $"{session.Funding}"
-            lblFunding.Location = New Point(8, HEADER_HEIGHT + 108) ' ქვემოთ ჩაწეული
-            lblFunding.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
-            card.Controls.Add(lblFunding)
+                ' დაფინანსება
+                Dim lblFunding As New Label()
+                lblFunding.Text = $"{session.Funding}"
+                lblFunding.Location = New Point(8, HEADER_HEIGHT + 108) ' ქვემოთ ჩაწეული
+                lblFunding.Size = New Size(CARD_WIDTH - 16, 20) ' ფიქსირებული სიგანე
+                card.Controls.Add(lblFunding)
 
-            ' ვადაგადაცილების დღეები - დავამატეთ ვადაგადაცილების შესახებ ინფორმაცია
-            Dim overdueText As String = "ვადაგადაცილება: "
-            Dim daysOverdue As Integer = Math.Abs((DateTime.Today - session.DateTime.Date).Days)
-            overdueText += $"{daysOverdue} დღე"
+                ' ვადაგადაცილების დღეები - დავამატეთ ვადაგადაცილების შესახებ ინფორმაცია
+                Dim overdueText As String = "ვადაგადაცილება: "
+                Dim daysOverdue As Integer = Math.Abs((DateTime.Today - session.DateTime.Date).Days)
+                overdueText += $"{daysOverdue} დღე"
 
-            Dim lblOverdue As New Label()
-            lblOverdue.Text = overdueText
-            lblOverdue.Location = New Point(8, HEADER_HEIGHT + 132) ' ბოლო რიგი
-            lblOverdue.AutoSize = True
-            lblOverdue.ForeColor = Color.DarkRed
-            lblOverdue.Font = New Font(lblOverdue.Font.FontFamily, 9, FontStyle.Regular) ' Bold სტილი
-            card.Controls.Add(lblOverdue)
+                Dim lblOverdue As New Label()
+                lblOverdue.Text = overdueText
+                lblOverdue.Location = New Point(8, HEADER_HEIGHT + 132) ' ბოლო რიგი
+                lblOverdue.AutoSize = True
+                lblOverdue.ForeColor = Color.DarkRed
+                lblOverdue.Font = New Font(lblOverdue.Font.FontFamily, 9, FontStyle.Regular) ' Bold სტილი
+                card.Controls.Add(lblOverdue)
 
-            ' რედაქტირების ღილაკი - დავაბრუნეთ ორიგინალური ფერი და სტილი
-            If IsAuthorizedUser AndAlso (UserRoleValue = "1" OrElse UserRoleValue = "2" OrElse UserRoleValue = "3") Then
-                Dim btnEdit As New Button()
-                btnEdit.Text = "✎" ' ფანქრის სიმბოლო
-                btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
-                btnEdit.ForeColor = Color.White
-                btnEdit.BackColor = Color.FromArgb(220, 0, 0) ' მუქი წითელი - ორიგინალური ფერი
-                btnEdit.Size = New Size(30, 30) ' ორიგინალური ზომა
-                btnEdit.Location = New Point(CARD_WIDTH - 40, HEADER_HEIGHT + 123) ' ორიგინალური პოზიცია
-                btnEdit.FlatStyle = FlatStyle.Flat ' ორიგინალური სტილი
-                btnEdit.FlatAppearance.BorderSize = 0
-                btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
-                btnEdit.Cursor = Cursors.Hand ' ხელის კურსორი
+                ' რედაქტირების ღილაკი - დავაბრუნეთ ორიგინალური ფერი და სტილი
+                If IsAuthorizedUser AndAlso (UserRoleValue = "1" OrElse UserRoleValue = "2" OrElse UserRoleValue = "3") Then
+                    Dim btnEdit As New Button()
+                    btnEdit.Text = "✎" ' ფანქრის სიმბოლო
+                    btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
+                    btnEdit.ForeColor = Color.White
+                    btnEdit.BackColor = Color.FromArgb(220, 0, 0) ' მუქი წითელი - ორიგინალური ფერი
+                    btnEdit.Size = New Size(30, 30) ' ორიგინალური ზომა
+                    btnEdit.Location = New Point(CARD_WIDTH - 40, HEADER_HEIGHT + 123) ' ორიგინალური პოზიცია
+                    btnEdit.FlatStyle = FlatStyle.Flat ' ორიგინალური სტილი
+                    btnEdit.FlatAppearance.BorderSize = 0
+                    btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
+                    btnEdit.Cursor = Cursors.Hand ' ხელის კურსორი
 
-                ' მრგვალი ფორმის ღილაკი
-                Dim btnPath As New Drawing2D.GraphicsPath()
-                btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
-                btnEdit.Region = New Region(btnPath)
+                    ' მრგვალი ფორმის ღილაკი
+                    Dim btnPath As New Drawing2D.GraphicsPath()
+                    btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
+                    btnEdit.Region = New Region(btnPath)
 
-                ' ღილაკის მიბმა ფუნქციაზე
-                AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+                    ' ღილაკის მიბმა ფუნქციაზე
+                    AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
 
-                ' ღილაკის დამატება ბარათზე
-                card.Controls.Add(btnEdit)
+                    ' ღილაკის დამატება ბარათზე
+                    card.Controls.Add(btnEdit)
 
-                ' წინა პლანზე გამოტანა - მნიშვნელოვანია
-                btnEdit.BringToFront()
+                    ' წინა პლანზე გამოტანა - მნიშვნელოვანია
+                    btnEdit.BringToFront()
 
-                Debug.WriteLine($"ShowCurrentPageCards: ღილაკი დაემატა ბარათზე, ID={session.Id}")
-            End If
+                    Debug.WriteLine($"ShowCurrentPageCards: ღილაკი დაემატა ბარათზე, ID={session.Id}")
+                End If
 
-            ' დავამატოთ ბარათი GroupBox-ზე
-            GBRedTasks.Controls.Add(card)
+                ' დავამატოთ ბარათი GroupBox-ზე
+                GBRedTasks.Controls.Add(card)
 
-            ' განვაახლოთ ბარათის პოზიცია შემდეგი ბარათისთვის
-            cardCount += 1
-            If cardCount Mod cardsPerRow = 0 Then
-                ' ახალი მწკრივი
-                xPos = CARD_MARGIN
-                yPos += CARD_HEIGHT + CARD_MARGIN
-            Else
-                ' იგივე მწკრივი, შემდეგი სვეტი
-                xPos += CARD_WIDTH + horizontalSpacing
-            End If
-        Next
+                ' განვაახლოთ ბარათის პოზიცია შემდეგი ბარათისთვის
+                cardCount += 1
+                If cardCount Mod cardsPerRow = 0 Then
+                    ' ახალი მწკრივი
+                    xPos = CARD_MARGIN
+                    yPos += CARD_HEIGHT + CARD_MARGIN
+                Else
+                    ' იგივე მწკრივი, შემდეგი სვეტი
+                    xPos += CARD_WIDTH + horizontalSpacing
+                End If
+            Next
 
         ' განვაახლოთ პაგინაციის ღილაკების მდებარეობა
         'BtnPrev.Location = New Point(10, GBRedTasks.Height - 40)
@@ -802,24 +800,13 @@ Public Class UC_Home
     ''' <summary>
     ''' ვადაგადაცილებული სესიების ბარათების შექმნა და GBRedTasks-ში განთავსება
     ''' </summary>
-    Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String, Optional allSessions As List(Of SessionModel) = Nothing)
+    Public Sub PopulateOverdueSessions(sessions As List(Of SessionModel), isAuthorized As Boolean, userRole As String)
         Try
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
 
             ' შევინახოთ მომხმარებლის მდგომარეობა
             IsAuthorizedUser = isAuthorized
             UserRoleValue = userRole
-
-            ' შევინახოთ ყველა სესია თუ მოწოდებულია
-            If allSessions IsNot Nothing Then
-                Me.AllSessions = New List(Of SessionModel)()
-                For Each session In allSessions
-                    Me.AllSessions.Add(session)
-                Next
-
-                ' განვაახლოთ დღევანდელი სტატისტიკა
-                UpdateTodayStatistics()
-            End If
 
             ' მნიშვნელოვანი: განვაახლოთ ვადაგადაცილებული სესიების ლეიბლები აქვე
             ' რადგან სესიები უკვე გვაქვს
@@ -841,8 +828,9 @@ Public Class UC_Home
             LNeerReaction.Text = allOverdueSessions.ToString()
             LNeedReactionToday.Text = todayOverdueSessions.ToString()
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: სტატისტიკა განახლდა - სულ: {allOverdueSessions}, დღევანდელი: {todayOverdueSessions}")
+
             ' გავასუფთავოთ ძველი სესიები და ჩავსვათ ახალი
-            allSessions = New List(Of SessionModel)()
+            AllSessions = New List(Of SessionModel)()
 
             ' გადავატაროთ ყველა სესია, მოვიპოვოთ ცხრილიდან არსებული raw data და შევასწოროთ ველები
             If sessions IsNot Nothing Then
@@ -883,6 +871,111 @@ Public Class UC_Home
         Catch ex As Exception
             Debug.WriteLine($"UC_Home.PopulateOverdueSessions: შეცდომა - {ex.Message}")
             MessageBox.Show($"შეცდომა ვადაგადაცილებული სესიების ასახვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' დღევანდელი სესიების სიის განახლება და სტატისტიკის დათვლა
+    ''' </summary>
+    ''' <param name="sessions">ყველა დღევანდელი სესია</param>
+    Public Sub UpdateTodaySessionsStatistics(sessions As List(Of SessionModel))
+        Try
+            Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: დაიწყო, სესიების რაოდენობა: {If(sessions Is Nothing, 0, sessions.Count)}")
+            Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: დღევანდელი თარიღი: {DateTime.Today:dd.MM.yyyy}")
+
+            ' შევამოწმოთ და დავაფიქსიროთ ყველა თარიღი
+            If sessions IsNot Nothing AndAlso sessions.Count > 0 Then
+                For i As Integer = 0 To Math.Min(10, sessions.Count - 1)
+                    Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: სესია #{i + 1} - " &
+                           $"ID={sessions(i).Id}, " &
+                           $"თარიღი={sessions(i).DateTime:dd.MM.yyyy HH:mm}, " &
+                           $"DateTime.ToString()={sessions(i).DateTime.ToString()}, " &
+                           $"DateTime.Date={sessions(i).DateTime.Date:dd.MM.yyyy}")
+                Next
+            End If
+
+            ' დავრწმუნდეთ, რომ ვმუშაობთ მხოლოდ დღევანდელ სესიებზე
+            Dim currentDateStr = DateTime.Today.ToString("dd.MM.yyyy") ' მაგ: "11.05.2025"
+            Dim confirmedTodaySessions = New List(Of SessionModel)()
+
+            If sessions IsNot Nothing Then
+                For Each session In sessions
+                    Dim sessionDateStr = session.DateTime.ToString("dd.MM.yyyy")
+
+                    ' სტრიქონების შედარება უფრო საიმედოა ამ შემთხვევაში
+                    If sessionDateStr = currentDateStr Then
+                        confirmedTodaySessions.Add(session)
+                        Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: ✓ დამატებულია დღევანდელი სესია - ID={session.Id}, " &
+                               $"თარიღი={session.DateTime:dd.MM.yyyy}, " &
+                               $"სტრიქონი={sessionDateStr}")
+                    Else
+                        Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: ✗ გამოტოვებულია არა-დღევანდელი სესია - ID={session.Id}, " &
+                               $"თარიღი={session.DateTime:dd.MM.yyyy}, " &
+                               $"სტრიქონი={sessionDateStr}, " &
+                               $"(დღევანდელი={currentDateStr})")
+                    End If
+                Next
+            End If
+
+            Debug.WriteLine($"UC_Home.UpdateTodaySessionsStatistics: დადასტურებული დღევანდელი სესიები: {confirmedTodaySessions.Count}")
+
+            ' განაახლეთ დღევანდელი სესიების სია
+            TodaySessions.Clear()
+            For Each session In confirmedTodaySessions
+                TodaySessions.Add(session)
+            Next
+
+            ' დავითვალოთ სტატისტიკა
+            Dim totalSessions As Integer = TodaySessions.Count
+
+            ' შესრულებული სესიები (სტატუსით "შესრულებული")
+            Dim completedSessions As Integer = 0
+            For Each session As SessionModel In TodaySessions
+                If session.Status.Trim().ToLower() = "შესრულებული" Then
+                    completedSessions += 1
+                End If
+            Next
+
+            ' დაგეგმილი სესიები (სტატუსით "დაგეგმილი")
+            Dim plannedSessions As Integer = 0
+            For Each session As SessionModel In TodaySessions
+                If session.Status.Trim().ToLower() = "დაგეგმილი" Then
+                    plannedSessions += 1
+                End If
+            Next
+
+            ' უნიკალური ბენეფიციარები
+            Dim beneficiarySet As New HashSet(Of String)
+            For Each session As SessionModel In TodaySessions
+                Dim fullName As String = session.BeneficiaryName & " " & session.BeneficiarySurname
+                beneficiarySet.Add(fullName)
+            Next
+            Dim uniqueBeneficiaries As Integer = beneficiarySet.Count
+
+            ' უნიკალური თერაპევტები
+            Dim therapistSet As New HashSet(Of String)
+            For Each session As SessionModel In TodaySessions
+                If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
+                    therapistSet.Add(session.TherapistName)
+                End If
+            Next
+            Dim uniqueTherapists As Integer = therapistSet.Count
+
+            ' განვაახლოთ ლეიბლები
+            LSe.Text = totalSessions.ToString()
+            LDone.Text = completedSessions.ToString()
+            LNDone.Text = plannedSessions.ToString()
+            LBenes.Text = uniqueBeneficiaries.ToString()
+            LPers.Text = uniqueTherapists.ToString()
+
+            Debug.WriteLine("UC_Home.UpdateTodaySessionsStatistics: სტატისტიკა განახლდა - " &
+            "სულ: " & totalSessions & ", " &
+            "შესრულებული: " & completedSessions & ", " &
+            "დაგეგმილი: " & plannedSessions & ", " &
+            "ბენეფიციარები: " & uniqueBeneficiaries & ", " &
+            "პერსონალი: " & uniqueTherapists)
+
+        Catch ex As Exception
+            Debug.WriteLine("UC_Home.UpdateTodaySessionsStatistics: შეცდომა - " & ex.Message)
         End Try
     End Sub
     ''' <summary>

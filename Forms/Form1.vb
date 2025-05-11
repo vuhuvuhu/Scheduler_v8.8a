@@ -395,11 +395,24 @@ Public Class Form1
                                    Dim allSessions = dataService.GetAllSessions()
                                    Debug.WriteLine($"LoadHomeDataAsync: წამოღებულია {allSessions.Count} სესია სულ")
 
-                                   ' ვიპოვოთ დღევანდელი სესიები სტატისტიკისთვის
+                                   ' ვიპოვოთ დღევანდელი სესიები სტატისტიკისთვის - უფრო მკაცრი ფილტრაცია
                                    Dim currentDate As DateTime = DateTime.Today
-                                   Dim todaySessions = allSessions.Where(Function(s) s.DateTime.Date = currentDate).ToList()
-                                   Debug.WriteLine($"LoadHomeDataAsync: დღევანდელი სესიების რაოდენობა: {todaySessions.Count}")
+                                   Dim todaySessions = New List(Of SessionModel)()
 
+                                   ' ვამოწმებთ თითოეულ სესიას ცალ-ცალკე, მკაცრი შედარებით
+                                   For Each session In allSessions
+                                       Dim sessionDate = session.DateTime.Date
+                                       Dim isSameDay = (sessionDate.Year = currentDate.Year) AndAlso
+                    (sessionDate.Month = currentDate.Month) AndAlso
+                    (sessionDate.Day = currentDate.Day)
+
+                                       If isSameDay Then
+                                           todaySessions.Add(session)
+                                           Debug.WriteLine($"LoadHomeDataAsync: დამატებულია დღევანდელი სესია - ID={session.Id}, თარიღი={session.DateTime:dd.MM.yyyy}")
+                                       End If
+                                   Next
+
+                                   Debug.WriteLine($"LoadHomeDataAsync: დღევანდელი სესიების რაოდენობა: {todaySessions.Count}")
                                    ' პირველი 3 ვადაგადაცილებული სესიის დებაგინგი
                                    For i As Integer = 0 To Math.Min(2, overdueSessions.Count - 1)
                                        Debug.WriteLine($"LoadHomeDataAsync: ვადაგადაცილებული სესია #{i + 1} - " &
@@ -425,8 +438,8 @@ Public Class Form1
                                        Debug.WriteLine($"LoadHomeDataAsync: DB-Personal-დან მიღებულია {If(personalData Is Nothing, 0, personalData.Count)} მწკრივი")
 
                                        If personalData IsNot Nothing AndAlso personalData.Count > 0 Then
-                                           ' დღევანდელი თარიღი - აქ უკვე შევცვალეთ ცვლადის სახელი
-                                           ' გამოვიყენოთ currentDate ცვლადი, რომელიც უკვე არსებობს
+                                           ' დღევანდელი თარიღი
+                                           Dim today As DateTime = DateTime.Today
 
                                            ' გადავირბინოთ ყველა მწკრივი
                                            For Each row As IList(Of Object) In personalData
@@ -446,13 +459,13 @@ Public Class Form1
                                                       DateTime.TryParse(birthDateStr, birthDate) Then
 
                                                                ' შემდეგი დაბადების დღის გამოთვლა
-                                                               Dim nextBirthday As DateTime = New DateTime(currentDate.Year, birthDate.Month, birthDate.Day)
-                                                               If nextBirthday < currentDate Then
+                                                               Dim nextBirthday As DateTime = New DateTime(today.Year, birthDate.Month, birthDate.Day)
+                                                               If nextBirthday < today Then
                                                                    nextBirthday = nextBirthday.AddYears(1)
                                                                End If
 
                                                                ' რამდენი დღე რჩება
-                                                               Dim daysLeft As Integer = (nextBirthday - currentDate).Days
+                                                               Dim daysLeft As Integer = (nextBirthday - today).Days
 
                                                                ' თუ 7 დღეზე ნაკლები რჩება, დავამატოთ
                                                                If daysLeft <= 7 Then
@@ -515,11 +528,14 @@ Public Class Form1
 
                                                          ' თუ ეს მოქმედი homeControl-ია
                                                          If homeControl.Visible AndAlso homeControl.IsHandleCreated Then
+                                                             ' განვაახლოთ დღევანდელი სესიების სტატისტიკა
+                                                             homeControl.UpdateTodaySessionsStatistics(todaySessions)
+                                                             Debug.WriteLine($"LoadHomeDataAsync: დღევანდელი სესიების სტატისტიკა განახლდა, რაოდენობა: {todaySessions.Count}")
+
                                                              ' ვადაგადაცილებული სესიების შევსება
                                                              homeControl.PopulateOverdueSessions(overdueSessions.ToList(),
                                                                                 viewModel.IsAuthorized,
-                                                                                viewModel.Role,
-                                                                                allSessions.ToList())  ' დავამატეთ ყველა სესია როგორც პარამეტრი
+                                                                                viewModel.Role)
 
                                                              Debug.WriteLine("LoadHomeDataAsync: PopulateOverdueSessions გამოძახება დასრულდა")
 
