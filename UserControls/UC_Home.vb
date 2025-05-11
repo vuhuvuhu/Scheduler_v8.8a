@@ -251,7 +251,7 @@ Public Class UC_Home
     ''' </summary>
     Public Sub PopulateUpcomingBirthdays(birthdays As List(Of BirthdayModel))
         Try
-            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: დაიწყო, ვცდილობთ მოახლოებული დაბადების დღეების ჩვენებას")
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: დაიწყო, მოახლოებული დაბადების დღეების ჩვენებას")
 
             ' გავასუფთავოთ GBBD გრუპბოქსი
             GBBD.Controls.Clear()
@@ -269,20 +269,34 @@ Public Class UC_Home
                 Return
             End If
 
-            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: მიღებულია {birthdays.Count} დაბადების დღე")
+            ' დავალაგოთ დაბადების დღეები დღეების რაოდენობის მიხედვით
+            Dim sortedBirthdays = birthdays.OrderBy(Function(b) b.DaysUntilBirthday).ToList()
+            Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: მიღებულია {sortedBirthdays.Count} დაბადების დღე")
 
-            ' გამოვიტანოთ თითოეული დაბადების დღე უბრალოდ 
+            ' გამოვიტანოთ პირველი 5 დაბადების დღე (ან ნაკლები თუ არ გვყავს 5)
             Dim yPos As Integer = 20
             Dim displayCount As Integer = 0
+            Dim maxToShow As Integer = Math.Min(5, sortedBirthdays.Count)
 
-            For Each birthday As BirthdayModel In birthdays
+            For i As Integer = 0 To maxToShow - 1
+                Dim birthday = sortedBirthdays(i)
+
                 Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: დაბადების დღე - ID={birthday.Id}, " &
-                           $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
-                           $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩენილი დღეები={birthday.DaysUntilBirthday}")
+                       $"სახელი={birthday.PersonName}, გვარი={birthday.PersonSurname}, " &
+                       $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩენილი დღეები={birthday.DaysUntilBirthday}")
 
                 ' ტექსტი: "სახელი გვარი - დარჩა X დღე"
-                Dim daysText As String = "დღე"
-                Dim birthdayText As String = $"{birthday.PersonName} {birthday.PersonSurname} - დარჩა {birthday.DaysUntilBirthday} {daysText}"
+                Dim daysText As String
+                Select Case birthday.DaysUntilBirthday
+                    Case 0
+                        daysText = "დღეს"
+                    Case 1
+                        daysText = "ხვალ"
+                    Case Else
+                        daysText = $"დარჩა {birthday.DaysUntilBirthday} დღე"
+                End Select
+
+                Dim birthdayText As String = $"{birthday.PersonName} {birthday.PersonSurname} - {daysText}"
 
                 ' ლეიბლის შექმნა
                 Dim lblBirthday As New Label()
@@ -303,6 +317,16 @@ Public Class UC_Home
                 yPos += 20
                 displayCount += 1
             Next
+
+            ' თუ 5-ზე მეტი დაბადების დღეა, ვაჩვენოთ "...და კიდევ X"
+            If sortedBirthdays.Count > 5 Then
+                Dim lblMore As New Label()
+                lblMore.Text = $"...და კიდევ {sortedBirthdays.Count - 5}"
+                lblMore.AutoSize = True
+                lblMore.Location = New Point(10, yPos)
+                lblMore.ForeColor = Color.Gray
+                GBBD.Controls.Add(lblMore)
+            End If
 
             Debug.WriteLine($"UC_Home.PopulateUpcomingBirthdays: წარმატებით გამოჩნდა {displayCount} დაბადების დღე")
 
@@ -404,22 +428,50 @@ Public Class UC_Home
     End Sub
 
     ''' <summary>
-    ''' Refresh ღილაკის Click ივენთის დამმუშავებელი
+    ''' Refresh ღილაკის Click ივენთის დამმუშავებელი - სრულად განაახლებს ყველა მონაცემს
     ''' </summary>
     Private Sub BtnRefresh_Click(sender As Object, e As EventArgs) Handles BtnRefresh.Click
         Debug.WriteLine("BtnRefresh_Click: განახლების მოთხოვნა მიღებულია")
 
-        ' გაუქმება ყველა ქეშის, თუ შესაძლებელია
-        If dataService IsNot Nothing AndAlso TypeOf dataService Is SheetDataService Then
-            Try
-                DirectCast(dataService, SheetDataService).InvalidateAllCache()
-            Catch ex As Exception
-                Debug.WriteLine($"BtnRefresh_Click: შეცდომა ქეშის გაუქმებისას - {ex.Message}")
-            End Try
-        End If
+        ' ღილაკის დროებით გამორთვა ორჯერ დაჭერის პრევენციისთვის
+        BtnRefresh.Enabled = False
+        Cursor = Cursors.WaitCursor
 
-        ' მონაცემების ჩატვირთვა
-        LoadData()
+        Try
+            ' გაუქმება ყველა ქეშის, თუ შესაძლებელია
+            If dataService IsNot Nothing Then
+                Try
+                    ' SheetDataService-ისთვის
+                    If TypeOf dataService Is SheetDataService Then
+                        DirectCast(dataService, SheetDataService).InvalidateAllCache()
+                        Debug.WriteLine("BtnRefresh_Click: SheetDataService ქეში გასუფთავდა")
+                    ElseIf TypeOf dataService Is GoogleSheetsDataService Then
+                        ' თუ ამ სერვისს აქვს ქეშის გასუფთავების მეთოდი
+                        Debug.WriteLine("BtnRefresh_Click: GoogleSheetsDataService ქეშირება")
+                    End If
+                Catch ex As Exception
+                    Debug.WriteLine($"BtnRefresh_Click: შეცდომა ქეშის გაუქმებისას - {ex.Message}")
+                End Try
+            Else
+                Debug.WriteLine("BtnRefresh_Click: dataService არ არის ინიციალიზებული")
+            End If
+
+            ' 1. განვაახლოთ ViewModel-ის მონაცემები
+            viewModel.RefreshData()
+
+            ' 2. ჩავტვირთოთ ყველა მონაცემი ხელახლა
+            RefreshAllData()
+
+            ' 3. ვაცნობოთ მომხმარებელს
+            MessageBox.Show("მონაცემები წარმატებით განახლდა", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            Debug.WriteLine($"BtnRefresh_Click: განახლების შეცდომა - {ex.Message}")
+            MessageBox.Show($"მონაცემების განახლების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            ' ღილაკის და კურსორის აღდგენა
+            BtnRefresh.Enabled = True
+            Cursor = Cursors.Default
+        End Try
     End Sub
 
     ''' <summary>
@@ -989,7 +1041,110 @@ Public Class UC_Home
         MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
         ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
     End Sub
+    ''' <summary>
+    ''' სრულიად განაახლებს ყველა მონაცემს და UI ელემენტს
+    ''' </summary>
+    Private Sub RefreshAllData()
+        Debug.WriteLine("UC_Home.RefreshAllData: დაიწყო ყველა მონაცემის განახლება")
 
+        If dataService Is Nothing Then
+            Debug.WriteLine("UC_Home.RefreshAllData: dataService არ არის ინიციალიზებული")
+            Return
+        End If
+
+        Try
+            ' 1. განვაახლოთ მომხმარებლის ინფორმაცია და მისალმება
+            ' ეს ველები მოგვეწოდება მთავარი Form1-დან viewModel-ის საშუალებით
+            LUserName.Text = viewModel.UserName
+            LWish.Text = viewModel.GetGreetingByTime() ' მისალმების განახლება მიმდინარე დროის მიხედვით
+
+            ' 2. განვაახლოთ დროის ინფორმაცია
+            viewModel.CurrentTime = DateTime.Now
+            LTime.Text = viewModel.FormattedTime
+            LDate.Text = viewModel.FormattedDate
+            LWeekDay.Text = viewModel.WeekDayName
+
+            ' 3. დღევანდელი სტატისტიკის განახლება - GB_Today ლეიბლები
+            Dim todaySessions = dataService.GetTodaySessions()
+            Debug.WriteLine($"UC_Home.RefreshAllData: მიღებულია {todaySessions.Count} დღევანდელი სესია")
+
+            ' შესრულებული სესიები (სტატუსით "შესრულებული")
+            Dim completedSessions As Integer = 0
+            For Each session In todaySessions
+                If session.Status.Trim().ToLower() = "შესრულებული" Then
+                    completedSessions += 1
+                End If
+            Next
+
+            ' დაგეგმილი სესიები (სტატუსით "დაგეგმილი")
+            Dim plannedSessions As Integer = 0
+            For Each session In todaySessions
+                If session.Status.Trim().ToLower() = "დაგეგმილი" Then
+                    plannedSessions += 1
+                End If
+            Next
+
+            ' უნიკალური ბენეფიციარები
+            Dim beneficiarySet As New HashSet(Of String)
+            For Each session In todaySessions
+                beneficiarySet.Add(session.FullName)
+            Next
+
+            ' უნიკალური თერაპევტები
+            Dim therapistSet As New HashSet(Of String)
+            For Each session In todaySessions
+                If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
+                    therapistSet.Add(session.TherapistName)
+                End If
+            Next
+
+            ' ლეიბლების განახლება
+            LSe.Text = todaySessions.Count.ToString()
+            LDone.Text = completedSessions.ToString()
+            LNDone.Text = plannedSessions.ToString()
+            LBenes.Text = beneficiarySet.Count.ToString()
+            LPers.Text = therapistSet.Count.ToString()
+
+            ' 4. ვადაგადაცილებული სესიების სტატისტიკა - GBActiveTasks ლეიბლები
+            Dim overdueSessions = dataService.GetOverdueSessions()
+            Debug.WriteLine($"UC_Home.RefreshAllData: მიღებულია {overdueSessions.Count} ვადაგადაცილებული სესია")
+
+            ' დღევანდელი ვადაგადაცილებული სესიები
+            Dim today = DateTime.Today
+            Dim todayOverdueSessions As Integer = 0
+            For Each session In overdueSessions
+                If session.DateTime.Date = today Then
+                    todayOverdueSessions += 1
+                End If
+            Next
+
+            ' ლეიბლების განახლება
+            LNeerReaction.Text = overdueSessions.Count.ToString()
+            LNeedReactionToday.Text = todayOverdueSessions.ToString()
+
+            ' 5. დაბადების დღეები - GBBD ლეიბლები
+            Dim birthdays = dataService.GetUpcomingBirthdays(30) ' 30 დღის განმავლობაში
+            Debug.WriteLine($"UC_Home.RefreshAllData: მიღებულია {birthdays.Count} დაბადების დღე")
+
+            ' UI-ზე გამოტანა
+            PopulateUpcomingBirthdays(birthdays)
+
+            ' 6. ვადაგადაცილებული სესიების ბარათები - GBRedTasks
+            ' წამოვიღოთ ყველა სესია
+            Dim allSessions = dataService.GetAllSessions()
+            Debug.WriteLine($"UC_Home.RefreshAllData: მიღებულია {allSessions.Count} სესია (სულ)")
+
+            ' ავტორიზაციის ინფორმაცია უცვლელი რჩება
+            ' გამოვიყენოთ ვადაგადაცილებული სესიების გამოტანის ფუნქცია
+            PopulateOverdueSessions(overdueSessions, IsAuthorizedUser, UserRoleValue)
+
+            Debug.WriteLine("UC_Home.RefreshAllData: ყველა მონაცემი წარმატებით განახლდა")
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Home.RefreshAllData: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"UC_Home.RefreshAllData: StackTrace - {ex.StackTrace}")
+            Throw ' გადავაგდოთ შეცდომა ზედა დონეზე დამუშავებისთვის
+        End Try
+    End Sub
     ''' <summary>
     ''' ტესტური მეთოდი კონტროლების ხილვადობის დიაგნოსტიკისთვის
     ''' </summary>

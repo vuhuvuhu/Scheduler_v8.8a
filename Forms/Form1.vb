@@ -92,7 +92,12 @@ Public Class Form1
         ' UI-ის საწყისი ინსტრუქციები ViewModel-იდან
         LUser.Text = If(String.IsNullOrEmpty(viewModel.Email), "გთხოვთ გაიაროთ ავტორიზაცია", viewModel.Email)
         BtnLogin.Text = If(viewModel.IsAuthorized, "გასვლა", "ავტორიზაცია")
-
+        'ბექგრაუნდის სურათის ჩატვირთვა
+        Dim imagePath As String = Path.Combine(Application.StartupPath, "Resources", "AppImages", "bg1.jpg")
+        If File.Exists(imagePath) Then
+            Me.BackgroundImage = Image.FromFile(imagePath)
+            Me.BackgroundImageLayout = ImageLayout.Stretch
+        End If
         ' დავამატოთ მისალმება homeViewModel-ში
         homeViewModel.Greeting = homeViewModel.GetGreetingByTime()
 

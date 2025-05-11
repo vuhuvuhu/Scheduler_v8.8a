@@ -72,16 +72,16 @@ Partial Class Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.BackgroundImage = CType(resources.GetObject("$this.BackgroundImage"), System.Drawing.Image)
         Me.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.ClientSize = New System.Drawing.Size(994, 450)
         Me.Controls.Add(Me.pnlMain)
         Me.Controls.Add(Me.LUser)
         Me.Controls.Add(Me.BtnLogin)
         Me.Controls.Add(Me.mainMenu)
+        Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.MainMenuStrip = Me.mainMenu
         Me.Name = "Form1"
-        Me.Text = "Form1"
+        Me.Text = "Prospero Scheduler v8.8a"
         Me.WindowState = System.Windows.Forms.FormWindowState.Maximized
         Me.ResumeLayout(False)
         Me.PerformLayout()

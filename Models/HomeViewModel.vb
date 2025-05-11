@@ -213,7 +213,12 @@ Namespace Scheduler_v8_8a.Models
         Public Sub UpdateTime()
             CurrentTime = DateTime.Now
         End Sub
-
+        ''' <summary>
+        ''' მისალმების ტექსტის განახლება
+        ''' </summary>
+        Public Sub UpdateGreeting()
+            Greeting = GetGreetingByTime()
+        End Sub
         ''' <summary>
         ''' მონაცემების განახლება ყველა წყაროდან
         ''' </summary>
