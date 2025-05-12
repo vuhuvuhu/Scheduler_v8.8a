@@ -75,7 +75,7 @@ Namespace Scheduler_v8_8a.Services
         Public Function ReadRange(range As String) As IList(Of IList(Of Object))
             Try
                 If Not _isInitialized Then
-                    Debug.WriteLine("GoogleServiceAccountClient.ReadRange: სერვისი არ არის ინიციალიზებული")
+                    'Debug.WriteLine("GoogleServiceAccountClient.ReadRange: სერვისი არ არის ინიციალიზებული")
                     Return New List(Of IList(Of Object))()
                 End If
 
@@ -83,10 +83,10 @@ Namespace Scheduler_v8_8a.Services
                 Dim response = request.Execute()
                 Dim values = response.Values
 
-                Debug.WriteLine($"GoogleServiceAccountClient.ReadRange: წაკითხულია {If(values Is Nothing, 0, values.Count)} მწკრივი დიაპაზონიდან {range}")
+                'Debug.WriteLine($"GoogleServiceAccountClient.ReadRange: წაკითხულია {If(values Is Nothing, 0, values.Count)} მწკრივი დიაპაზონიდან {range}")
                 Return If(values, New List(Of IList(Of Object))())
             Catch ex As Exception
-                Debug.WriteLine($"GoogleServiceAccountClient.ReadRange: შეცდომა - {ex.Message}")
+                'Debug.WriteLine($"GoogleServiceAccountClient.ReadRange: შეცდომა - {ex.Message}")
                 Return New List(Of IList(Of Object))()
             End Try
         End Function

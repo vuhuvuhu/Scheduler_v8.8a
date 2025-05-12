@@ -22,6 +22,7 @@ Partial Class NewRecordForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(NewRecordForm))
         Me.LMsgSpace = New System.Windows.Forms.Label()
         Me.LMsgPer = New System.Windows.Forms.Label()
         Me.BtnAddDaf = New System.Windows.Forms.Button()
@@ -94,23 +95,23 @@ Partial Class NewRecordForm
         '
         'LMsgSpace
         '
-        Me.LMsgSpace.Location = New System.Drawing.Point(14, 492)
+        Me.LMsgSpace.Location = New System.Drawing.Point(14, 532)
         Me.LMsgSpace.Name = "LMsgSpace"
-        Me.LMsgSpace.Size = New System.Drawing.Size(266, 40)
+        Me.LMsgSpace.Size = New System.Drawing.Size(320, 60)
         Me.LMsgSpace.TabIndex = 340
         Me.LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
         '
         'LMsgPer
         '
-        Me.LMsgPer.Location = New System.Drawing.Point(14, 452)
+        Me.LMsgPer.Location = New System.Drawing.Point(14, 472)
         Me.LMsgPer.Name = "LMsgPer"
-        Me.LMsgPer.Size = New System.Drawing.Size(266, 40)
+        Me.LMsgPer.Size = New System.Drawing.Size(320, 60)
         Me.LMsgPer.TabIndex = 339
         Me.LMsgPer.Text = "მოცემულ დროს თერაპევტი თავისუფალია"
         '
         'BtnAddDaf
         '
-        Me.BtnAddDaf.Location = New System.Drawing.Point(105, 360)
+        Me.BtnAddDaf.Location = New System.Drawing.Point(105, 331)
         Me.BtnAddDaf.Name = "BtnAddDaf"
         Me.BtnAddDaf.Size = New System.Drawing.Size(176, 23)
         Me.BtnAddDaf.TabIndex = 338
@@ -119,7 +120,7 @@ Partial Class NewRecordForm
         '
         'BtnAddTer
         '
-        Me.BtnAddTer.Location = New System.Drawing.Point(105, 304)
+        Me.BtnAddTer.Location = New System.Drawing.Point(105, 275)
         Me.BtnAddTer.Name = "BtnAddTer"
         Me.BtnAddTer.Size = New System.Drawing.Size(176, 23)
         Me.BtnAddTer.TabIndex = 337
@@ -128,7 +129,7 @@ Partial Class NewRecordForm
         '
         'BtnAddPer
         '
-        Me.BtnAddPer.Location = New System.Drawing.Point(106, 248)
+        Me.BtnAddPer.Location = New System.Drawing.Point(106, 219)
         Me.BtnAddPer.Name = "BtnAddPer"
         Me.BtnAddPer.Size = New System.Drawing.Size(176, 23)
         Me.BtnAddPer.TabIndex = 336
@@ -137,17 +138,19 @@ Partial Class NewRecordForm
         '
         'BtnAddBene
         '
-        Me.BtnAddBene.Location = New System.Drawing.Point(106, 79)
+        Me.BtnAddBene.BackColor = System.Drawing.Color.Transparent
+        Me.BtnAddBene.BackgroundImage = CType(resources.GetObject("BtnAddBene.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAddBene.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnAddBene.Location = New System.Drawing.Point(287, 48)
         Me.BtnAddBene.Name = "BtnAddBene"
-        Me.BtnAddBene.Size = New System.Drawing.Size(176, 23)
+        Me.BtnAddBene.Size = New System.Drawing.Size(30, 30)
         Me.BtnAddBene.TabIndex = 335
-        Me.BtnAddBene.Text = "ბენეფიციარის დამატება"
-        Me.BtnAddBene.UseVisualStyleBackColor = True
+        Me.BtnAddBene.UseVisualStyleBackColor = False
         '
         'RB6
         '
         Me.RB6.AutoSize = True
-        Me.RB6.Location = New System.Drawing.Point(529, 297)
+        Me.RB6.Location = New System.Drawing.Point(586, 297)
         Me.RB6.Name = "RB6"
         Me.RB6.Size = New System.Drawing.Size(73, 17)
         Me.RB6.TabIndex = 334
@@ -159,7 +162,7 @@ Partial Class NewRecordForm
         '
         Me.LAutor.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.LAutor.AutoSize = True
-        Me.LAutor.Location = New System.Drawing.Point(612, 7)
+        Me.LAutor.Location = New System.Drawing.Point(668, 7)
         Me.LAutor.Name = "LAutor"
         Me.LAutor.Size = New System.Drawing.Size(108, 13)
         Me.LAutor.TabIndex = 333
@@ -168,7 +171,7 @@ Partial Class NewRecordForm
         'LPlan
         '
         Me.LPlan.AutoSize = True
-        Me.LPlan.Location = New System.Drawing.Point(396, 253)
+        Me.LPlan.Location = New System.Drawing.Point(453, 253)
         Me.LPlan.Name = "LPlan"
         Me.LPlan.Size = New System.Drawing.Size(71, 13)
         Me.LPlan.TabIndex = 332
@@ -176,9 +179,9 @@ Partial Class NewRecordForm
         '
         'LWarning
         '
-        Me.LWarning.Location = New System.Drawing.Point(288, 412)
+        Me.LWarning.Location = New System.Drawing.Point(345, 412)
         Me.LWarning.Name = "LWarning"
-        Me.LWarning.Size = New System.Drawing.Size(332, 122)
+        Me.LWarning.Size = New System.Drawing.Size(332, 180)
         Me.LWarning.TabIndex = 331
         Me.LWarning.Text = "Label4"
         '
@@ -186,14 +189,15 @@ Partial Class NewRecordForm
         '
         Me.LMsgBene.Location = New System.Drawing.Point(14, 412)
         Me.LMsgBene.Name = "LMsgBene"
-        Me.LMsgBene.Size = New System.Drawing.Size(266, 40)
+        Me.LMsgBene.Size = New System.Drawing.Size(320, 60)
         Me.LMsgBene.TabIndex = 330
         Me.LMsgBene.Text = "მოცემულ დროს ბენეფიციარი თავისუფალია"
         '
         'BtnAdd
         '
+        Me.BtnAdd.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.BtnAdd.BackColor = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(255, Byte), Integer), CType(CType(192, Byte), Integer))
-        Me.BtnAdd.Location = New System.Drawing.Point(626, 511)
+        Me.BtnAdd.Location = New System.Drawing.Point(683, 566)
         Me.BtnAdd.Name = "BtnAdd"
         Me.BtnAdd.Size = New System.Drawing.Size(91, 23)
         Me.BtnAdd.TabIndex = 329
@@ -203,7 +207,7 @@ Partial Class NewRecordForm
         '
         'BtnClear
         '
-        Me.BtnClear.Location = New System.Drawing.Point(626, 482)
+        Me.BtnClear.Location = New System.Drawing.Point(683, 537)
         Me.BtnClear.Name = "BtnClear"
         Me.BtnClear.Size = New System.Drawing.Size(91, 23)
         Me.BtnClear.TabIndex = 328
@@ -213,7 +217,7 @@ Partial Class NewRecordForm
         'RB5
         '
         Me.RB5.AutoSize = True
-        Me.RB5.Location = New System.Drawing.Point(529, 251)
+        Me.RB5.Location = New System.Drawing.Point(586, 251)
         Me.RB5.Name = "RB5"
         Me.RB5.Size = New System.Drawing.Size(73, 17)
         Me.RB5.TabIndex = 327
@@ -224,7 +228,7 @@ Partial Class NewRecordForm
         'RB3
         '
         Me.RB3.AutoSize = True
-        Me.RB3.Location = New System.Drawing.Point(386, 297)
+        Me.RB3.Location = New System.Drawing.Point(443, 297)
         Me.RB3.Name = "RB3"
         Me.RB3.Size = New System.Drawing.Size(119, 17)
         Me.RB3.TabIndex = 326
@@ -235,7 +239,7 @@ Partial Class NewRecordForm
         'RB1
         '
         Me.RB1.AutoSize = True
-        Me.RB1.Location = New System.Drawing.Point(386, 251)
+        Me.RB1.Location = New System.Drawing.Point(443, 251)
         Me.RB1.Name = "RB1"
         Me.RB1.Size = New System.Drawing.Size(109, 17)
         Me.RB1.TabIndex = 325
@@ -246,7 +250,7 @@ Partial Class NewRecordForm
         'RB4
         '
         Me.RB4.AutoSize = True
-        Me.RB4.Location = New System.Drawing.Point(529, 274)
+        Me.RB4.Location = New System.Drawing.Point(586, 274)
         Me.RB4.Name = "RB4"
         Me.RB4.Size = New System.Drawing.Size(143, 17)
         Me.RB4.TabIndex = 324
@@ -257,7 +261,7 @@ Partial Class NewRecordForm
         'RB2
         '
         Me.RB2.AutoSize = True
-        Me.RB2.Location = New System.Drawing.Point(386, 274)
+        Me.RB2.Location = New System.Drawing.Point(443, 274)
         Me.RB2.Name = "RB2"
         Me.RB2.Size = New System.Drawing.Size(139, 17)
         Me.RB2.TabIndex = 323
@@ -267,7 +271,7 @@ Partial Class NewRecordForm
         '
         'TCom
         '
-        Me.TCom.Location = New System.Drawing.Point(291, 342)
+        Me.TCom.Location = New System.Drawing.Point(348, 342)
         Me.TCom.Multiline = True
         Me.TCom.Name = "TCom"
         Me.TCom.Size = New System.Drawing.Size(432, 67)
@@ -275,7 +279,7 @@ Partial Class NewRecordForm
         '
         'BTNS13
         '
-        Me.BTNS13.Location = New System.Drawing.Point(664, 23)
+        Me.BTNS13.Location = New System.Drawing.Point(721, 23)
         Me.BTNS13.Name = "BTNS13"
         Me.BTNS13.Size = New System.Drawing.Size(55, 23)
         Me.BTNS13.TabIndex = 321
@@ -284,7 +288,7 @@ Partial Class NewRecordForm
         '
         'BTNS11
         '
-        Me.BTNS11.Location = New System.Drawing.Point(596, 23)
+        Me.BTNS11.Location = New System.Drawing.Point(653, 23)
         Me.BTNS11.Name = "BTNS11"
         Me.BTNS11.Size = New System.Drawing.Size(62, 23)
         Me.BTNS11.TabIndex = 320
@@ -293,7 +297,7 @@ Partial Class NewRecordForm
         '
         'BTNS12
         '
-        Me.BTNS12.Location = New System.Drawing.Point(596, 52)
+        Me.BTNS12.Location = New System.Drawing.Point(653, 52)
         Me.BTNS12.Name = "BTNS12"
         Me.BTNS12.Size = New System.Drawing.Size(62, 23)
         Me.BTNS12.TabIndex = 319
@@ -302,7 +306,7 @@ Partial Class NewRecordForm
         '
         'BTNS14
         '
-        Me.BTNS14.Location = New System.Drawing.Point(664, 52)
+        Me.BTNS14.Location = New System.Drawing.Point(721, 52)
         Me.BTNS14.Name = "BTNS14"
         Me.BTNS14.Size = New System.Drawing.Size(55, 23)
         Me.BTNS14.TabIndex = 318
@@ -311,7 +315,7 @@ Partial Class NewRecordForm
         '
         'BTNS9
         '
-        Me.BTNS9.Location = New System.Drawing.Point(457, 42)
+        Me.BTNS9.Location = New System.Drawing.Point(514, 42)
         Me.BTNS9.Name = "BTNS9"
         Me.BTNS9.Size = New System.Drawing.Size(105, 48)
         Me.BTNS9.TabIndex = 317
@@ -320,7 +324,7 @@ Partial Class NewRecordForm
         '
         'BTNS8
         '
-        Me.BTNS8.Location = New System.Drawing.Point(457, 96)
+        Me.BTNS8.Location = New System.Drawing.Point(514, 96)
         Me.BTNS8.Name = "BTNS8"
         Me.BTNS8.Size = New System.Drawing.Size(105, 58)
         Me.BTNS8.TabIndex = 316
@@ -329,7 +333,7 @@ Partial Class NewRecordForm
         '
         'BTNS10
         '
-        Me.BTNS10.Location = New System.Drawing.Point(614, 88)
+        Me.BTNS10.Location = New System.Drawing.Point(671, 88)
         Me.BTNS10.Name = "BTNS10"
         Me.BTNS10.Size = New System.Drawing.Size(105, 66)
         Me.BTNS10.TabIndex = 315
@@ -338,7 +342,7 @@ Partial Class NewRecordForm
         '
         'BTNS7
         '
-        Me.BTNS7.Location = New System.Drawing.Point(636, 188)
+        Me.BTNS7.Location = New System.Drawing.Point(693, 188)
         Me.BTNS7.Name = "BTNS7"
         Me.BTNS7.Size = New System.Drawing.Size(83, 45)
         Me.BTNS7.TabIndex = 314
@@ -347,7 +351,7 @@ Partial Class NewRecordForm
         '
         'BTNS6
         '
-        Me.BTNS6.Location = New System.Drawing.Point(547, 188)
+        Me.BTNS6.Location = New System.Drawing.Point(604, 188)
         Me.BTNS6.Name = "BTNS6"
         Me.BTNS6.Size = New System.Drawing.Size(83, 45)
         Me.BTNS6.TabIndex = 313
@@ -356,7 +360,7 @@ Partial Class NewRecordForm
         '
         'BTNS5
         '
-        Me.BTNS5.Location = New System.Drawing.Point(457, 188)
+        Me.BTNS5.Location = New System.Drawing.Point(514, 188)
         Me.BTNS5.Name = "BTNS5"
         Me.BTNS5.Size = New System.Drawing.Size(83, 45)
         Me.BTNS5.TabIndex = 312
@@ -365,7 +369,7 @@ Partial Class NewRecordForm
         '
         'BTNS4
         '
-        Me.BTNS4.Location = New System.Drawing.Point(399, 159)
+        Me.BTNS4.Location = New System.Drawing.Point(456, 159)
         Me.BTNS4.Name = "BTNS4"
         Me.BTNS4.Size = New System.Drawing.Size(52, 74)
         Me.BTNS4.TabIndex = 311
@@ -374,7 +378,7 @@ Partial Class NewRecordForm
         '
         'BTNS3
         '
-        Me.BTNS3.Location = New System.Drawing.Point(288, 122)
+        Me.BTNS3.Location = New System.Drawing.Point(345, 122)
         Me.BTNS3.Name = "BTNS3"
         Me.BTNS3.Size = New System.Drawing.Size(105, 111)
         Me.BTNS3.TabIndex = 310
@@ -383,7 +387,7 @@ Partial Class NewRecordForm
         '
         'BTNS2
         '
-        Me.BTNS2.Location = New System.Drawing.Point(288, 82)
+        Me.BTNS2.Location = New System.Drawing.Point(345, 82)
         Me.BTNS2.Name = "BTNS2"
         Me.BTNS2.Size = New System.Drawing.Size(105, 38)
         Me.BTNS2.TabIndex = 309
@@ -392,7 +396,7 @@ Partial Class NewRecordForm
         '
         'BTNS1
         '
-        Me.BTNS1.Location = New System.Drawing.Point(288, 42)
+        Me.BTNS1.Location = New System.Drawing.Point(345, 42)
         Me.BTNS1.Name = "BTNS1"
         Me.BTNS1.Size = New System.Drawing.Size(105, 38)
         Me.BTNS1.TabIndex = 308
@@ -402,7 +406,7 @@ Partial Class NewRecordForm
         'CBGroup
         '
         Me.CBGroup.AutoSize = True
-        Me.CBGroup.Location = New System.Drawing.Point(200, 392)
+        Me.CBGroup.Location = New System.Drawing.Point(200, 363)
         Me.CBGroup.Name = "CBGroup"
         Me.CBGroup.Size = New System.Drawing.Size(80, 17)
         Me.CBGroup.TabIndex = 307
@@ -411,7 +415,7 @@ Partial Class NewRecordForm
         '
         'TCost
         '
-        Me.TCost.Location = New System.Drawing.Point(105, 389)
+        Me.TCost.Location = New System.Drawing.Point(105, 360)
         Me.TCost.Name = "TCost"
         Me.TCost.Size = New System.Drawing.Size(42, 20)
         Me.TCost.TabIndex = 306
@@ -419,31 +423,31 @@ Partial Class NewRecordForm
         'CBDaf
         '
         Me.CBDaf.FormattingEnabled = True
-        Me.CBDaf.Location = New System.Drawing.Point(105, 333)
+        Me.CBDaf.Location = New System.Drawing.Point(105, 304)
         Me.CBDaf.Name = "CBDaf"
-        Me.CBDaf.Size = New System.Drawing.Size(176, 21)
+        Me.CBDaf.Size = New System.Drawing.Size(175, 21)
         Me.CBDaf.TabIndex = 305
         '
         'CBTer
         '
         Me.CBTer.FormattingEnabled = True
-        Me.CBTer.Location = New System.Drawing.Point(105, 277)
+        Me.CBTer.Location = New System.Drawing.Point(105, 248)
         Me.CBTer.Name = "CBTer"
-        Me.CBTer.Size = New System.Drawing.Size(176, 21)
+        Me.CBTer.Size = New System.Drawing.Size(177, 21)
         Me.CBTer.TabIndex = 304
         '
         'CBPer
         '
         Me.CBPer.FormattingEnabled = True
-        Me.CBPer.Location = New System.Drawing.Point(106, 221)
+        Me.CBPer.Location = New System.Drawing.Point(106, 192)
         Me.CBPer.Name = "CBPer"
-        Me.CBPer.Size = New System.Drawing.Size(176, 21)
+        Me.CBPer.Size = New System.Drawing.Size(175, 21)
         Me.CBPer.TabIndex = 303
         '
         'Label18
         '
         Me.Label18.AutoSize = True
-        Me.Label18.Location = New System.Drawing.Point(288, 253)
+        Me.Label18.Location = New System.Drawing.Point(345, 253)
         Me.Label18.Name = "Label18"
         Me.Label18.Size = New System.Drawing.Size(92, 13)
         Me.Label18.TabIndex = 302
@@ -452,7 +456,7 @@ Partial Class NewRecordForm
         'Label17
         '
         Me.Label17.AutoSize = True
-        Me.Label17.Location = New System.Drawing.Point(288, 326)
+        Me.Label17.Location = New System.Drawing.Point(345, 326)
         Me.Label17.Name = "Label17"
         Me.Label17.Size = New System.Drawing.Size(86, 13)
         Me.Label17.TabIndex = 301
@@ -461,7 +465,7 @@ Partial Class NewRecordForm
         'Label16
         '
         Me.Label16.AutoSize = True
-        Me.Label16.Location = New System.Drawing.Point(11, 392)
+        Me.Label16.Location = New System.Drawing.Point(11, 363)
         Me.Label16.Name = "Label16"
         Me.Label16.Size = New System.Drawing.Size(50, 13)
         Me.Label16.TabIndex = 300
@@ -470,7 +474,7 @@ Partial Class NewRecordForm
         'Label15
         '
         Me.Label15.AutoSize = True
-        Me.Label15.Location = New System.Drawing.Point(10, 336)
+        Me.Label15.Location = New System.Drawing.Point(10, 307)
         Me.Label15.Name = "Label15"
         Me.Label15.Size = New System.Drawing.Size(96, 13)
         Me.Label15.TabIndex = 299
@@ -479,7 +483,7 @@ Partial Class NewRecordForm
         'Label14
         '
         Me.Label14.AutoSize = True
-        Me.Label14.Location = New System.Drawing.Point(11, 285)
+        Me.Label14.Location = New System.Drawing.Point(11, 256)
         Me.Label14.Name = "Label14"
         Me.Label14.Size = New System.Drawing.Size(69, 13)
         Me.Label14.TabIndex = 298
@@ -488,7 +492,7 @@ Partial Class NewRecordForm
         'Label13
         '
         Me.Label13.AutoSize = True
-        Me.Label13.Location = New System.Drawing.Point(288, 25)
+        Me.Label13.Location = New System.Drawing.Point(345, 25)
         Me.Label13.Name = "Label13"
         Me.Label13.Size = New System.Drawing.Size(60, 13)
         Me.Label13.TabIndex = 297
@@ -497,7 +501,7 @@ Partial Class NewRecordForm
         'Label12
         '
         Me.Label12.AutoSize = True
-        Me.Label12.Location = New System.Drawing.Point(12, 226)
+        Me.Label12.Location = New System.Drawing.Point(12, 197)
         Me.Label12.Name = "Label12"
         Me.Label12.Size = New System.Drawing.Size(83, 13)
         Me.Label12.TabIndex = 296
@@ -505,7 +509,7 @@ Partial Class NewRecordForm
         '
         'BTNDurUp
         '
-        Me.BTNDurUp.Location = New System.Drawing.Point(252, 192)
+        Me.BTNDurUp.Location = New System.Drawing.Point(252, 163)
         Me.BTNDurUp.Name = "BTNDurUp"
         Me.BTNDurUp.Size = New System.Drawing.Size(30, 23)
         Me.BTNDurUp.TabIndex = 295
@@ -514,7 +518,7 @@ Partial Class NewRecordForm
         '
         'BTNDurDown
         '
-        Me.BTNDurDown.Location = New System.Drawing.Point(178, 192)
+        Me.BTNDurDown.Location = New System.Drawing.Point(178, 163)
         Me.BTNDurDown.Name = "BTNDurDown"
         Me.BTNDurDown.Size = New System.Drawing.Size(30, 23)
         Me.BTNDurDown.TabIndex = 294
@@ -523,7 +527,7 @@ Partial Class NewRecordForm
         '
         'TDur
         '
-        Me.TDur.Location = New System.Drawing.Point(214, 194)
+        Me.TDur.Location = New System.Drawing.Point(214, 165)
         Me.TDur.Name = "TDur"
         Me.TDur.Size = New System.Drawing.Size(32, 20)
         Me.TDur.TabIndex = 293
@@ -531,7 +535,7 @@ Partial Class NewRecordForm
         '
         'BTNMinUp
         '
-        Me.BTNMinUp.Location = New System.Drawing.Point(252, 163)
+        Me.BTNMinUp.Location = New System.Drawing.Point(252, 134)
         Me.BTNMinUp.Name = "BTNMinUp"
         Me.BTNMinUp.Size = New System.Drawing.Size(30, 23)
         Me.BTNMinUp.TabIndex = 292
@@ -540,7 +544,7 @@ Partial Class NewRecordForm
         '
         'BTNMinDown
         '
-        Me.BTNMinDown.Location = New System.Drawing.Point(178, 163)
+        Me.BTNMinDown.Location = New System.Drawing.Point(178, 134)
         Me.BTNMinDown.Name = "BTNMinDown"
         Me.BTNMinDown.Size = New System.Drawing.Size(30, 23)
         Me.BTNMinDown.TabIndex = 291
@@ -549,7 +553,7 @@ Partial Class NewRecordForm
         '
         'TMin
         '
-        Me.TMin.Location = New System.Drawing.Point(214, 165)
+        Me.TMin.Location = New System.Drawing.Point(214, 136)
         Me.TMin.Name = "TMin"
         Me.TMin.Size = New System.Drawing.Size(32, 20)
         Me.TMin.TabIndex = 290
@@ -557,7 +561,7 @@ Partial Class NewRecordForm
         '
         'BTNHourUp
         '
-        Me.BTNHourUp.Location = New System.Drawing.Point(252, 134)
+        Me.BTNHourUp.Location = New System.Drawing.Point(252, 105)
         Me.BTNHourUp.Name = "BTNHourUp"
         Me.BTNHourUp.Size = New System.Drawing.Size(30, 23)
         Me.BTNHourUp.TabIndex = 289
@@ -566,7 +570,7 @@ Partial Class NewRecordForm
         '
         'BTNHourDown
         '
-        Me.BTNHourDown.Location = New System.Drawing.Point(178, 134)
+        Me.BTNHourDown.Location = New System.Drawing.Point(178, 105)
         Me.BTNHourDown.Name = "BTNHourDown"
         Me.BTNHourDown.Size = New System.Drawing.Size(30, 23)
         Me.BTNHourDown.TabIndex = 288
@@ -576,7 +580,7 @@ Partial Class NewRecordForm
         'Label11
         '
         Me.Label11.AutoSize = True
-        Me.Label11.Location = New System.Drawing.Point(94, 197)
+        Me.Label11.Location = New System.Drawing.Point(94, 168)
         Me.Label11.Name = "Label11"
         Me.Label11.Size = New System.Drawing.Size(84, 13)
         Me.Label11.TabIndex = 287
@@ -585,7 +589,7 @@ Partial Class NewRecordForm
         'Label10
         '
         Me.Label10.AutoSize = True
-        Me.Label10.Location = New System.Drawing.Point(132, 168)
+        Me.Label10.Location = New System.Drawing.Point(132, 139)
         Me.Label10.Name = "Label10"
         Me.Label10.Size = New System.Drawing.Size(40, 13)
         Me.Label10.TabIndex = 286
@@ -594,7 +598,7 @@ Partial Class NewRecordForm
         'Label9
         '
         Me.Label9.AutoSize = True
-        Me.Label9.Location = New System.Drawing.Point(128, 139)
+        Me.Label9.Location = New System.Drawing.Point(128, 110)
         Me.Label9.Name = "Label9"
         Me.Label9.Size = New System.Drawing.Size(44, 13)
         Me.Label9.TabIndex = 285
@@ -602,7 +606,7 @@ Partial Class NewRecordForm
         '
         'THour
         '
-        Me.THour.Location = New System.Drawing.Point(214, 136)
+        Me.THour.Location = New System.Drawing.Point(214, 107)
         Me.THour.Name = "THour"
         Me.THour.Size = New System.Drawing.Size(32, 20)
         Me.THour.TabIndex = 284
@@ -611,7 +615,7 @@ Partial Class NewRecordForm
         'Label8
         '
         Me.Label8.AutoSize = True
-        Me.Label8.Location = New System.Drawing.Point(12, 142)
+        Me.Label8.Location = New System.Drawing.Point(12, 113)
         Me.Label8.Name = "Label8"
         Me.Label8.Size = New System.Drawing.Size(48, 13)
         Me.Label8.TabIndex = 283
@@ -620,7 +624,7 @@ Partial Class NewRecordForm
         'Label7
         '
         Me.Label7.AutoSize = True
-        Me.Label7.Location = New System.Drawing.Point(11, 114)
+        Me.Label7.Location = New System.Drawing.Point(11, 85)
         Me.Label7.Name = "Label7"
         Me.Label7.Size = New System.Drawing.Size(66, 13)
         Me.Label7.TabIndex = 282
@@ -631,7 +635,7 @@ Partial Class NewRecordForm
         Me.DTP1.CustomFormat = "dd MMMM yyyy 'წელი'"
         Me.DTP1.Font = New System.Drawing.Font("Sylfaen", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.DTP1.Format = System.Windows.Forms.DateTimePickerFormat.Custom
-        Me.DTP1.Location = New System.Drawing.Point(106, 108)
+        Me.DTP1.Location = New System.Drawing.Point(106, 79)
         Me.DTP1.Name = "DTP1"
         Me.DTP1.Size = New System.Drawing.Size(176, 23)
         Me.DTP1.TabIndex = 281
@@ -641,7 +645,7 @@ Partial Class NewRecordForm
         Me.CBBeneSurname.FormattingEnabled = True
         Me.CBBeneSurname.Location = New System.Drawing.Point(106, 52)
         Me.CBBeneSurname.Name = "CBBeneSurname"
-        Me.CBBeneSurname.Size = New System.Drawing.Size(176, 21)
+        Me.CBBeneSurname.Size = New System.Drawing.Size(175, 21)
         Me.CBBeneSurname.TabIndex = 279
         '
         'Label6
@@ -710,7 +714,8 @@ Partial Class NewRecordForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(732, 545)
+        Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(255, Byte), Integer), CType(CType(192, Byte), Integer))
+        Me.ClientSize = New System.Drawing.Size(788, 600)
         Me.Controls.Add(Me.LMsgSpace)
         Me.Controls.Add(Me.LMsgPer)
         Me.Controls.Add(Me.BtnAddDaf)
