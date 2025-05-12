@@ -22,6 +22,7 @@ Partial Class NewRecordForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(NewRecordForm))
         Me.LMsgSpace = New System.Windows.Forms.Label()
         Me.LMsgPer = New System.Windows.Forms.Label()
         Me.BtnAddDaf = New System.Windows.Forms.Button()
@@ -272,6 +273,7 @@ Partial Class NewRecordForm
         Me.TCom.Name = "TCom"
         Me.TCom.Size = New System.Drawing.Size(432, 67)
         Me.TCom.TabIndex = 322
+        Me.TCom.Text = resources.GetString("TCom.Text")
         '
         'BTNS13
         '

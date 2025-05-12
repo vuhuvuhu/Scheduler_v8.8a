@@ -133,9 +133,21 @@ Public Class NewRecordForm
             ' ComboBox-ების რედაქტირების შეზღუდვა - მხოლოდ ჩამონათვალიდან არჩევა
             CBBeneName.DropDownStyle = ComboBoxStyle.DropDownList
             CBBeneSurname.DropDownStyle = ComboBoxStyle.DropDownList
+            CBPer.DropDownStyle = ComboBoxStyle.DropDownList
+            CBTer.DropDownStyle = ComboBoxStyle.DropDownList
+            CBDaf.DropDownStyle = ComboBoxStyle.DropDownList
 
             ' ბენეფიციარის სახელების ჩატვირთვა
             LoadBeneNames()
+
+            ' თერაპევტების სიის ჩატვირთვა
+            LoadTherapists()
+
+            ' თერაპიის ტიპების ჩატვირთვა
+            LoadTherapyTypes()
+
+            ' დაფინანსების პროგრამების ჩატვირთვა
+            LoadFundingPrograms()
 
             ' CBBeneSurname თავიდან დაბლოკილია
             CBBeneSurname.Enabled = False
@@ -145,6 +157,9 @@ Public Class NewRecordForm
 
             ' საათის, წუთის და ხანგძლივობის ლეიბლების ინიციალიზაცია
             InitializeTimeAndDurationLabels()
+
+            ' TCost ტექსტბოქსის ინიციალიზაცია
+            TCost.Text = "0"
 
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ფორმის ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -164,10 +179,12 @@ Public Class NewRecordForm
         ' ხანგძლივობა - საწყისი მნიშვნელობა 60
         TDur.Text = "60"
 
-        ' ვიზუალური სტილი - სწორი მნიშვნელობები Label კონტროლებისთვის
-        THour.TextAlign = HorizontalAlignment.Center
-        TMin.TextAlign = HorizontalAlignment.Center
-        TDur.TextAlign = HorizontalAlignment.Center
+        ' თუ კონტროლები ტექსტბოქსებია, მაშინ გამოვიყენოთ TextAlign
+        If TypeOf THour Is TextBox Then
+            DirectCast(THour, TextBox).TextAlign = HorizontalAlignment.Center
+            DirectCast(TMin, TextBox).TextAlign = HorizontalAlignment.Center
+            DirectCast(TDur, TextBox).TextAlign = HorizontalAlignment.Center
+        End If
 
         ' ლეიბლების საზღვრები
         THour.BorderStyle = BorderStyle.FixedSingle
@@ -203,7 +220,7 @@ Public Class NewRecordForm
         End Try
     End Sub
     ''' <summary>
-    ''' ბენეფიციარის სახელების ჩატვირთვა DB-Bene ფურცლიდან
+    ''' ბენეფიციარის სახელების ჩატვირთვა DB-Bene ფურცლიდან - განახლებული ვერსია
     ''' </summary>
     Private Sub LoadBeneNames()
         Try
@@ -234,6 +251,9 @@ Public Class NewRecordForm
             ' გასუფთავება ComboBox-ის
             CBBeneName.Items.Clear()
 
+            ' დავამატოთ პირველი ელემენტი - მინიშნება
+            CBBeneName.Items.Add("- აირჩიეთ ბენეფიციარის სახელი -")
+
             ' უნიკალური სახელების სორტირება ანბანის მიხედვით და დამატება CBBeneName-ში
             Dim sortedNamesList As List(Of String) = uniqueNames.OrderBy(Function(name) name).ToList()
 
@@ -241,30 +261,40 @@ Public Class NewRecordForm
                 CBBeneName.Items.Add(sortedNamesList(i))
             Next
 
+            ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
+            CBBeneName.SelectedIndex = 0
+
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ბენეფიციარის სახელების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     ''' <summary>
-    ''' CBBeneName-ში სახელის არჩევისას ივენთი
+    ''' CBBeneName-ში სახელის არჩევისას ივენთი - განახლებული
     ''' </summary>
     Private Sub CBBeneName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneName.SelectedIndexChanged
         Try
             ' გავასუფთაოთ CBBeneSurname-ის Items კოლექცია
             CBBeneSurname.Items.Clear()
 
-            ' თუ ინდექსი ვალიდურია, ჩავტვირთოთ შესაბამისი გვარები
-            If CBBeneName.SelectedIndex >= 0 Then
-                Dim selectedName As String = CBBeneName.SelectedItem.ToString()
-                LoadBeneSurnames(selectedName)
-
-                ' გავააქტიუროთ გვარების ჩამონათვალი
-                CBBeneSurname.Enabled = True
-            Else
-                ' ინდექსი არავალიდურია, გამოვრთოთ გვარების ჩამონათვალი
+            ' თუ არჩეულია პირველი ელემენტი (მინიშნება), გვარების ჩამონათვალი გამორთულია
+            If CBBeneName.SelectedIndex = 0 Then
                 CBBeneSurname.Enabled = False
+                Return
             End If
+
+            ' დავამატოთ მინიშნება გვარების ComboBox-ში
+            CBBeneSurname.Items.Add("- აირჩიეთ გვარი -")
+
+            ' ჩავტვირთოთ შესაბამისი გვარები
+            Dim selectedName As String = CBBeneName.SelectedItem.ToString()
+            LoadBeneSurnames(selectedName)
+
+            ' გავააქტიუროთ გვარების ჩამონათვალი
+            CBBeneSurname.Enabled = True
+
+            ' ავირჩიოთ მინიშნება
+            CBBeneSurname.SelectedIndex = 0
         Catch ex As Exception
             MessageBox.Show($"შეცდომა სახელის არჩევისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -283,14 +313,11 @@ Public Class NewRecordForm
         End If
     End Sub
     ''' <summary>
-    ''' ბენეფიციარის გვარების ჩატვირთვა არჩეული სახელის შესაბამისად
+    ''' ბენეფიციარის გვარების ჩატვირთვა არჩეული სახელის შესაბამისად - განახლებული
     ''' </summary>
     ''' <param name="selectedName">არჩეული სახელი</param>
     Private Sub LoadBeneSurnames(selectedName As String)
         Try
-            ' გავასუფთაოთ გვარების ჩამონათვალი
-            CBBeneSurname.Items.Clear()
-
             ' B და C სვეტების წაკითხვა DB-Bene ფურცლიდან
             Dim rows = dataService.GetData("DB-Bene!B2:C")
 
@@ -321,15 +348,11 @@ Public Class NewRecordForm
                 CBBeneSurname.Items.Add(sortedSurnamesList(i))
             Next
 
-            ' თუ მხოლოდ ერთი გვარია, ავტომატურად ავირჩიოთ
-            If sortedSurnamesList.Count = 1 Then
-                CBBeneSurname.SelectedIndex = 0
-            End If
-
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ბენეფიციარის გვარების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
     ''' <summary>
     ''' BTNHourDown ღილაკზე დაჭერა - საათის შემცირება 1-ით
     ''' </summary>
@@ -458,6 +481,224 @@ Public Class NewRecordForm
             End If
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ხანგძლივობის გაზრდისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაპევტების სიის ჩატვირთვა DB-Personal გვერდიდან - განახლებული
+    ''' </summary>
+    Private Sub LoadTherapists()
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' B, C და H სვეტების წაკითხვა DB-Personal გვერდიდან
+            Dim rows = dataService.GetData("DB-Personal!B2:H")
+
+            ' თუ მონაცემები არ არის, გამოვიდეთ ფუნქციიდან
+            If rows Is Nothing OrElse rows.Count = 0 Then
+                MessageBox.Show("თერაპევტების მონაცემები ვერ მოიძებნა", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' გავასუფთაოთ კომბობოქსი
+            CBPer.Items.Clear()
+
+            ' დავამატოთ პირველი ელემენტი - მინიშნება
+            CBPer.Items.Add("- აირჩიეთ თერაპევტი -")
+
+            ' თერაპევტების სიის შექმნა
+            Dim therapists As New List(Of String)
+
+            For Each row In rows
+                ' შევამოწმოთ არის თუ არა საკმარისი სვეტები და არის თუ არა "active"
+                If row.Count >= 7 AndAlso
+               Not String.IsNullOrEmpty(row(0)?.ToString().Trim()) AndAlso  ' B სვეტი - სახელი
+               Not String.IsNullOrEmpty(row(1)?.ToString().Trim()) AndAlso  ' C სვეტი - გვარი
+               row(6)?.ToString().Trim().ToLower() = "active" Then          ' H სვეტი - სტატუსი
+
+                    ' შექმენით სახელი + გვარი ფორმატში
+                    Dim therapistName = $"{row(0).ToString().Trim()} {row(1).ToString().Trim()}"
+                    therapists.Add(therapistName)
+                End If
+            Next
+
+            ' დავალაგოთ ანბანის მიხედვით
+            therapists.Sort()
+
+            ' დავამატოთ კომბობოქსში
+            For Each therapist In therapists
+                CBPer.Items.Add(therapist)
+            Next
+
+            ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
+            CBPer.SelectedIndex = 0
+
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა თერაპევტების სიის ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაპიის ტიპების ჩატვირთვა DB-Therapy ფურცლიდან - განახლებული
+    ''' </summary>
+    Private Sub LoadTherapyTypes()
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' B სვეტის წაკითხვა DB-Therapy ფურცლიდან
+            Dim rows = dataService.GetData("DB-Therapy!B2:B")
+
+            ' თუ მონაცემები არ არის, გამოვიდეთ ფუნქციიდან
+            If rows Is Nothing OrElse rows.Count = 0 Then
+                MessageBox.Show("თერაპიის ტიპების მონაცემები ვერ მოიძებნა", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' გავასუფთაოთ კომბობოქსი
+            CBTer.Items.Clear()
+
+            ' დავამატოთ პირველი ელემენტი - მინიშნება
+            CBTer.Items.Add("- აირჩიეთ თერაპიის ტიპი -")
+
+            ' დავამატოთ თერაპიის ტიპები
+            For Each row In rows
+                If row.Count > 0 AndAlso Not String.IsNullOrEmpty(row(0)?.ToString().Trim()) Then
+                    CBTer.Items.Add(row(0).ToString().Trim())
+                End If
+            Next
+
+            ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
+            CBTer.SelectedIndex = 0
+
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა თერაპიის ტიპების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' დაფინანსების პროგრამების ჩატვირთვა DB-Program ფურცლიდან - განახლებული
+    ''' </summary>
+    Private Sub LoadFundingPrograms()
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' B სვეტის წაკითხვა DB-Program ფურცლიდან
+            Dim rows = dataService.GetData("DB-Program!B2:B")
+
+            ' თუ მონაცემები არ არის, გამოვიდეთ ფუნქციიდან
+            If rows Is Nothing OrElse rows.Count = 0 Then
+                MessageBox.Show("დაფინანსების პროგრამების მონაცემები ვერ მოიძებნა", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' გავასუფთაოთ კომბობოქსი
+            CBDaf.Items.Clear()
+
+            ' დავამატოთ პირველი ელემენტი - მინიშნება
+            CBDaf.Items.Add("- აირჩიეთ დაფინანსების პროგრამა -")
+
+            ' დავამატოთ დაფინანსების პროგრამები
+            For Each row In rows
+                If row.Count > 0 AndAlso Not String.IsNullOrEmpty(row(0)?.ToString().Trim()) Then
+                    CBDaf.Items.Add(row(0).ToString().Trim())
+                End If
+            Next
+
+            ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
+            CBDaf.SelectedIndex = 0
+
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა დაფინანსების პროგრამების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' TCost-ში კლავიშზე დაჭერის ივენთი - მხოლოდ ციფრების და წერტილის/მძიმის დაშვება
+    ''' </summary>
+    Private Sub TCost_KeyPress(sender As Object, e As KeyPressEventArgs) Handles TCost.KeyPress
+        ' აქცეპტირებული სიმბოლოები: ციფრები, წაშლის კლავიში, წერტილი, მძიმე
+        If Not (Char.IsDigit(e.KeyChar) OrElse e.KeyChar = ControlChars.Back OrElse e.KeyChar = "." OrElse e.KeyChar = ",") Then
+            ' დანარჩენი სიმბოლოების ბლოკირება
+            e.Handled = True
+            Return
+        End If
+
+        ' შევამოწმოთ თუ ეს წერტილი ან მძიმეა
+        If e.KeyChar = "." OrElse e.KeyChar = "," Then
+            ' წერტილი/მძიმე არ უნდა იყოს პირველი სიმბოლო 
+            If TCost.Text.Length = 0 Then
+                e.Handled = True
+                Return
+            End If
+
+            ' წერტილი/მძიმე არ უნდა გამეორდეს
+            If TCost.Text.Contains(".") OrElse TCost.Text.Contains(",") Then
+                e.Handled = True
+                Return
+            End If
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' TCost-ში ტექსტის შეცვლის ივენთი - დამატებითი ვალიდაცია
+    ''' </summary>
+    Private Sub TCost_TextChanged(sender As Object, e As EventArgs) Handles TCost.TextChanged
+        ' ტექსტის ვალიდაცია და კორექტირება
+        Dim text As String = TCost.Text
+
+        ' თუ ტექსტი ცარიელია, დავაყენოთ 0
+        If String.IsNullOrEmpty(text) Then
+            TCost.Text = "0"
+            Return
+        End If
+
+        ' შევამოწმოთ რომ ტექსტი რიცხვის ფორმატშია
+        Dim isValidNumber As Boolean = True
+
+        ' ვეცადოთ დავაკონვერტიროთ Double-ად
+        Dim value As Double
+        If Not Double.TryParse(text.Replace(",", "."), value) Then
+            isValidNumber = False
+        End If
+
+        ' თუ არ არის ვალიდური რიცხვი, დავაბრუნოთ 0 ან წინა ვალიდური მნიშვნელობა
+        If Not isValidNumber Then
+            TCost.Text = "0"
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' TCost-დან გასვლის ივენთი - რიცხვის ფორმატირება
+    ''' </summary>
+    Private Sub TCost_Leave(sender As Object, e As EventArgs) Handles TCost.Leave
+        Try
+            ' ტექსტის ფორმატირება როგორც რიცხვის
+            Dim text As String = TCost.Text.Replace(",", ".")
+
+            ' თუ ტექსტი ცარიელია ან არ არის რიცხვი, დავაყენოთ 0
+            Dim value As Double
+            If String.IsNullOrEmpty(text) OrElse Not Double.TryParse(text, value) Then
+                TCost.Text = "0"
+                Return
+            End If
+
+            ' ფორმატირება ორი ციფრით მძიმის შემდეგ
+            TCost.Text = String.Format("{0:0.00}", value)
+        Catch ex As Exception
+            ' შეცდომის შემთხვევაში დავაყენოთ 0
+            TCost.Text = "0"
         End Try
     End Sub
 End Class
