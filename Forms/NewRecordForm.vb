@@ -22,6 +22,8 @@ Public Class NewRecordForm
     Private _editRecordId As Integer = 0
     ' მომხმარებლის ელ.ფოსტა
     Private _userEmail As String = ""
+    ' ფლაგი რეკურსიის თავიდან ასაცილებლად
+    Private isUpdating As Boolean = False
 
     ''' <summary>
     ''' კონსტრუქტორი ახალი ჩანაწერის შესაქმნელად
@@ -161,8 +163,56 @@ Public Class NewRecordForm
             ' TCost ტექსტბოქსის ინიციალიზაცია
             TCost.Text = "0"
 
+            ' სივრცეების ღილაკების საწყისი ფერების დაყენება
+            InitializeSpaceButtons()
+
+            ' რადიობუტონების ხილვადობის კონტროლი თარიღის მიხედვით
+            UpdateStatusVisibility()
+
+            ' თარიღისა და დროის ცვლილების ივენთების დამატება
+            ' ValueChanged ივენთს აღარ ვიყენებთ, მის ნაცვლად CloseUp ივენთს ვიყენებთ
+            RemoveHandler DTP1.ValueChanged, AddressOf DTP1_ValueChanged
+            AddHandler DTP1.CloseUp, AddressOf DTP1_CloseUp
+            AddHandler THour.TextChanged, AddressOf DateTimeChanged
+            AddHandler TMin.TextChanged, AddressOf DateTimeChanged
+
+            ' სივრცეების ღილაკებზე click ივენთების მიბმა
+            AttachSpaceButtonHandlers()
+
+            ' რადიობუტონების ივენთების მიბმა
+            AttachRadioButtonHandlers()
+
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ფორმის ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ფორმის დახურვისას მივხსნათ ივენთის მიბმები
+    ''' </summary>
+    Private Sub NewRecordForm_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        Try
+            ' მოვხსნათ ყველა მიბმული ივენთი რესურსების გასათავისუფლებლად
+            RemoveHandler DTP1.CloseUp, AddressOf DTP1_CloseUp
+            RemoveHandler THour.TextChanged, AddressOf DateTimeChanged
+            RemoveHandler TMin.TextChanged, AddressOf DateTimeChanged
+
+            ' სივრცის ღილაკებიდან ივენთების მოხსნა
+            For Each btn As Button In Me.Controls.OfType(Of Button)()
+                If btn.Name.StartsWith("BTNS") Then
+                    RemoveHandler btn.Click, AddressOf SpaceButton_Click
+                End If
+            Next
+
+            ' რადიობუტონებიდან ივენთების მოხსნა
+            For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                If rb.Name.StartsWith("RB") Then
+                    RemoveHandler rb.CheckedChanged, AddressOf StatusRadioButton_CheckedChanged
+                End If
+            Next
+        Catch ex As Exception
+            ' უბრალოდ გავაგრძელოთ, შეცდომა აქ კრიტიკული არ არის
+            Debug.WriteLine($"FormClosing ივენთების მოხსნის შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -264,41 +314,50 @@ Public Class NewRecordForm
             ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
             CBBeneName.SelectedIndex = 0
 
+            ' საწყისი ფონის ფერი უნდა იყოს ჩვეულებრივი
+            CBBeneName.BackColor = SystemColors.Window
+            CBBeneSurname.BackColor = SystemColors.Window
+
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ბენეფიციარის სახელების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     ''' <summary>
-    ''' CBBeneName-ში სახელის არჩევისას ივენთი - განახლებული
+    ''' CBBeneName-ს SelectedIndexChanged ივენთი - ბენეფიციარის სახელის არჩევისას
+    ''' აქტიურდება CBBeneSurname და ტვირთავს შესაბამის გვარებს
     ''' </summary>
     Private Sub CBBeneName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneName.SelectedIndexChanged
         Try
             ' გავასუფთაოთ CBBeneSurname-ის Items კოლექცია
             CBBeneSurname.Items.Clear()
 
-            ' თუ არჩეულია პირველი ელემენტი (მინიშნება), გვარების ჩამონათვალი გამორთულია
-            If CBBeneName.SelectedIndex = 0 Then
+            ' თუ ინდექსი ვალიდურია და არაა პირველი ელემენტი, ჩავტვირთოთ შესაბამისი გვარები
+            If CBBeneName.SelectedIndex > 0 Then
+                Dim selectedName As String = CBBeneName.SelectedItem.ToString()
+                LoadBeneSurnames(selectedName)
+
+                ' გავააქტიუროთ გვარების ჩამონათვალი
+                CBBeneSurname.Enabled = True
+
+                ' ბენეფიციარის მდგომარეობის შემოწმება
+                CheckBeneficiaryAvailability()
+            Else
+                ' ინდექსი არავალიდურია ან არჩეულია პირველი ელემენტი, გამოვრთოთ გვარების ჩამონათვალი
                 CBBeneSurname.Enabled = False
-                Return
+
+                ' გავწმინდოთ ბექგრაუნდი და შეტყობინება
+                CBBeneName.BackColor = SystemColors.Window
+                CBBeneSurname.BackColor = SystemColors.Window
+                LMsgBene.Text = "აირჩიეთ ბენეფიციარი"
+                LMsgBene.ForeColor = Color.Black
             End If
 
-            ' დავამატოთ მინიშნება გვარების ComboBox-ში
-            CBBeneSurname.Items.Add("- აირჩიეთ გვარი -")
-
-            ' ჩავტვირთოთ შესაბამისი გვარები
-            Dim selectedName As String = CBBeneName.SelectedItem.ToString()
-            LoadBeneSurnames(selectedName)
-
-            ' გავააქტიუროთ გვარების ჩამონათვალი
-            CBBeneSurname.Enabled = True
-
-            ' ავირჩიოთ მინიშნება
-            CBBeneSurname.SelectedIndex = 0
         Catch ex As Exception
             MessageBox.Show($"შეცდომა სახელის არჩევისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
     ''' <summary>
     ''' CBBeneName-ში ტექსტის შეცვლისას ივენთი
     ''' </summary>
@@ -351,6 +410,13 @@ Public Class NewRecordForm
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ბენეფიციარის გვარების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+    ''' <summary>
+    ''' CBBeneSurname-ს SelectedIndexChanged ივენთი - ბენეფიციარის გვარის არჩევისას
+    ''' </summary>
+    Private Sub CBBeneSurname_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneSurname.SelectedIndexChanged
+        ' ბენეფიციარის მდგომარეობის შემოწმება
+        CheckBeneficiaryAvailability()
     End Sub
 
     ''' <summary>
@@ -700,5 +766,452 @@ Public Class NewRecordForm
             ' შეცდომის შემთხვევაში დავაყენოთ 0
             TCost.Text = "0"
         End Try
+    End Sub
+    ''' <summary>
+    ''' სივრცეების ღილაკების Click ივენთების მიბმა
+    ''' </summary>
+    Private Sub AttachSpaceButtonHandlers()
+        ' ყველა BTNS ღილაკის მოძებნა და ივენთის მიბმა
+        For Each btn As Button In Me.Controls.OfType(Of Button)()
+            If btn.Name.StartsWith("BTNS") Then
+                AddHandler btn.Click, AddressOf SpaceButton_Click
+            End If
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' რადიობუტონების Click ივენთების მიბმა
+    ''' </summary>
+    Private Sub AttachRadioButtonHandlers()
+        ' ყველა RB* რადიობუტონის მოძებნა და ივენთის მიბმა
+        For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+            If rb.Name.StartsWith("RB") Then
+                AddHandler rb.CheckedChanged, AddressOf StatusRadioButton_CheckedChanged
+            End If
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' სივრცეების ღილაკების საწყისი მდგომარეობის დაყენება
+    ''' ამოწმებს რომელი სივრცეებია დაკავებული, თავისუფალი, ან ჯგუფური სესიით
+    ''' </summary>
+    Private Sub InitializeSpaceButtons()
+        Try
+            ' თარიღისა და დროის აღება ფორმიდან
+            Dim selectedDate As DateTime = GetSelectedDateTime()
+
+            ' სივრცეების დატვირთულობის ინფორმაციის წამოღება Google Sheets-დან
+            Dim occupiedSpaces As Dictionary(Of String, Boolean) = GetOccupiedSpaces(selectedDate)
+            Dim groupSpaces As Dictionary(Of String, Boolean) = GetGroupSpaces(selectedDate)
+
+            ' ყველა BTNS ღილაკის მოძებნა
+            For Each btn As Button In Me.Controls.OfType(Of Button)()
+                If btn.Name.StartsWith("BTNS") Then
+                    Dim spaceName As String = btn.Text.Trim()
+
+                    If occupiedSpaces.ContainsKey(spaceName) AndAlso occupiedSpaces(spaceName) Then
+                        ' დაკავებული სივრცე - ღია წითელი
+                        btn.BackColor = Color.FromArgb(255, 200, 200)
+                    ElseIf groupSpaces.ContainsKey(spaceName) AndAlso groupSpaces(spaceName) Then
+                        ' ჯგუფური სესიის სივრცე - ღია ყვითელი
+                        btn.BackColor = Color.FromArgb(255, 255, 200)
+                    Else
+                        ' თავისუფალი სივრცე - ღია მწვანე
+                        btn.BackColor = Color.FromArgb(200, 255, 200)
+                    End If
+                End If
+            Next
+
+            ' სტატუსის ტექსტის განახლება LMsgSpace ლეიბლში
+            LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
+            LMsgSpace.ForeColor = Color.DarkGreen
+
+        Catch ex As Exception
+            Debug.WriteLine($"InitializeSpaceButtons: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სივრცეების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' აბრუნებს არჩეულ თარიღსა და დროს DateTime ობიექტად
+    ''' </summary>
+    Private Function GetSelectedDateTime() As DateTime
+        Dim selectedDate As DateTime = DTP1.Value.Date
+
+        ' საათისა და წუთის აღება ტექსტბოქსებიდან
+        Dim hour As Integer = 0
+        Dim minute As Integer = 0
+
+        If Not Integer.TryParse(THour.Text, hour) Then hour = 12
+        If Not Integer.TryParse(TMin.Text, minute) Then minute = 0
+
+        ' ვალიდაცია
+        hour = Math.Max(0, Math.Min(23, hour))
+        minute = Math.Max(0, Math.Min(59, minute))
+
+        ' საბოლოო თარიღის და დროის ობიექტის შექმნა
+        Return New DateTime(selectedDate.Year, selectedDate.Month, selectedDate.Day, hour, minute, 0)
+    End Function
+
+    ''' <summary>
+    ''' ამოწმებს Google Sheets-დან რომელი სივრცეებია დაკავებული მოცემული თარიღისა და დროისთვის
+    ''' </summary>
+    Private Function GetOccupiedSpaces(selectedDateTime As DateTime) As Dictionary(Of String, Boolean)
+        Dim occupiedSpaces As New Dictionary(Of String, Boolean)
+
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                Debug.WriteLine("GetOccupiedSpaces: dataService არ არის ინიციალიზებული")
+                Return occupiedSpaces
+            End If
+
+            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
+            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(90) ' სესიებისთვის ვამოწმებთ დაგეგმილ დროს +/- 30 წთ
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+
+            If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then ' K სვეტი არის ინდექსი 10
+                        Try
+                            ' სივრცის სახელი K სვეტიდან
+                            Dim spaceName As String = row(10).ToString().Trim()
+
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = row(5).ToString()
+                            Dim sessionDateTime As DateTime
+
+                            ' პარსინგის მცდელობა
+                            If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                                     System.Globalization.CultureInfo.InvariantCulture,
+                                                     System.Globalization.DateTimeStyles.None,
+                                                     sessionDateTime) OrElse
+                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
+                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                    ' დაკავებული სივრცე
+                                    occupiedSpaces(spaceName) = True
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetOccupiedSpaces: შეცდომა - {ex.Message}")
+        End Try
+
+        Return occupiedSpaces
+    End Function
+
+    ''' <summary>
+    ''' ამოწმებს Google Sheets-დან რომელი სივრცეებშია ჯგუფური სესიები მოცემული თარიღისა და დროისთვის
+    ''' </summary>
+    Private Function GetGroupSpaces(selectedDateTime As DateTime) As Dictionary(Of String, Boolean)
+        Dim groupSpaces As New Dictionary(Of String, Boolean)
+
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                Debug.WriteLine("GetGroupSpaces: dataService არ არის ინიციალიზებული")
+                Return groupSpaces
+            End If
+
+            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
+            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება (სივრცე და IsGroup)
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+
+            If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then
+                        Try
+                            ' სივრცის სახელი K სვეტიდან
+                            Dim spaceName As String = row(10).ToString().Trim()
+
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = row(5).ToString()
+                            Dim sessionDateTime As DateTime
+
+                            ' პარსინგის მცდელობა
+                            If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                                     System.Globalization.CultureInfo.InvariantCulture,
+                                                     System.Globalization.DateTimeStyles.None,
+                                                     sessionDateTime) OrElse
+                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს 
+                                ' და რომ ეს ჯგუფური სესიაა (G სვეტი - ინდექსი 6)
+                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime AndAlso
+                                   row.Count > 6 AndAlso row(6).ToString().ToLower() = "true" Then
+                                    ' ჯგუფური სესიის სივრცე
+                                    groupSpaces(spaceName) = True
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetGroupSpaces: შეცდომა - {ex.Message}")
+        End Try
+
+        Return groupSpaces
+    End Function
+
+    ''' <summary>
+    ''' სივრცის ღილაკზე დაჭერის ივენთი
+    ''' </summary>
+    Private Sub SpaceButton_Click(sender As Object, e As EventArgs)
+        ' აღვადგინოთ ყველა ღილაკის ფერი
+        InitializeSpaceButtons()
+
+        ' დავაყენოთ არჩეული ღილაკის ფერი ცისფერზე
+        Dim clickedButton As Button = DirectCast(sender, Button)
+        clickedButton.BackColor = Color.FromArgb(173, 216, 230) ' ცისფერი
+
+        ' შევინახოთ არჩეული სივრცის სახელი
+        Dim selectedSpace As String = clickedButton.Text
+
+        ' განვაახლოთ სტატუსის ლეიბლი
+        LMsgSpace.Text = $"არჩეულია სივრცე: {selectedSpace}"
+        LMsgSpace.ForeColor = Color.Blue
+    End Sub
+
+    ''' <summary>
+    ''' DTP1-ის CloseUp ივენთი - კალენდრის დახურვისას გააქტიურდება
+    ''' </summary>
+    Private Sub DTP1_CloseUp(sender As Object, e As EventArgs)
+        ' დროის ცვლილების დამმუშავებლის გამოძახება
+        DateTimeChanged(sender, e)
+    End Sub
+
+    ''' <summary>
+    ''' დროის ან თარიღის ცვლილების ივენთი - გაფართოებული ბენეფიციარის შემოწმებით
+    ''' დამატებულია რეკურსიის თავიდან აცილების მექანიზმი
+    ''' </summary>
+    Private Sub DateTimeChanged(sender As Object, e As EventArgs)
+        ' რეკურსიისგან დაცვა
+        If isUpdating Then
+            Return
+        End If
+
+        isUpdating = True
+
+        Try
+            ' განვაახლოთ სივრცეების სტატუსები
+            InitializeSpaceButtons()
+
+            ' განვაახლოთ შესრულების სტატუსის ხილვადობა
+            UpdateStatusVisibility()
+
+            ' განვაახლოთ ბენეფიციარის მდგომარეობა
+            CheckBeneficiaryAvailability()
+        Finally
+            isUpdating = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' განაახლებს შესრულების სტატუსის კონტროლების ხილვადობას თარიღის მიხედვით
+    ''' თავიდან არცერთი რადიობუტონი არ არის მონიშნული
+    ''' </summary>
+    Private Sub UpdateStatusVisibility()
+        Try
+            ' არჩეული თარიღი და დრო
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
+
+            ' მიმდინარე დრო
+            Dim currentDateTime As DateTime = DateTime.Now
+
+            ' ყველა რადიობუტონი
+            Dim radioButtons As New List(Of RadioButton)
+            For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                If rb.Name.StartsWith("RB") Then
+                    radioButtons.Add(rb)
+                End If
+            Next
+
+            ' მოვხსნათ ყველა მონიშვნა
+            For Each rb In radioButtons
+                rb.Checked = False
+            Next
+
+            ' ვამოწმებთ არის თუ არა არჩეული დრო მიმდინარე მომენტზე მეტი (სამომავლო)
+            If selectedDateTime > currentDateTime Then
+                ' სამომავლო თარიღი - დავმალოთ რადიობუტონები და გამოვაჩინოთ LPlan
+                For Each rb In radioButtons
+                    rb.Visible = False
+                Next
+
+                LPlan.Visible = True
+
+                ' შეტყობინების განახლება
+                LWarning.Text = "სეანსი იგეგმება მომავალში, სტატუსი იქნება 'დაგეგმილი'"
+                LWarning.ForeColor = Color.DarkGreen
+            Else
+                ' წარსული თარიღი - გამოვაჩინოთ რადიობუტონები და დავმალოთ LPlan
+                For Each rb In radioButtons
+                    rb.Visible = True
+                Next
+
+                LPlan.Visible = False
+
+                ' შეტყობინების განახლება
+                LWarning.Text = "სეანსის თარიღი არის წარსულში, აირჩიეთ შესრულების სტატუსი"
+                LWarning.ForeColor = Color.DarkRed
+
+                ' არ ვანიშნინებთ არცერთ რადიობუტონს ავტომატურად
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateStatusVisibility: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
+    ''' ბენეფიციარის მდგომარეობის შემოწმება არჩეული თარიღისა და დროისთვის
+    ''' </summary>
+    Private Sub CheckBeneficiaryAvailability()
+        Try
+            ' შევამოწმოთ გვაქვს თუ არა არჩეული ბენეფიციარი
+            If CBBeneName.SelectedIndex <= 0 OrElse String.IsNullOrEmpty(CBBeneSurname.Text) Then
+                ' თუ ბენეფიციარი არ არის არჩეული ან არჩეულია "-აირჩიეთ-", გავასუფთაოთ ლეიბლი და ბექგრაუნდი
+                LMsgBene.Text = "აირჩიეთ ბენეფიციარი"
+                LMsgBene.ForeColor = Color.Black
+                CBBeneName.BackColor = SystemColors.Window
+                CBBeneSurname.BackColor = SystemColors.Window
+                Return
+            End If
+
+            ' არჩეული თარიღი და დრო
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
+
+            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
+            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+
+            ' არჩეული ბენეფიციარი
+            Dim beneficiaryName As String = CBBeneName.Text.Trim()
+            Dim beneficiarySurname As String = CBBeneSurname.Text.Trim()
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+
+            ' ბენეფიციარის არსებული სესიების მოძებნა
+            Dim beneficiarySession As IList(Of Object) = Nothing
+
+            If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then ' K სვეტამდე (სივრცემდე)
+                        Try
+                            ' ბენეფიციარის სახელი (D სვეტი - ინდექსი 3) და გვარი (E სვეტი - ინდექსი 4)
+                            Dim rowBeneName As String = If(row.Count > 3, row(3).ToString().Trim(), "")
+                            Dim rowBeneSurname As String = If(row.Count > 4, row(4).ToString().Trim(), "")
+
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
+                            Dim sessionDateTime As DateTime
+
+                            ' ვამოწმებთ თუ ეს იგივე ბენეფიციარია
+                            If String.Equals(rowBeneName, beneficiaryName, StringComparison.OrdinalIgnoreCase) AndAlso
+                           String.Equals(rowBeneSurname, beneficiarySurname, StringComparison.OrdinalIgnoreCase) Then
+
+                                ' პარსინგის მცდელობა
+                                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                                     System.Globalization.CultureInfo.InvariantCulture,
+                                                     System.Globalization.DateTimeStyles.None,
+                                                     sessionDateTime) OrElse
+                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                    ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
+                                    If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                        ' ნაპოვნია ბენეფიციარის სესია მოცემულ დროის შუალედში
+                                        beneficiarySession = row
+                                        Exit For
+                                    End If
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+            ' ბენეფიციარის მდგომარეობის ვიზუალური ასახვა
+            If beneficiarySession IsNot Nothing Then
+                ' ბენეფიციარი დაკავებულია - წითელი ინდიკატორი
+                CBBeneName.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
+                CBBeneSurname.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
+
+                ' დეტალური ინფორმაცია თერაპევტზე, თერაპიაზე და სივრცეზე
+                Dim therapistName As String = If(beneficiarySession.Count > 8, beneficiarySession(8).ToString(), "")
+                Dim therapyType As String = If(beneficiarySession.Count > 9, beneficiarySession(9).ToString(), "")
+                Dim spaceName As String = If(beneficiarySession.Count > 10, beneficiarySession(10).ToString(), "")
+
+                ' მრავალხაზიანი ტექსტი ლეიბლში
+                Dim infoText As New System.Text.StringBuilder()
+                infoText.AppendLine("მოცემულ დროს ბენეფიციარი დაკავებულია:")
+                infoText.AppendLine($"თერაპევტი: {therapistName}")
+                infoText.AppendLine($"თერაპია: {therapyType}")
+                infoText.Append($"სივრცე: {spaceName}")
+
+                LMsgBene.Text = infoText.ToString()
+                LMsgBene.ForeColor = Color.DarkRed
+            Else
+                ' ბენეფიციარი თავისუფალია - მწვანე ინდიკატორი
+                CBBeneName.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
+                CBBeneSurname.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
+
+                LMsgBene.Text = "მოცემულ დროს ბენეფიციარი თავისუფალია"
+                LMsgBene.ForeColor = Color.DarkGreen
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"CheckBeneficiaryAvailability: შეცდომა - {ex.Message}")
+
+            ' შეცდომის შემთხვევაში ვაჩვენოთ ნეიტრალური სტატუსი
+            LMsgBene.Text = "ბენეფიციარის მდგომარეობის შემოწმება ვერ მოხერხდა"
+            LMsgBene.ForeColor = Color.Gray
+            CBBeneName.BackColor = SystemColors.Window
+            CBBeneSurname.BackColor = SystemColors.Window
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' რადიობუტონის არჩევის ივენთი
+    ''' </summary>
+    Private Sub StatusRadioButton_CheckedChanged(sender As Object, e As EventArgs)
+        Dim rb As RadioButton = DirectCast(sender, RadioButton)
+
+        ' მხოლოდ არჩეულ რადიობუტონს ვამუშავებთ
+        If rb.Checked Then
+            ' შეტყობინების განახლება
+            LWarning.Text = $"არჩეული სტატუსი: {rb.Text}"
+            LWarning.ForeColor = Color.Blue
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' ValueChanged ივენთი აღარ გამოიყენება, მაგრამ რჩება დიზაინერში მიბმული
+    ''' შევქმნით ცარიელ მეთოდს, რომელიც არაფერს აკეთებს
+    ''' </summary>
+    Private Sub DTP1_ValueChanged(sender As Object, e As EventArgs) Handles DTP1.ValueChanged
+        ' არაფერს აკეთებს, რეალური ფუნქცონალი CloseUp-შია
     End Sub
 End Class
