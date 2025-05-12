@@ -169,6 +169,9 @@ Public Class NewRecordForm
             ' რადიობუტონების ხილვადობის კონტროლი თარიღის მიხედვით
             UpdateStatusVisibility()
 
+            ' მორგებული კომბობოქსების დაყენება
+            SetupCustomComboBoxes()
+
             ' თარიღისა და დროის ცვლილების ივენთების დამატება
             ' ValueChanged ივენთს აღარ ვიყენებთ, მის ნაცვლად CloseUp ივენთს ვიყენებთ
             RemoveHandler DTP1.ValueChanged, AddressOf DTP1_ValueChanged
@@ -210,6 +213,11 @@ Public Class NewRecordForm
                     RemoveHandler rb.CheckedChanged, AddressOf StatusRadioButton_CheckedChanged
                 End If
             Next
+
+            ' მოვხსნათ კომბობოქსების DrawItem ივენთები
+            RemoveHandler CBBeneName.DrawItem, AddressOf ComboBox_DrawItem
+            RemoveHandler CBBeneSurname.DrawItem, AddressOf ComboBox_DrawItem
+
         Catch ex As Exception
             ' უბრალოდ გავაგრძელოთ, შეცდომა აქ კრიტიკული არ არის
             Debug.WriteLine($"FormClosing ივენთების მოხსნის შეცდომა: {ex.Message}")
@@ -267,6 +275,62 @@ Public Class NewRecordForm
 
         Catch ex As Exception
             MessageBox.Show($"შეცდომა DateTimePicker-ის კონფიგურაციისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ' დაამატეთ ეს მეთოდი კლასში
+    Private Sub SetupCustomComboBoxes()
+        ' შევცვალოთ კომბობოქსების DrawMode, რომ ხელით ვხატოთ
+        CBBeneName.DrawMode = DrawMode.OwnerDrawFixed
+        CBBeneSurname.DrawMode = DrawMode.OwnerDrawFixed
+
+        ' მივაბათ DrawItem ივენთი CBBeneName-სთვის
+        AddHandler CBBeneName.DrawItem, AddressOf ComboBox_DrawItem
+
+        ' მივაბათ DrawItem ივენთი CBBeneSurname-სთვის
+        AddHandler CBBeneSurname.DrawItem, AddressOf ComboBox_DrawItem
+
+        Debug.WriteLine("კომბობოქსების DrawMode შეცვლილია")
+    End Sub
+
+    ' დამატებითი მეთოდი კომბობოქსის ელემენტების დასახატად
+    Private Sub ComboBox_DrawItem(sender As Object, e As DrawItemEventArgs)
+        Try
+            If e.Index < 0 Then Return
+
+            Dim combo As ComboBox = DirectCast(sender, ComboBox)
+
+            ' გამოვიყენოთ კომბობოქსის არსებული ფერი (BackColor)
+            Dim backColor As Color = combo.BackColor
+
+            ' არჩეული ელემენტისთვის გამოვიყენოთ სტანდარტული ჰაილაითი
+            If (e.State And DrawItemState.Selected) > 0 Then
+                ' სისტემური ფერის გამოყენება არჩეული ელემენტისთვის
+                e.DrawBackground()
+            Else
+                ' კომბობოქსის ფერის გამოყენება ჩვეულებრივი ელემენტებისთვის
+                Using brush As New SolidBrush(backColor)
+                    e.Graphics.FillRectangle(brush, e.Bounds)
+                End Using
+            End If
+
+            ' ტექსტის დახატვა
+            If e.Index < combo.Items.Count Then
+                Dim itemText As String = combo.Items(e.Index).ToString()
+                Dim textBrush As New SolidBrush(e.ForeColor)
+
+                ' ვხატავთ ტექსტს
+                e.Graphics.DrawString(itemText, e.Font, textBrush,
+                                 New RectangleF(e.Bounds.X, e.Bounds.Y, e.Bounds.Width, e.Bounds.Height))
+
+                textBrush.Dispose()
+            End If
+
+            ' ფოკუსის მართკუთხედი (თუ საჭიროა)
+            If (e.State And DrawItemState.Focus) > 0 Then
+                e.DrawFocusRectangle()
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"ComboBox_DrawItem შეცდომა: {ex.Message}")
         End Try
     End Sub
     ''' <summary>
