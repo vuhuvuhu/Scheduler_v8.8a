@@ -5,6 +5,7 @@
 ' ასევე არსებული ჩანაწერების რედაქტირებისთვის
 ' ===========================================
 Imports System.Globalization
+Imports System.Text
 Imports System.Threading
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
@@ -845,6 +846,7 @@ Public Class NewRecordForm
 
     ''' <summary>
     ''' გამართული ვერსია TCost_Leave ივენთისთვის, რომელიც არ გაანულებს მნიშვნელობას
+    ''' და სწორად დააფორმატებს ფასს
     ''' </summary>
     Private Sub TCost_Leave(sender As Object, e As EventArgs) Handles TCost.Leave
         Try
@@ -859,12 +861,14 @@ Public Class NewRecordForm
 
             ' მოვსინჯოთ რიცხვის პარსინგი
             Dim value As Decimal
-            If Decimal.TryParse(text, value) Then
+            If Decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, value) Then
                 ' მხოლოდ მაშინ ვაფორმატირებთ, თუ ეს ნამდვილად რიცხვია
-                ' ფორმატირება ორი ციფრით მძიმის შემდეგ
-                TCost.Text = String.Format(CultureInfo.InvariantCulture, "{0:0.00}", value)
+                ' ვიყენებთ უცვლელ კულტურას ფორმატირებისთვის
+                TCost.Text = value.ToString("0.00", CultureInfo.InvariantCulture)
+
+                ' ფორმის ვალიდაცია ფორმატირების შემდეგ
+                ValidateFormInputs()
             End If
-            ' თუ პარსინგი ვერ მოხერხდა, დავტოვოთ როგორც არის
         Catch ex As Exception
             Debug.WriteLine($"TCost_Leave: შეცდომა - {ex.Message}")
             ' ტექსტს არ ვცვლით შეცდომის შემთხვევაში
@@ -1782,13 +1786,13 @@ Public Class NewRecordForm
                 CBDaf.BackColor = SystemColors.Window
             End If
 
-            ' 5. ფასის შემოწმება - ცვლილება, რომ ცარიელის დროს შესაბამისი შეტყობინება გამოიტანოს
+            ' 5. ფასის შემოწმება - შესწორებული ვერსია სწორი კულტურით
             Dim price As Decimal = 0
             If String.IsNullOrWhiteSpace(TCost.Text) Then
                 warningText.AppendLine("• გთხოვთ შეიყვანოთ ფასი")
                 TCost.BackColor = Color.MistyRose
                 isFormValid = False
-            ElseIf Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) OrElse price < 0 Then
+            ElseIf Not Decimal.TryParse(TCost.Text.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, price) OrElse price < 0 Then
                 warningText.AppendLine("• გთხოვთ შეიყვანოთ ვალიდური ფასი")
                 TCost.BackColor = Color.MistyRose
                 isFormValid = False
@@ -1957,14 +1961,19 @@ Public Class NewRecordForm
     End Sub
     ''' <summary>
     ''' BtnAdd ღილაკზე დაჭერის ჰენდლერი - ახალი სესიის დამატება ან არსებული სესიის რედაქტირება
+    ''' შესწორებული ვერსია ფასის სწორი გადაცემისთვის
     ''' </summary>
     Private Sub BtnAdd_Click(sender As Object, e As EventArgs) Handles BtnAdd.Click
         Try
             ' დებაგ ინფორმაცია
             Debug.WriteLine($"BtnAdd_Click: დაიწყო ოპერაცია - რეჟიმი: {If(_isAddMode, "დამატება", "რედაქტირება")}")
 
-            ' 1. შევამოწმოთ ფორმის ვალიდურობა
-            If Not IsFormValid() Then
+            ' 1. შემოწმება ფორმის ვალიდურობის - ValidateFormInputs გამოძახება
+            ValidateFormInputs()
+
+            ' BtnAdd-ის ხილვადობა განისაზღვრება ValidateFormInputs მეთოდში
+            ' თუ BtnAdd არ არის ხილული, ფორმა არავალიდურია
+            If Not BtnAdd.Visible Then
                 MessageBox.Show("გთხოვთ შეავსოთ ყველა სავალდებულო ველი", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
@@ -2012,9 +2021,33 @@ Public Class NewRecordForm
             Dim selectedSpace As String = GetSelectedSpace()
             rowData.Add(selectedSpace)
 
-            ' მ) ფასი (L სვეტი)
+            ' მ) ფასი (L სვეტი) - გასწორებული ვერსია
+            Dim priceText As String = TCost.Text.Trim().Replace(",", ".")
             Dim price As Decimal = 0
-            Decimal.TryParse(TCost.Text.Replace(",", "."), price)
+
+            ' დებაგისთვის ვბეჭდავთ საწყის მნიშვნელობას
+            Debug.WriteLine($"BtnAdd_Click: ფასის საწყისი მნიშვნელობა TCost.Text = '{TCost.Text}'")
+            Debug.WriteLine($"BtnAdd_Click: ფასის დამუშავებული ტექსტი priceText = '{priceText}'")
+
+            ' მკაცრი პარსინგი უცვლელი კულტურით
+            If Decimal.TryParse(priceText, NumberStyles.Any, CultureInfo.InvariantCulture, price) Then
+                Debug.WriteLine($"BtnAdd_Click: ფასის პარსინგი წარმატებულია: {price}")
+            Else
+                ' თუ პარსინგი ვერ მოხერხდა, ჩავატაროთ მეტი დებაგინგი
+                Debug.WriteLine($"BtnAdd_Click: ფასის პარსინგი ვერ მოხერხდა!")
+
+                ' მეტად გავმართოთ ტექსტი და კიდევ ერთხელ ვცადოთ
+                priceText = priceText.Trim().Replace(" ", "")
+                If Decimal.TryParse(priceText, NumberStyles.Any, CultureInfo.InvariantCulture, price) Then
+                    Debug.WriteLine($"BtnAdd_Click: ფასის მეორადი პარსინგი წარმატებულია: {price}")
+                Else
+                    ' თუ მაინც ვერ მოხერხდა, ვიყენებთ 0-ს და ვბეჭდავთ გაფრთხილებას
+                    Debug.WriteLine($"BtnAdd_Click: ფასის მეორადი პარსინგიც ვერ მოხერხდა! ვიყენებთ 0-ს")
+                    price = 0
+                End If
+            End If
+
+            ' ფასის მნიშვნელობა აქ უნდა დაემატოს როგორც რიცხვითი მნიშვნელობა
             rowData.Add(price)
 
             ' ნ) შესრულების სტატუსი (M სვეტი)
@@ -2026,6 +2059,13 @@ Public Class NewRecordForm
 
             ' პ) კომენტარი (O სვეტი)
             rowData.Add(TCom.Text)
+
+            ' მთლიანი მწკრივის მნიშვნელობების ლოგირება დებაგისთვის
+            Dim rowDataDebug As New StringBuilder("BtnAdd_Click: მწკრივის მნიშვნელობები: ")
+            For i As Integer = 0 To rowData.Count - 1
+                rowDataDebug.Append($"[{i}]={rowData(i)}, ")
+            Next
+            Debug.WriteLine(rowDataDebug.ToString())
 
             ' 3. ოპერაციის შესრულება - დამატება ან რედაქტირება
             If _isAddMode Then
@@ -2044,7 +2084,7 @@ Public Class NewRecordForm
                     For i As Integer = 0 To scheduleData.Count - 1
                         Try
                             If scheduleData(i).Count > 0 AndAlso
-                               scheduleData(i)(0).ToString() = LN.Text Then
+                           scheduleData(i)(0).ToString() = LN.Text Then
                                 ' ვიპოვეთ შესაბამისი ID
                                 rowIndex = i + 2 ' +2 იმიტომ, რომ (1) ინდექსები 0-დან იწყება და (2) პირველი რიგი სათაურებია
                                 Exit For
@@ -2077,65 +2117,6 @@ Public Class NewRecordForm
             MessageBox.Show($"სესიის დამატება/რედაქტირება ვერ მოხერხდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
-    ''' <summary>
-    ''' ამოწმებს არის თუ არა ფორმა სრულად და სწორად შევსებული
-    ''' </summary>
-    Private Function IsFormValid() As Boolean
-        ' ეს არის ცალკე ფუნქცია, რომელიც გამოყენებულია ზემოთ
-
-        ' 1. ბენეფიციარის შემოწმება
-        If CBBeneName.SelectedIndex <= 0 OrElse String.IsNullOrEmpty(CBBeneSurname.Text) Then
-            Return False
-        End If
-
-        ' 2. თერაპევტის შემოწმება
-        If CBPer.SelectedIndex <= 0 Then
-            Return False
-        End If
-
-        ' 3. თერაპიის ტიპის შემოწმება
-        If CBTer.SelectedIndex <= 0 Then
-            Return False
-        End If
-
-        ' 4. დაფინანსების შემოწმება
-        If CBDaf.SelectedIndex <= 0 Then
-            Return False
-        End If
-
-        ' 5. ფასის შემოწმება
-        Dim price As Decimal = 0
-        If Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) Then
-            Return False
-        End If
-
-        ' 6. სივრცის შემოწმება
-        If GetSelectedSpace() = "" Then
-            Return False
-        End If
-
-        ' 7. სტატუსის შემოწმება წარსული თარიღისთვის
-        Dim selectedDateTime As DateTime = GetSelectedDateTime()
-
-        If selectedDateTime < DateTime.Now Then
-            ' წარსული თარიღისთვის საჭიროა სტატუსის არჩევა
-            Dim statusSelected As Boolean = False
-            For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
-                If rb.Name.StartsWith("RB") AndAlso rb.Checked Then
-                    statusSelected = True
-                    Exit For
-                End If
-            Next
-
-            If Not statusSelected Then
-                Return False
-            End If
-        End If
-
-        Return True
-    End Function
-
     ''' <summary>
     ''' აბრუნებს არჩეულ სივრცეს ფორმიდან
     ''' </summary>
