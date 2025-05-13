@@ -132,6 +132,12 @@ Public Class NewRecordForm
                 LN.Text = _editRecordId.ToString()
             End If
 
+            TCost.Text = "" ' ცარიელი ნაცვლად "0"-ისა
+
+            ' LWarning-ის ინიციალიზაცია
+            LWarning.Text = "გთხოვთ შეავსოთ ყველა აუცილებელი ველი"
+            LWarning.ForeColor = Color.Black
+
             ' ComboBox-ების რედაქტირების შეზღუდვა - მხოლოდ ჩამონათვალიდან არჩევა
             CBBeneName.DropDownStyle = ComboBoxStyle.DropDownList
             CBBeneSurname.DropDownStyle = ComboBoxStyle.DropDownList
@@ -1373,6 +1379,8 @@ Public Class NewRecordForm
     Private Sub DTP1_CloseUp(sender As Object, e As EventArgs)
         ' დროის ცვლილების დამმუშავებლის გამოძახება
         DateTimeChanged(sender, e)
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
     End Sub
 
     ''' <summary>
@@ -1788,9 +1796,13 @@ Public Class NewRecordForm
                 CBDaf.BackColor = SystemColors.Window
             End If
 
-            ' 5. ფასის შემოწმება
+            ' 5. ფასის შემოწმება - ცვლილება, რომ ცარიელის დროს შესაბამისი შეტყობინება გამოიტანოს
             Dim price As Decimal = 0
-            If Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) OrElse price < 0 Then
+            If String.IsNullOrWhiteSpace(TCost.Text) Then
+                warningText.AppendLine("• გთხოვთ შეიყვანოთ ფასი")
+                TCost.BackColor = Color.MistyRose
+                isFormValid = False
+            ElseIf Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) OrElse price < 0 Then
                 warningText.AppendLine("• გთხოვთ შეიყვანოთ ვალიდური ფასი")
                 TCost.BackColor = Color.MistyRose
                 isFormValid = False
@@ -1813,9 +1825,11 @@ Public Class NewRecordForm
                 isFormValid = False
             End If
 
-            ' 7. დასრულების სტატუსის შემოწმება თუ საჭიროა
+            ' 7. დასრულების სტატუსის შემოწმება თუ საჭიროა - შეცვლილი ლოგიკით
             Dim selectedDateTime As DateTime = GetSelectedDateTime()
-            If selectedDateTime <= DateTime.Now Then
+            Dim isFutureSession As Boolean = selectedDateTime > DateTime.Now
+
+            If Not isFutureSession Then
                 ' წარსული თარიღისთვის სტატუსი აუცილებელია
                 Dim statusSelected As Boolean = False
                 For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
@@ -1835,10 +1849,15 @@ Public Class NewRecordForm
             If isFormValid Then
                 BtnAdd.Visible = True
 
-                ' ყველა ველი სწორია
+                ' ყველა ველი სწორია - შეტყობინება დამოკიდებულია სესიის დროზე
                 warningText.Clear()
-                warningText.AppendLine("ყველა ველი შევსებულია!")
-                warningText.AppendLine("შეგიძლიათ დააჭიროთ დამატების ღილაკს.")
+                If isFutureSession Then
+                    warningText.AppendLine("ყველა ველი შევსებულია!")
+                    warningText.AppendLine("სესია დაემატება სტატუსით 'დაგეგმილი'.")
+                Else
+                    warningText.AppendLine("ყველა ველი შევსებულია!")
+                    warningText.AppendLine("შეგიძლიათ დააჭიროთ დამატების ღილაკს.")
+                End If
                 warningColor = Color.DarkGreen
             Else
                 BtnAdd.Visible = False
