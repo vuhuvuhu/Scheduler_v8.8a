@@ -880,72 +880,21 @@ Public Class NewRecordForm
     Private Sub InitializeSpaceButtons()
         Try
             ' თარიღისა და დროის აღება ფორმიდან
-            Dim selectedDate As DateTime = GetSelectedDateTime()
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
 
             ' სივრცეების დატვირთულობის ინფორმაციის წამოღება Google Sheets-დან
-            Dim occupiedSpaces As Dictionary(Of String, Boolean) = GetOccupiedSpaces(selectedDate)
-            Dim groupSpaces As Dictionary(Of String, Boolean) = GetGroupSpaces(selectedDate)
-
-            ' ინფორმაცია დაკავებულ სივრცეებზე - ახალი ლექსიკონი
-            Dim spaceDetailsDict As New Dictionary(Of String, IList(Of Object))
-
-            ' მოვიპოვოთ ინფორმაცია ყველა სივრცეზე
-            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
-
-            ' დროის შუალედი
-            Dim startTime As DateTime = selectedDate.AddMinutes(-30)
-            Dim endTime As DateTime = selectedDate.AddMinutes(90)
-
-            ' ავაგოთ სივრცის დეტალების ლექსიკონი
-            If scheduleData IsNot Nothing Then
-                For Each row In scheduleData
-                    If row.Count >= 11 Then
-                        Try
-                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
-                            Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
-                            Dim sessionDateTime As DateTime
-
-                            ' სივრცის სახელი K სვეტიდან (ინდექსი 10)
-                            Dim spaceName As String = row(10).ToString().Trim()
-
-                            ' პარსინგის მცდელობა
-                            If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                            System.Globalization.CultureInfo.InvariantCulture,
-                                            System.Globalization.DateTimeStyles.None,
-                                            sessionDateTime) OrElse
-                            DateTime.TryParse(dateTimeStr, sessionDateTime) Then
-
-                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
-                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
-                                    ' დავიმახსოვროთ დეტალები ამ სივრცისთვის
-                                    spaceDetailsDict(spaceName) = row
-                                End If
-                            End If
-                        Catch ex As Exception
-                            ' გავაგრძელოთ შემდეგ ჩანაწერზე
-                            Continue For
-                        End Try
-                    End If
-                Next
-            End If
-
-            ' მიმდინარე არჩეული ღილაკი (თუ ასეთი არსებობს)
-            Dim selectedButton As Button = Nothing
+            Dim occupiedSpaces As Dictionary(Of String, IList(Of Object)) = GetOccupiedSpacesWithDetails(selectedDateTime)
+            Dim groupSpaces As Dictionary(Of String, Boolean) = GetGroupSpaces(selectedDateTime)
 
             ' ყველა BTNS ღილაკის მოძებნა
             For Each btn As Button In Me.Controls.OfType(Of Button)()
                 If btn.Name.StartsWith("BTNS") Then
                     Dim spaceName As String = btn.Text.Trim()
 
-                    ' თუ ღილაკი უკვე ცისფერია (არჩეულია), დავიმახსოვროთ
-                    If btn.BackColor = Color.FromArgb(173, 216, 230) Then
-                        selectedButton = btn
-                    End If
-
-                    If occupiedSpaces.ContainsKey(spaceName) AndAlso occupiedSpaces(spaceName) Then
+                    If occupiedSpaces.ContainsKey(spaceName) Then
                         ' დაკავებული სივრცე - ღია წითელი
                         btn.BackColor = Color.FromArgb(255, 200, 200)
-                    ElseIf groupSpaces.ContainsKey(spaceName) AndAlso groupSpaces(spaceName) Then
+                    ElseIf groupSpaces.ContainsKey(spaceName) Then
                         ' ჯგუფური სესიის სივრცე - ღია ყვითელი
                         btn.BackColor = Color.FromArgb(255, 255, 200)
                     Else
@@ -955,16 +904,44 @@ Public Class NewRecordForm
                 End If
             Next
 
-            ' საწყისი მდგომარეობა ლეიბლისთვის - თუ ღილაკი არ არის არჩეული
-            If selectedButton Is Nothing Then
-                LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
-                LMsgSpace.ForeColor = Color.DarkGreen
-            Else
-                ' აღვადგინოთ არჩეული ღილაკი
-                selectedButton.BackColor = Color.FromArgb(173, 216, 230) ' ცისფერი
+            ' სტატუსის ტექსტის განახლება LMsgSpace ლეიბლში
+            If occupiedSpaces.Count > 0 Then
+                ' თუ დაკავებული სივრცეები არსებობს, გამოვიტანოთ დეტალურად ერთი მაგალითი
+                Dim firstOccupiedSpace As String = occupiedSpaces.Keys.First()
+                Dim sessionDetails As IList(Of Object) = occupiedSpaces(firstOccupiedSpace)
 
-                ' შესაბამისი ინფორმაციის ჩვენება
-                UpdateSpaceInfoLabel(selectedButton.Text, spaceDetailsDict)
+                ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპევტზე, თერაპიის ტიპზე
+                Dim beneName As String = If(sessionDetails.Count > 3, sessionDetails(3).ToString(), "")
+                Dim beneSurname As String = If(sessionDetails.Count > 4, sessionDetails(4).ToString(), "")
+                Dim therapistName As String = If(sessionDetails.Count > 8, sessionDetails(8).ToString(), "")
+                Dim therapyType As String = If(sessionDetails.Count > 9, sessionDetails(9).ToString(), "")
+                Dim dateTimeStr As String = If(sessionDetails.Count > 5, sessionDetails(5).ToString(), "")
+
+                ' მრავალხაზიანი ტექსტი ლეიბლში
+                Dim infoText As New System.Text.StringBuilder()
+                infoText.AppendLine($"სივრცე '{firstOccupiedSpace}' დაკავებულია:")
+                infoText.AppendLine($"ბენეფიციარი: {beneName} {beneSurname}")
+                infoText.AppendLine($"თერაპევტი: {therapistName}")
+                infoText.AppendLine($"თერაპია: {therapyType}")
+
+                ' თუ არის სხვა დაკავებული სივრცეებიც
+                If occupiedSpaces.Count > 1 Then
+                    infoText.Append($"და კიდევ {occupiedSpaces.Count - 1} დაკავებული სივრცე")
+                End If
+
+                LMsgSpace.Text = infoText.ToString()
+                LMsgSpace.ForeColor = Color.DarkRed
+            ElseIf groupSpaces.Count > 0 Then
+                ' თუ მხოლოდ ჯგუფური სივრცეები არსებობს
+                Dim firstGroupSpace As String = groupSpaces.Keys.First()
+
+                LMsgSpace.Text = $"სივრცე '{firstGroupSpace}' გამოიყენება ჯგუფური სესიისთვის" &
+                             If(groupSpaces.Count > 1, $"{Environment.NewLine}და კიდევ {groupSpaces.Count - 1} ჯგუფური სივრცე", "")
+                LMsgSpace.ForeColor = Color.DarkOrange
+            Else
+                ' ყველა სივრცე თავისუფალია
+                LMsgSpace.Text = "მოცემულ დროს ყველა სივრცე თავისუფალია"
+                LMsgSpace.ForeColor = Color.DarkGreen
             End If
 
         Catch ex As Exception
@@ -972,6 +949,92 @@ Public Class NewRecordForm
             MessageBox.Show($"სივრცეების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' ამოწმებს Google Sheets-დან რომელი სივრცეებია დაკავებული და აბრუნებს სესიის დეტალებს
+    ''' </summary>
+    Private Function GetOccupiedSpacesWithDetails(selectedDateTime As DateTime) As Dictionary(Of String, IList(Of Object))
+        Dim occupiedSpaces As New Dictionary(Of String, IList(Of Object))
+
+        Try
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                Debug.WriteLine("GetOccupiedSpacesWithDetails: dataService არ არის ინიციალიზებული")
+                Return occupiedSpaces
+            End If
+
+            ' დროის შუალედის განსაზღვრა (უფრო ზუსტი შუალედი)
+            Dim selectedDuration As Integer = 0
+            Integer.TryParse(TDur.Text, selectedDuration)
+            If selectedDuration <= 0 Then selectedDuration = 60 ' ნაგულისხმევი ხანგრძლივობა
+
+            Dim startTime As DateTime = selectedDateTime
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(selectedDuration)
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:M") ' გაფართოებული დიაპაზონი სტატუსის ჩათვლით
+
+            If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then ' სულ მცირე K სვეტამდე
+                        Try
+                            ' სივრცის სახელი K სვეტიდან (ინდექსი 10)
+                            Dim spaceName As String = row(10).ToString().Trim()
+
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = row(5).ToString()
+                            Dim sessionDateTime As DateTime
+
+                            ' სესიის ხანგრძლივობა G სვეტიდან (ინდექსი 6)
+                            Dim sessionDuration As Integer = 60 ' ნაგულისხმევი ხანგრძლივობა
+                            If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6)?.ToString()) Then
+                                Integer.TryParse(row(6).ToString(), sessionDuration)
+                            End If
+
+                            ' სესიის სტატუსის შემოწმება M სვეტიდან (ინდექსი 12)
+                            Dim sessionStatus As String = ""
+                            If row.Count > 12 AndAlso Not String.IsNullOrEmpty(row(12)?.ToString()) Then
+                                sessionStatus = row(12).ToString().Trim().ToLower()
+                            End If
+
+                            ' თუ სესია გაუქმებულია, არ ჩავთვალოთ დაკავებულად
+                            If sessionStatus = "გაუქმებული" OrElse sessionStatus = "გაუქმება" Then
+                                Continue For
+                            End If
+
+                            ' პარსინგის მცდელობა
+                            If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                                System.Globalization.CultureInfo.InvariantCulture,
+                                                System.Globalization.DateTimeStyles.None,
+                                                sessionDateTime) OrElse
+                           DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                ' სესიის დასრულების დრო
+                                Dim sessionEndTime As DateTime = sessionDateTime.AddMinutes(sessionDuration)
+
+                                ' შევამოწმოთ გადაკვეთა ორ დროის შუალედს შორის
+                                ' [startTime, endTime] და [sessionDateTime, sessionEndTime]
+                                If (startTime < sessionEndTime) AndAlso (endTime > sessionDateTime) Then
+                                    ' დაკავებული სივრცე (დროითი გადაფარვით) - შევინახოთ მთელი მწკრივი დეტალებისთვის
+                                    occupiedSpaces(spaceName) = row
+                                    Debug.WriteLine($"GetOccupiedSpacesWithDetails: ნაპოვნია დაკავებული სივრცე: {spaceName}, დრო: {sessionDateTime}")
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetOccupiedSpacesWithDetails: შეცდომა - {ex.Message}")
+        End Try
+
+        Return occupiedSpaces
+    End Function
+
     ''' <summary>
     ''' დამხმარე მეთოდი სივრცის ინფორმაციის ლეიბლის განახლებისთვის
     ''' </summary>
@@ -1061,9 +1124,14 @@ Public Class NewRecordForm
                 Return occupiedSpaces
             End If
 
-            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
-            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
-            Dim endTime As DateTime = selectedDateTime.AddMinutes(90) ' სესიებისთვის ვამოწმებთ დაგეგმილ დროს +/- 30 წთ
+            ' დროის შუალედის განსაზღვრა (უფრო ზუსტი შუალედი)
+            Dim selectedDuration As Integer = 0
+            Integer.TryParse(TDur.Text, selectedDuration)
+            If selectedDuration <= 0 Then selectedDuration = 60 ' ნაგულისხმევი ხანგრძლივობა
+
+            ' ახალი შუალედი - ფაქტიური სესიების გადაფარვის შემოწმებით
+            Dim startTime As DateTime = selectedDateTime
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(selectedDuration)
 
             ' DB-Schedule ფურცლიდან მონაცემების წამოღება
             Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
@@ -1079,17 +1147,28 @@ Public Class NewRecordForm
                             Dim dateTimeStr As String = row(5).ToString()
                             Dim sessionDateTime As DateTime
 
+                            ' სესიის ხანგრძლივობა G სვეტიდან (ინდექსი 6)
+                            Dim sessionDuration As Integer = 60 ' ნაგულისხმევი ხანგრძლივობა
+                            If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6)?.ToString()) Then
+                                Integer.TryParse(row(6).ToString(), sessionDuration)
+                            End If
+
                             ' პარსინგის მცდელობა
                             If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                                     System.Globalization.CultureInfo.InvariantCulture,
-                                                     System.Globalization.DateTimeStyles.None,
-                                                     sessionDateTime) OrElse
-                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+                                                System.Globalization.CultureInfo.InvariantCulture,
+                                                System.Globalization.DateTimeStyles.None,
+                                                sessionDateTime) OrElse
+                           DateTime.TryParse(dateTimeStr, sessionDateTime) Then
 
-                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
-                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
-                                    ' დაკავებული სივრცე
+                                ' სესიის დასრულების დრო
+                                Dim sessionEndTime As DateTime = sessionDateTime.AddMinutes(sessionDuration)
+
+                                ' შევამოწმოთ გადაკვეთა ორ დროის შუალედს შორის
+                                ' [startTime, endTime] და [sessionDateTime, sessionEndTime]
+                                If (startTime < sessionEndTime) AndAlso (endTime > sessionDateTime) Then
+                                    ' დაკავებული სივრცე (დროითი გადაფარვით)
                                     occupiedSpaces(spaceName) = True
+                                    Debug.WriteLine($"GetOccupiedSpaces: ნაპოვნია დაკავებული სივრცე: {spaceName}, დრო: {sessionDateTime}")
                                 End If
                             End If
                         Catch ex As Exception
@@ -1120,11 +1199,16 @@ Public Class NewRecordForm
                 Return groupSpaces
             End If
 
-            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
-            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
-            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+            ' დროის შუალედის განსაზღვრა (უფრო ზუსტი შუალედი)
+            Dim selectedDuration As Integer = 0
+            Integer.TryParse(TDur.Text, selectedDuration)
+            If selectedDuration <= 0 Then selectedDuration = 60 ' ნაგულისხმევი ხანგრძლივობა
 
-            ' DB-Schedule ფურცლიდან მონაცემების წამოღება (სივრცე და IsGroup)
+            ' ახალი შუალედი - ფაქტიური სესიების გადაფარვის შემოწმებით
+            Dim startTime As DateTime = selectedDateTime
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(selectedDuration)
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება
             Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
 
             If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
@@ -1138,19 +1222,28 @@ Public Class NewRecordForm
                             Dim dateTimeStr As String = row(5).ToString()
                             Dim sessionDateTime As DateTime
 
+                            ' სესიის ხანგრძლივობა G სვეტიდან (ინდექსი 6)
+                            Dim sessionDuration As Integer = 60 ' ნაგულისხმევი ხანგრძლივობა
+                            If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6)?.ToString()) Then
+                                Integer.TryParse(row(6).ToString(), sessionDuration)
+                            End If
+
                             ' პარსინგის მცდელობა
                             If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                                     System.Globalization.CultureInfo.InvariantCulture,
-                                                     System.Globalization.DateTimeStyles.None,
-                                                     sessionDateTime) OrElse
-                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+                                                System.Globalization.CultureInfo.InvariantCulture,
+                                                System.Globalization.DateTimeStyles.None,
+                                                sessionDateTime) OrElse
+                           DateTime.TryParse(dateTimeStr, sessionDateTime) Then
 
-                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს 
-                                ' და რომ ეს ჯგუფური სესიაა (G სვეტი - ინდექსი 6)
-                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime AndAlso
-                                   row.Count > 6 AndAlso row(6).ToString().ToLower() = "true" Then
-                                    ' ჯგუფური სესიის სივრცე
+                                ' სესიის დასრულების დრო
+                                Dim sessionEndTime As DateTime = sessionDateTime.AddMinutes(sessionDuration)
+
+                                ' შევამოწმოთ გადაკვეთა ორ დროის შუალედს შორის და რომ ეს ჯგუფური სესიაა 
+                                If (startTime < sessionEndTime) AndAlso (endTime > sessionDateTime) AndAlso
+                                row.Count > 7 AndAlso row(7).ToString().ToLower() = "true" Then
+                                    ' ჯგუფური სესიის სივრცე (დროითი გადაფარვით)
                                     groupSpaces(spaceName) = True
+                                    Debug.WriteLine($"GetGroupSpaces: ნაპოვნია ჯგუფური სივრცე: {spaceName}, დრო: {sessionDateTime}")
                                 End If
                             End If
                         Catch ex As Exception
@@ -1169,22 +1262,78 @@ Public Class NewRecordForm
     End Function
 
     ''' <summary>
-    ''' სივრცის ღილაკზე დაჭერის ივენთი
+    ''' სივრცის ღილაკზე დაჭერის ივენთი - გასწორებული ვერსია
     ''' </summary>
+
     Private Sub SpaceButton_Click(sender As Object, e As EventArgs)
-        ' აღვადგინოთ ყველა ღილაკის ფერი
-        InitializeSpaceButtons()
+        Try
+            ' სტატიკური ცვლადი წინა ღილაკის დასამახსოვრებლად
+            Static lastSelectedButton As Button = Nothing
 
-        ' დავაყენოთ არჩეული ღილაკის ფერი ცისფერზე
-        Dim clickedButton As Button = DirectCast(sender, Button)
-        clickedButton.BackColor = Color.FromArgb(173, 216, 230) ' ცისფერი
+            ' ახალი არჩეული ღილაკი
+            Dim clickedButton As Button = DirectCast(sender, Button)
+            Dim selectedSpace As String = clickedButton.Text
 
-        ' შევინახოთ არჩეული სივრცის სახელი
-        Dim selectedSpace As String = clickedButton.Text
+            ' თარიღის და დაკავებული სივრცეების ინფორმაციის მიღება - ერთხელ
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
+            Dim occupiedSpaces As Dictionary(Of String, IList(Of Object)) = GetOccupiedSpacesWithDetails(selectedDateTime)
+            Dim groupSpaces As Dictionary(Of String, Boolean) = GetGroupSpaces(selectedDateTime)
 
-        ' განვაახლოთ სტატუსის ლეიბლი
-        LMsgSpace.Text = $"არჩეულია სივრცე: {selectedSpace}"
-        LMsgSpace.ForeColor = Color.Blue
+            ' თუ არის წინა არჩეული ღილაკი და ის განსხვავდება ახლანდელისგან
+            If lastSelectedButton IsNot Nothing AndAlso lastSelectedButton IsNot clickedButton Then
+                ' წინა ღილაკის ტექსტი
+                Dim lastSpaceName As String = lastSelectedButton.Text.Trim()
+
+                ' წინა ღილაკისთვის შესაბამისი ფერის დაბრუნება
+                If occupiedSpaces.ContainsKey(lastSpaceName) Then
+                    lastSelectedButton.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
+                ElseIf groupSpaces.ContainsKey(lastSpaceName) Then
+                    lastSelectedButton.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
+                Else
+                    lastSelectedButton.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
+                End If
+            End If
+
+            ' მიმდინარე ღილაკის მონიშვნა
+            clickedButton.BackColor = Color.FromArgb(173, 216, 230) ' ცისფერი
+            lastSelectedButton = clickedButton
+
+            ' ვნახოთ, დაკავებულია თუ არა ეს სივრცე და ვაჩვენოთ დეტალური ინფორმაცია
+            If occupiedSpaces.ContainsKey(selectedSpace) Then
+                ' დაკავებულია - ვაჩვენოთ დეტალები
+                Dim sessionDetails As IList(Of Object) = occupiedSpaces(selectedSpace)
+
+                ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპევტზე, თერაპიის ტიპზე
+                Dim beneName As String = If(sessionDetails.Count > 3, sessionDetails(3).ToString(), "")
+                Dim beneSurname As String = If(sessionDetails.Count > 4, sessionDetails(4).ToString(), "")
+                Dim therapistName As String = If(sessionDetails.Count > 8, sessionDetails(8).ToString(), "")
+                Dim therapyType As String = If(sessionDetails.Count > 9, sessionDetails(9).ToString(), "")
+                Dim dateTimeStr As String = If(sessionDetails.Count > 5, sessionDetails(5).ToString(), "")
+
+                ' მრავალხაზიანი ტექსტი ლეიბლში
+                Dim infoText As New System.Text.StringBuilder()
+                infoText.AppendLine($"არჩეული სივრცე '{selectedSpace}' დაკავებულია:")
+                infoText.AppendLine($"ბენეფიციარი: {beneName} {beneSurname}")
+                infoText.AppendLine($"თერაპევტი: {therapistName}")
+                infoText.AppendLine($"თერაპია: {therapyType}")
+                'infoText.Append($"თარიღი: {dateTimeStr}")
+
+                LMsgSpace.Text = infoText.ToString()
+                LMsgSpace.ForeColor = Color.DarkRed
+            ElseIf groupSpaces.ContainsKey(selectedSpace) Then
+                ' ჯგუფური სესია
+                LMsgSpace.Text = $"არჩეული სივრცე '{selectedSpace}' გამოიყენება ჯგუფური სესიისთვის"
+                LMsgSpace.ForeColor = Color.DarkOrange
+            Else
+                ' თავისუფალი სივრცე
+                LMsgSpace.Text = $"არჩეული სივრცე: {selectedSpace} (თავისუფალია)"
+                LMsgSpace.ForeColor = Color.DarkGreen
+            End If
+
+            Debug.WriteLine($"SpaceButton_Click: არჩეულია სივრცე '{selectedSpace}'")
+        Catch ex As Exception
+            Debug.WriteLine($"SpaceButton_Click: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 
     ''' <summary>
@@ -1300,31 +1449,49 @@ Public Class NewRecordForm
             ' არჩეული თარიღი და დრო
             Dim selectedDateTime As DateTime = GetSelectedDateTime()
 
-            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
-            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
-            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+            ' სესიის ხანგრძლივობის მიღება
+            Dim selectedDuration As Integer = 60 ' ნაგულისხმევი ხანგრძლივობა
+            Integer.TryParse(TDur.Text, selectedDuration)
+
+            ' ზუსტი დროის შუალედის განსაზღვრა - აქტუალური სესიის დაწყება და დასრულება
+            Dim startTime As DateTime = selectedDateTime
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(selectedDuration)
 
             ' არჩეული ბენეფიციარი
             Dim beneficiaryName As String = CBBeneName.Text.Trim()
             Dim beneficiarySurname As String = CBBeneSurname.Text.Trim()
 
             ' DB-Schedule ფურცლიდან მონაცემების წამოღება
-            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:M") ' M-მდე, რომ სტატუსიც მოვიცვათ
 
             ' ბენეფიციარის არსებული სესიების მოძებნა
             Dim beneficiarySession As IList(Of Object) = Nothing
 
             If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
                 For Each row In scheduleData
-                    If row.Count >= 11 Then ' K სვეტამდე (სივრცემდე)
+                    If row.Count >= 13 Then ' M სვეტამდე
                         Try
                             ' ბენეფიციარის სახელი (D სვეტი - ინდექსი 3) და გვარი (E სვეტი - ინდექსი 4)
                             Dim rowBeneName As String = If(row.Count > 3, row(3).ToString().Trim(), "")
                             Dim rowBeneSurname As String = If(row.Count > 4, row(4).ToString().Trim(), "")
 
+                            ' სესიის სტატუსი (M სვეტი - ინდექსი 12)
+                            Dim sessionStatus As String = If(row.Count > 12, row(12).ToString().Trim().ToLower(), "")
+
+                            ' გაუქმებული ან შესრულებული სესიების გამოტოვება
+                            If sessionStatus = "გაუქმებული" OrElse sessionStatus = "გაუქმება" Then
+                                Continue For
+                            End If
+
                             ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
                             Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
                             Dim sessionDateTime As DateTime
+
+                            ' სესიის ხანგრძლივობა G სვეტიდან (ინდექსი 6)
+                            Dim sessionDuration As Integer = 60 ' ნაგულისხმევი
+                            If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6)?.ToString()) Then
+                                Integer.TryParse(row(6).ToString(), sessionDuration)
+                            End If
 
                             ' ვამოწმებთ თუ ეს იგივე ბენეფიციარია
                             If String.Equals(rowBeneName, beneficiaryName, StringComparison.OrdinalIgnoreCase) AndAlso
@@ -1337,8 +1504,11 @@ Public Class NewRecordForm
                                                      sessionDateTime) OrElse
                                 DateTime.TryParse(dateTimeStr, sessionDateTime) Then
 
-                                    ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
-                                    If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                    ' სესიის დასრულების დრო
+                                    Dim sessionEndTime As DateTime = sessionDateTime.AddMinutes(sessionDuration)
+
+                                    ' შევამოწმოთ ორი დროის შუალედის გადაკვეთა
+                                    If (startTime < sessionEndTime) AndAlso (endTime > sessionDateTime) Then
                                         ' ნაპოვნია ბენეფიციარის სესია მოცემულ დროის შუალედში
                                         beneficiarySession = row
                                         Exit For
@@ -1347,6 +1517,7 @@ Public Class NewRecordForm
                             End If
                         Catch ex As Exception
                             ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Debug.WriteLine($"CheckBeneficiaryAvailability: მწკრივის შემოწმების შეცდომა - {ex.Message}")
                             Continue For
                         End Try
                     End If
@@ -1400,7 +1571,7 @@ Public Class NewRecordForm
         Try
             ' შევამოწმოთ გვაქვს თუ არა არჩეული თერაპევტი
             If CBPer.SelectedIndex <= 0 Then
-                ' თუ თერაპევტი არ არის არჩეული ან არჩეულია "-აირჩიეთ-", გავასუფთაოთ ლეიბლი და ბექგრაუნდი
+                ' თუ თერაპევტი არ არის არჩეული, გავასუფთაოთ ლეიბლი
                 LMsgPer.Text = "აირჩიეთ თერაპევტი"
                 LMsgPer.ForeColor = Color.Black
                 CBPer.BackColor = SystemColors.Window
@@ -1408,59 +1579,73 @@ Public Class NewRecordForm
             End If
 
             ' არჩეული თარიღი და დრო
-            Dim selectedDateTime As DateTime = GetSelectedDateTime() ' იგივე მეთოდი რასაც ბენეფიციარების შემთხვევაში ვიყენებთ
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
 
-            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
-            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
-            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+            ' სესიის ხანგრძლივობის მიღება
+            Dim selectedDuration As Integer = 60 ' ნაგულისხმევი ხანგრძლივობა
+            Integer.TryParse(TDur.Text, selectedDuration)
+
+            ' ზუსტი დროის შუალედის განსაზღვრა - აქტუალური სესიის დაწყება და დასრულება
+            Dim startTime As DateTime = selectedDateTime
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(selectedDuration)
 
             ' არჩეული თერაპევტი
             Dim therapistName As String = CBPer.Text.Trim()
 
             ' DB-Schedule ფურცლიდან მონაცემების წამოღება
-            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:M") ' M-მდე, რომ სტატუსიც მოვიცვათ
 
             ' თერაპევტის არსებული სესიების მოძებნა
             Dim therapistSession As IList(Of Object) = Nothing
-            Dim isGroupSession As Boolean = False
 
             If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
                 For Each row In scheduleData
-                    If row.Count >= 11 Then ' K სვეტამდე (სივრცემდე)
+                    If row.Count >= 13 Then ' M სვეტამდე
                         Try
                             ' თერაპევტის სახელი (I სვეტი - ინდექსი 8)
                             Dim rowTherapistName As String = If(row.Count > 8, row(8).ToString().Trim(), "")
+
+                            ' სესიის სტატუსი (M სვეტი - ინდექსი 12)
+                            Dim sessionStatus As String = If(row.Count > 12, row(12).ToString().Trim().ToLower(), "")
+
+                            ' გაუქმებული ან შესრულებული სესიების გამოტოვება
+                            If sessionStatus = "გაუქმებული" OrElse sessionStatus = "გაუქმება" Then
+                                Continue For
+                            End If
 
                             ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
                             Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
                             Dim sessionDateTime As DateTime
 
+                            ' სესიის ხანგრძლივობა G სვეტიდან (ინდექსი 6)
+                            Dim sessionDuration As Integer = 60 ' ნაგულისხმევი
+                            If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6)?.ToString()) Then
+                                Integer.TryParse(row(6).ToString(), sessionDuration)
+                            End If
+
                             ' ვამოწმებთ თუ ეს იგივე თერაპევტია
                             If String.Equals(rowTherapistName, therapistName, StringComparison.OrdinalIgnoreCase) Then
-
                                 ' პარსინგის მცდელობა
                                 If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                                 System.Globalization.CultureInfo.InvariantCulture,
-                                                 System.Globalization.DateTimeStyles.None,
-                                                 sessionDateTime) OrElse
+                                                     System.Globalization.CultureInfo.InvariantCulture,
+                                                     System.Globalization.DateTimeStyles.None,
+                                                     sessionDateTime) OrElse
                                 DateTime.TryParse(dateTimeStr, sessionDateTime) Then
 
-                                    ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
-                                    If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                    ' სესიის დასრულების დრო
+                                    Dim sessionEndTime As DateTime = sessionDateTime.AddMinutes(sessionDuration)
+
+                                    ' შევამოწმოთ ორი დროის შუალედის გადაკვეთა
+                                    If (startTime < sessionEndTime) AndAlso (endTime > sessionDateTime) Then
                                         ' ნაპოვნია თერაპევტის სესია მოცემულ დროის შუალედში
                                         therapistSession = row
-
-                                        ' შევამოწმოთ არის თუ არა ჯგუფური სესია (G სვეტი - ინდექსი 6)
-                                        If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6).ToString()) Then
-                                            isGroupSession = Boolean.Parse(row(6).ToString())
-                                        End If
-
                                         Exit For
                                     End If
                                 End If
                             End If
                         Catch ex As Exception
                             ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Debug.WriteLine($"CheckTherapistAvailability: მწკრივის შემოწმების შეცდომა - {ex.Message}")
                             Continue For
                         End Try
                     End If
@@ -1469,45 +1654,24 @@ Public Class NewRecordForm
 
             ' თერაპევტის მდგომარეობის ვიზუალური ასახვა
             If therapistSession IsNot Nothing Then
-                If isGroupSession Then
-                    ' ჯგუფური სეანსი - ყვითელი ინდიკატორი
-                    CBPer.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
+                ' თერაპევტი დაკავებულია - წითელი ინდიკატორი
+                CBPer.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
 
-                    ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპიაზე და სივრცეზე
-                    Dim beneficiaryName As String = If(therapistSession.Count > 3, therapistSession(3).ToString(), "")
-                    Dim beneficiarySurname As String = If(therapistSession.Count > 4, therapistSession(4).ToString(), "")
-                    Dim therapyType As String = If(therapistSession.Count > 9, therapistSession(9).ToString(), "")
-                    Dim spaceName As String = If(therapistSession.Count > 10, therapistSession(10).ToString(), "")
+                ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპიაზე და სივრცეზე
+                Dim beneName As String = If(therapistSession.Count > 3, therapistSession(3).ToString(), "")
+                Dim beneSurname As String = If(therapistSession.Count > 4, therapistSession(4).ToString(), "")
+                Dim therapyType As String = If(therapistSession.Count > 9, therapistSession(9).ToString(), "")
+                Dim spaceName As String = If(therapistSession.Count > 10, therapistSession(10).ToString(), "")
 
-                    ' მრავალხაზიანი ტექსტი ლეიბლში
-                    Dim infoText As New System.Text.StringBuilder()
-                    infoText.AppendLine("მოცემულ დროს თერაპევტს აქვს ჯგუფური სეანსი:")
-                    infoText.AppendLine($"{beneficiaryName} {beneficiarySurname}")
-                    infoText.AppendLine($"თერაპია: {therapyType}")
-                    infoText.Append($"სივრცე: {spaceName}")
+                ' მრავალხაზიანი ტექსტი ლეიბლში
+                Dim infoText As New System.Text.StringBuilder()
+                infoText.AppendLine("მოცემულ დროს თერაპევტი დაკავებულია:")
+                infoText.AppendLine($"ბენეფიციარი: {beneName} {beneSurname}")
+                infoText.AppendLine($"თერაპია: {therapyType}")
+                infoText.Append($"სივრცე: {spaceName}")
 
-                    LMsgPer.Text = infoText.ToString()
-                    LMsgPer.ForeColor = Color.DarkOrange
-                Else
-                    ' ჩვეულებრივი სეანსი - წითელი ინდიკატორი
-                    CBPer.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
-
-                    ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპიაზე და სივრცეზე
-                    Dim beneficiaryName As String = If(therapistSession.Count > 3, therapistSession(3).ToString(), "")
-                    Dim beneficiarySurname As String = If(therapistSession.Count > 4, therapistSession(4).ToString(), "")
-                    Dim therapyType As String = If(therapistSession.Count > 9, therapistSession(9).ToString(), "")
-                    Dim spaceName As String = If(therapistSession.Count > 10, therapistSession(10).ToString(), "")
-
-                    ' მრავალხაზიანი ტექსტი ლეიბლში
-                    Dim infoText As New System.Text.StringBuilder()
-                    infoText.AppendLine("მოცემულ დროს თერაპევტი დაკავებულია:")
-                    infoText.AppendLine($"{beneficiaryName} {beneficiarySurname}")
-                    infoText.AppendLine($"თერაპია: {therapyType}")
-                    infoText.Append($"სივრცე: {spaceName}")
-
-                    LMsgPer.Text = infoText.ToString()
-                    LMsgPer.ForeColor = Color.DarkRed
-                End If
+                LMsgPer.Text = infoText.ToString()
+                LMsgPer.ForeColor = Color.DarkRed
             Else
                 ' თერაპევტი თავისუფალია - მწვანე ინდიკატორი
                 CBPer.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე

@@ -97,7 +97,7 @@ Partial Class NewRecordForm
         '
         Me.LMsgSpace.Location = New System.Drawing.Point(10, 446)
         Me.LMsgSpace.Name = "LMsgSpace"
-        Me.LMsgSpace.Size = New System.Drawing.Size(320, 60)
+        Me.LMsgSpace.Size = New System.Drawing.Size(320, 109)
         Me.LMsgSpace.TabIndex = 340
         Me.LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
         '
