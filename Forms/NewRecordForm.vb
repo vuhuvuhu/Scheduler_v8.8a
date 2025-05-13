@@ -117,6 +117,17 @@ Public Class NewRecordForm
     ''' </summary>
     Private Sub NewRecordForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
+            ' ფორმის გაფორმება რეჟიმის მიხედვით
+            If _isAddMode Then
+                ' ახალი ჩანაწერის დამატების რეჟიმი - ღია მწვანე ფონი
+                Me.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
+                Me.Text = $"ახალი {recordType} - დამატება"
+            Else
+                ' რედაქტირების რეჟიმი - ღია ყვითელი ფონი
+                Me.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
+                Me.Text = $"{recordType} - რედაქტირება (ID: {_editRecordId})"
+            End If
+
             ' მიმდინარე თარიღის და დროის დაყენება
             LNow.Text = DateTime.Now.ToString("dd.MM.yyyy HH:mm")
 
