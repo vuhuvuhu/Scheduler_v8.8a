@@ -1875,10 +1875,316 @@ Public Class NewRecordForm
         End Try
     End Sub
     ''' <summary>
+    ''' BtnClear ღილაკზე დაჭერის ჰენდლერი - ყველა ველის გასუფთავება
+    ''' </summary>
+    Private Sub BtnClear_Click(sender As Object, e As EventArgs) Handles BtnClear.Click
+        Try
+            ' დებაგ ინფორმაცია
+            Debug.WriteLine("BtnClear_Click: ფორმის ველების გასუფთავება დაიწყო")
+
+            ' 1. ComboBox-ების გასუფთავება - პირველ ელემენტზე (მინიშნებაზე) დაბრუნება
+            CBBeneName.SelectedIndex = 0
+            CBBeneSurname.Items.Clear()
+            CBBeneSurname.Enabled = False
+            CBPer.SelectedIndex = 0
+            CBTer.SelectedIndex = 0
+            CBDaf.SelectedIndex = 0
+
+            ' 2. DateTimePicker-ის დაბრუნება მიმდინარე დღეზე
+            DTP1.Value = DateTime.Today
+
+            ' 3. დროის ველების დაბრუნება საწყის მნიშვნელობებზე
+            THour.Text = "12"
+            TMin.Text = "00"
+            TDur.Text = "60"
+
+            ' 4. ფასის ველის გასუფთავება
+            TCost.Text = "0"
+
+            ' 5. ჯგუფური ჩეკბოქსის გაუქმება
+            CBGroup.Checked = False
+
+            ' 6. კომენტარის ველის გასუფთავება
+            TCom.Text = ""
+
+            ' 7. სივრცის არჩევანის გაუქმება - ყველა ღილაკის საწყის ფერზე დაბრუნება
+            For Each btn As Button In Me.Controls.OfType(Of Button)()
+                If btn.Name.StartsWith("BTNS") Then
+                    ' დავაბრუნოთ ღილაკები საწყის ფერებზე
+                    btn.BackColor = Color.FromArgb(240, 240, 240) ' სტანდარტული ღილაკის ფერი
+                End If
+            Next
+
+            ' 8. რადიობუტონების მონიშვნის გაუქმება
+            For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                If rb.Name.StartsWith("RB") Then
+                    rb.Checked = False
+                End If
+            Next
+
+            ' 9. შეტყობინების ლეიბლების გასუფთავება/განახლება
+            LMsgBene.Text = "აირჩიეთ ბენეფიციარი"
+            LMsgBene.ForeColor = Color.Black
+
+            LMsgPer.Text = "აირჩიეთ თერაპევტი"
+            LMsgPer.ForeColor = Color.Black
+
+            LMsgSpace.Text = "აირჩიეთ სივრცე"
+            LMsgSpace.ForeColor = Color.Black
+
+            LWarning.Text = "გთხოვთ შეავსოთ ყველა აუცილებელი ველი"
+            LWarning.ForeColor = Color.Black
+
+            ' 10. ველების ფონის ფერების დაბრუნება ნორმალურ მდგომარეობაში
+            CBBeneName.BackColor = SystemColors.Window
+            CBBeneSurname.BackColor = SystemColors.Window
+            CBPer.BackColor = SystemColors.Window
+            CBTer.BackColor = SystemColors.Window
+            CBDaf.BackColor = SystemColors.Window
+            TCost.BackColor = SystemColors.Window
+
+            ' 11. დამატების ღილაკის დამალვა, რადგან ველები ცარიელია
+            BtnAdd.Visible = False
+
+            ' 12. სივრცეების ინიციალიზაცია - თავიდან დავაინიციალიზიროთ ღილაკების ფერები
+            InitializeSpaceButtons()
+
+            ' 13. ფორმის ვალიდაციის განახლება
+            ValidateFormInputs()
+
+            Debug.WriteLine("BtnClear_Click: ფორმის ველების გასუფთავება დასრულდა")
+
+            ' 14. მომხმარებლის ინფორმირება
+            MessageBox.Show("ფორმის ველები გასუფთავდა", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnClear_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ფორმის გასუფთავებისას დაფიქსირდა შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ''' <summary>
     ''' ValueChanged ივენთი აღარ გამოიყენება, მაგრამ რჩება დიზაინერში მიბმული
     ''' შევქმნით ცარიელ მეთოდს, რომელიც არაფერს აკეთებს
     ''' </summary>
     Private Sub DTP1_ValueChanged(sender As Object, e As EventArgs) Handles DTP1.ValueChanged
         ' არაფერს აკეთებს, რეალური ფუნქცონალი CloseUp-შია
     End Sub
+    ''' <summary>
+    ''' BtnAdd ღილაკზე დაჭერის ჰენდლერი - ახალი სესიის დამატება ან არსებული სესიის რედაქტირება
+    ''' </summary>
+    Private Sub BtnAdd_Click(sender As Object, e As EventArgs) Handles BtnAdd.Click
+        Try
+            ' დებაგ ინფორმაცია
+            Debug.WriteLine($"BtnAdd_Click: დაიწყო ოპერაცია - რეჟიმი: {If(_isAddMode, "დამატება", "რედაქტირება")}")
+
+            ' 1. შევამოწმოთ ფორმის ვალიდურობა
+            If Not IsFormValid() Then
+                MessageBox.Show("გთხოვთ შეავსოთ ყველა სავალდებულო ველი", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' 2. მოვამზადოთ მონაცემები Google Sheets-ისთვის
+            Dim rowData As New List(Of Object)()
+
+            ' ა) ID (A სვეტი)
+            rowData.Add(LN.Text) ' სესიის ID
+
+            ' ბ) შევსების თარიღი (B სვეტი)
+            rowData.Add(LNow.Text) ' მიმდინარე თარიღი და დრო
+
+            ' გ) ავტორი (C სვეტი)
+            rowData.Add(LAutor.Text) ' მომხმარებლის ელფოსტა
+
+            ' დ) ბენეფიციარის სახელი (D სვეტი)
+            rowData.Add(CBBeneName.Text)
+
+            ' ე) ბენეფიციარის გვარი (E სვეტი)
+            rowData.Add(CBBeneSurname.Text)
+
+            ' ვ) თარიღი და დრო (F სვეტი)
+            ' თარიღის და დროის კომბინაცია შესაბამის ფორმატში
+            Dim selectedDate As String = DTP1.Value.ToString("dd.MM.yyyy")
+            Dim hour As String = THour.Text.PadLeft(2, "0"c)
+            Dim minute As String = TMin.Text.PadLeft(2, "0"c)
+            rowData.Add($"{selectedDate} {hour}:{minute}")
+
+            ' ზ) ხანგრძლივობა (G სვეტი)
+            Dim duration As Integer = 60 ' ნაგულისხმევი მნიშვნელობა
+            Integer.TryParse(TDur.Text, duration)
+            rowData.Add(duration)
+
+            ' თ) ჯგუფური (H სვეტი)
+            rowData.Add(CBGroup.Checked)
+
+            ' ი) თერაპევტი (I სვეტი)
+            rowData.Add(CBPer.Text)
+
+            ' კ) თერაპიის ტიპი (J სვეტი)
+            rowData.Add(CBTer.Text)
+
+            ' ლ) სივრცე (K სვეტი)
+            Dim selectedSpace As String = GetSelectedSpace()
+            rowData.Add(selectedSpace)
+
+            ' მ) ფასი (L სვეტი)
+            Dim price As Decimal = 0
+            Decimal.TryParse(TCost.Text.Replace(",", "."), price)
+            rowData.Add(price)
+
+            ' ნ) შესრულების სტატუსი (M სვეტი)
+            Dim status As String = GetSelectedStatus()
+            rowData.Add(status)
+
+            ' ო) დაფინანსების პროგრამა (N სვეტი)
+            rowData.Add(CBDaf.Text)
+
+            ' პ) კომენტარი (O სვეტი)
+            rowData.Add(TCom.Text)
+
+            ' 3. ოპერაციის შესრულება - დამატება ან რედაქტირება
+            If _isAddMode Then
+                ' ახალი სესიის დამატება
+                dataService.AppendData("DB-Schedule!A:O", rowData)
+                Debug.WriteLine($"BtnAdd_Click: დაემატა ახალი სესია ID={LN.Text}")
+                MessageBox.Show("სესია წარმატებით დაემატა", "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                ' არსებული სესიის რედაქტირება
+
+                ' ჯერ მოვძებნოთ შესაბამისი მწკრივი DB-Schedule ფურცელში
+                Dim scheduleData = dataService.GetData("DB-Schedule!A2:A")
+                Dim rowIndex As Integer = -1
+
+                If scheduleData IsNot Nothing Then
+                    For i As Integer = 0 To scheduleData.Count - 1
+                        Try
+                            If scheduleData(i).Count > 0 AndAlso
+                               scheduleData(i)(0).ToString() = LN.Text Then
+                                ' ვიპოვეთ შესაბამისი ID
+                                rowIndex = i + 2 ' +2 იმიტომ, რომ (1) ინდექსები 0-დან იწყება და (2) პირველი რიგი სათაურებია
+                                Exit For
+                            End If
+                        Catch ex As Exception
+                            ' გავაგრძელოთ შემდეგი მწკრივით
+                            Continue For
+                        End Try
+                    Next
+                End If
+
+                If rowIndex > 0 Then
+                    ' განვაახლოთ მწკრივი
+                    dataService.UpdateData($"DB-Schedule!A{rowIndex}:O{rowIndex}", rowData)
+                    Debug.WriteLine($"BtnAdd_Click: განახლდა სესია ID={LN.Text}, რიგი={rowIndex}")
+                    MessageBox.Show("სესია წარმატებით განახლდა", "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Else
+                    ' ვერ ვიპოვეთ შესაბამისი მწკრივი
+                    Debug.WriteLine($"BtnAdd_Click: ვერ მოიძებნა სესია ID={LN.Text}")
+                    MessageBox.Show("სესიის განახლება ვერ მოხერხდა - შესაბამისი ID ვერ მოიძებნა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    Return
+                End If
+            End If
+
+            ' 4. ფორმის დახურვა წარმატებული ოპერაციის შემდეგ
+            Me.Close()
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnAdd_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის დამატება/რედაქტირება ვერ მოხერხდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ამოწმებს არის თუ არა ფორმა სრულად და სწორად შევსებული
+    ''' </summary>
+    Private Function IsFormValid() As Boolean
+        ' ეს არის ცალკე ფუნქცია, რომელიც გამოყენებულია ზემოთ
+
+        ' 1. ბენეფიციარის შემოწმება
+        If CBBeneName.SelectedIndex <= 0 OrElse String.IsNullOrEmpty(CBBeneSurname.Text) Then
+            Return False
+        End If
+
+        ' 2. თერაპევტის შემოწმება
+        If CBPer.SelectedIndex <= 0 Then
+            Return False
+        End If
+
+        ' 3. თერაპიის ტიპის შემოწმება
+        If CBTer.SelectedIndex <= 0 Then
+            Return False
+        End If
+
+        ' 4. დაფინანსების შემოწმება
+        If CBDaf.SelectedIndex <= 0 Then
+            Return False
+        End If
+
+        ' 5. ფასის შემოწმება
+        Dim price As Decimal = 0
+        If Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) Then
+            Return False
+        End If
+
+        ' 6. სივრცის შემოწმება
+        If GetSelectedSpace() = "" Then
+            Return False
+        End If
+
+        ' 7. სტატუსის შემოწმება წარსული თარიღისთვის
+        Dim selectedDateTime As DateTime = GetSelectedDateTime()
+
+        If selectedDateTime < DateTime.Now Then
+            ' წარსული თარიღისთვის საჭიროა სტატუსის არჩევა
+            Dim statusSelected As Boolean = False
+            For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                If rb.Name.StartsWith("RB") AndAlso rb.Checked Then
+                    statusSelected = True
+                    Exit For
+                End If
+            Next
+
+            If Not statusSelected Then
+                Return False
+            End If
+        End If
+
+        Return True
+    End Function
+
+    ''' <summary>
+    ''' აბრუნებს არჩეულ სივრცეს ფორმიდან
+    ''' </summary>
+    Private Function GetSelectedSpace() As String
+        ' ვეძებთ არჩეულ ღილაკს (ცისფერი ფონით)
+        For Each btn As Button In Me.Controls.OfType(Of Button)()
+            If btn.Name.StartsWith("BTNS") AndAlso btn.BackColor = Color.FromArgb(173, 216, 230) Then
+                Return btn.Text
+            End If
+        Next
+
+        ' არცერთი სივრცე არ არის არჩეული
+        Return ""
+    End Function
+
+    ''' <summary>
+    ''' აბრუნებს არჩეულ სტატუსს ფორმიდან
+    ''' </summary>
+    Private Function GetSelectedStatus() As String
+        ' შევამოწმოთ არის თუ არა სამომავლო სესია
+        Dim selectedDateTime As DateTime = GetSelectedDateTime()
+
+        If selectedDateTime > DateTime.Now Then
+            ' სამომავლო სესია ავტომატურად "დაგეგმილი" სტატუსით
+            Return "დაგეგმილი"
+        End If
+
+        ' წარსული თარიღისთვის ვამოწმებთ არჩეულ რადიობუტონს
+        For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+            If rb.Name.StartsWith("RB") AndAlso rb.Checked Then
+                Return rb.Text
+            End If
+        Next
+
+        ' ნაგულისხმევი სტატუსი, თუ არცერთი არ არის არჩეული
+        Return "დაგეგმილი"
+    End Function
 End Class
