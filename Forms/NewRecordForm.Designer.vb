@@ -95,7 +95,7 @@ Partial Class NewRecordForm
         '
         'LMsgSpace
         '
-        Me.LMsgSpace.Location = New System.Drawing.Point(14, 532)
+        Me.LMsgSpace.Location = New System.Drawing.Point(10, 446)
         Me.LMsgSpace.Name = "LMsgSpace"
         Me.LMsgSpace.Size = New System.Drawing.Size(320, 60)
         Me.LMsgSpace.TabIndex = 340
@@ -103,7 +103,7 @@ Partial Class NewRecordForm
         '
         'LMsgPer
         '
-        Me.LMsgPer.Location = New System.Drawing.Point(14, 472)
+        Me.LMsgPer.Location = New System.Drawing.Point(10, 386)
         Me.LMsgPer.Name = "LMsgPer"
         Me.LMsgPer.Size = New System.Drawing.Size(320, 60)
         Me.LMsgPer.TabIndex = 339
@@ -111,30 +111,34 @@ Partial Class NewRecordForm
         '
         'BtnAddDaf
         '
-        Me.BtnAddDaf.Location = New System.Drawing.Point(105, 331)
+        Me.BtnAddDaf.BackgroundImage = CType(resources.GetObject("BtnAddDaf.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAddDaf.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnAddDaf.Location = New System.Drawing.Point(287, 260)
         Me.BtnAddDaf.Name = "BtnAddDaf"
-        Me.BtnAddDaf.Size = New System.Drawing.Size(176, 23)
+        Me.BtnAddDaf.Size = New System.Drawing.Size(30, 30)
         Me.BtnAddDaf.TabIndex = 338
-        Me.BtnAddDaf.Text = "დაფინანსების დამატება"
         Me.BtnAddDaf.UseVisualStyleBackColor = True
         '
         'BtnAddTer
         '
-        Me.BtnAddTer.Location = New System.Drawing.Point(105, 275)
+        Me.BtnAddTer.BackgroundImage = CType(resources.GetObject("BtnAddTer.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAddTer.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnAddTer.Location = New System.Drawing.Point(287, 224)
         Me.BtnAddTer.Name = "BtnAddTer"
-        Me.BtnAddTer.Size = New System.Drawing.Size(176, 23)
+        Me.BtnAddTer.Size = New System.Drawing.Size(30, 30)
         Me.BtnAddTer.TabIndex = 337
-        Me.BtnAddTer.Text = "თერაპიის დამატება"
         Me.BtnAddTer.UseVisualStyleBackColor = True
         '
         'BtnAddPer
         '
-        Me.BtnAddPer.Location = New System.Drawing.Point(106, 219)
+        Me.BtnAddPer.BackColor = System.Drawing.Color.Transparent
+        Me.BtnAddPer.BackgroundImage = CType(resources.GetObject("BtnAddPer.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAddPer.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnAddPer.Location = New System.Drawing.Point(287, 188)
         Me.BtnAddPer.Name = "BtnAddPer"
-        Me.BtnAddPer.Size = New System.Drawing.Size(176, 23)
+        Me.BtnAddPer.Size = New System.Drawing.Size(30, 30)
         Me.BtnAddPer.TabIndex = 336
-        Me.BtnAddPer.Text = "თერაპევტის დამატება"
-        Me.BtnAddPer.UseVisualStyleBackColor = True
+        Me.BtnAddPer.UseVisualStyleBackColor = False
         '
         'BtnAddBene
         '
@@ -181,13 +185,13 @@ Partial Class NewRecordForm
         '
         Me.LWarning.Location = New System.Drawing.Point(345, 412)
         Me.LWarning.Name = "LWarning"
-        Me.LWarning.Size = New System.Drawing.Size(332, 180)
+        Me.LWarning.Size = New System.Drawing.Size(332, 148)
         Me.LWarning.TabIndex = 331
         Me.LWarning.Text = "Label4"
         '
         'LMsgBene
         '
-        Me.LMsgBene.Location = New System.Drawing.Point(14, 412)
+        Me.LMsgBene.Location = New System.Drawing.Point(10, 326)
         Me.LMsgBene.Name = "LMsgBene"
         Me.LMsgBene.Size = New System.Drawing.Size(320, 60)
         Me.LMsgBene.TabIndex = 330
@@ -197,7 +201,7 @@ Partial Class NewRecordForm
         '
         Me.BtnAdd.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.BtnAdd.BackColor = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(255, Byte), Integer), CType(CType(192, Byte), Integer))
-        Me.BtnAdd.Location = New System.Drawing.Point(683, 566)
+        Me.BtnAdd.Location = New System.Drawing.Point(685, 532)
         Me.BtnAdd.Name = "BtnAdd"
         Me.BtnAdd.Size = New System.Drawing.Size(91, 23)
         Me.BtnAdd.TabIndex = 329
@@ -207,7 +211,8 @@ Partial Class NewRecordForm
         '
         'BtnClear
         '
-        Me.BtnClear.Location = New System.Drawing.Point(683, 537)
+        Me.BtnClear.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnClear.Location = New System.Drawing.Point(685, 503)
         Me.BtnClear.Name = "BtnClear"
         Me.BtnClear.Size = New System.Drawing.Size(91, 23)
         Me.BtnClear.TabIndex = 328
@@ -406,7 +411,7 @@ Partial Class NewRecordForm
         'CBGroup
         '
         Me.CBGroup.AutoSize = True
-        Me.CBGroup.Location = New System.Drawing.Point(200, 363)
+        Me.CBGroup.Location = New System.Drawing.Point(199, 298)
         Me.CBGroup.Name = "CBGroup"
         Me.CBGroup.Size = New System.Drawing.Size(80, 17)
         Me.CBGroup.TabIndex = 307
@@ -415,7 +420,7 @@ Partial Class NewRecordForm
         '
         'TCost
         '
-        Me.TCost.Location = New System.Drawing.Point(105, 360)
+        Me.TCost.Location = New System.Drawing.Point(104, 295)
         Me.TCost.Name = "TCost"
         Me.TCost.Size = New System.Drawing.Size(42, 20)
         Me.TCost.TabIndex = 306
@@ -423,7 +428,7 @@ Partial Class NewRecordForm
         'CBDaf
         '
         Me.CBDaf.FormattingEnabled = True
-        Me.CBDaf.Location = New System.Drawing.Point(105, 304)
+        Me.CBDaf.Location = New System.Drawing.Point(104, 264)
         Me.CBDaf.Name = "CBDaf"
         Me.CBDaf.Size = New System.Drawing.Size(175, 21)
         Me.CBDaf.TabIndex = 305
@@ -431,7 +436,7 @@ Partial Class NewRecordForm
         'CBTer
         '
         Me.CBTer.FormattingEnabled = True
-        Me.CBTer.Location = New System.Drawing.Point(105, 248)
+        Me.CBTer.Location = New System.Drawing.Point(104, 228)
         Me.CBTer.Name = "CBTer"
         Me.CBTer.Size = New System.Drawing.Size(177, 21)
         Me.CBTer.TabIndex = 304
@@ -465,7 +470,7 @@ Partial Class NewRecordForm
         'Label16
         '
         Me.Label16.AutoSize = True
-        Me.Label16.Location = New System.Drawing.Point(11, 363)
+        Me.Label16.Location = New System.Drawing.Point(10, 298)
         Me.Label16.Name = "Label16"
         Me.Label16.Size = New System.Drawing.Size(50, 13)
         Me.Label16.TabIndex = 300
@@ -474,7 +479,7 @@ Partial Class NewRecordForm
         'Label15
         '
         Me.Label15.AutoSize = True
-        Me.Label15.Location = New System.Drawing.Point(10, 307)
+        Me.Label15.Location = New System.Drawing.Point(10, 267)
         Me.Label15.Name = "Label15"
         Me.Label15.Size = New System.Drawing.Size(96, 13)
         Me.Label15.TabIndex = 299
@@ -483,7 +488,7 @@ Partial Class NewRecordForm
         'Label14
         '
         Me.Label14.AutoSize = True
-        Me.Label14.Location = New System.Drawing.Point(11, 256)
+        Me.Label14.Location = New System.Drawing.Point(11, 231)
         Me.Label14.Name = "Label14"
         Me.Label14.Size = New System.Drawing.Size(69, 13)
         Me.Label14.TabIndex = 298
@@ -715,7 +720,7 @@ Partial Class NewRecordForm
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(255, Byte), Integer), CType(CType(192, Byte), Integer))
-        Me.ClientSize = New System.Drawing.Size(788, 600)
+        Me.ClientSize = New System.Drawing.Size(788, 567)
         Me.Controls.Add(Me.LMsgSpace)
         Me.Controls.Add(Me.LMsgPer)
         Me.Controls.Add(Me.BtnAddDaf)

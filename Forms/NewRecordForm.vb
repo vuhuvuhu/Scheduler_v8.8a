@@ -277,17 +277,23 @@ Public Class NewRecordForm
             MessageBox.Show($"შეცდომა DateTimePicker-ის კონფიგურაციისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-    ' დაამატეთ ეს მეთოდი კლასში
+    ''' <summary>
+    '''     სივრცეების ღილაკების საწყისი ფერების დაყენება
+    ''' </summary>
     Private Sub SetupCustomComboBoxes()
         ' შევცვალოთ კომბობოქსების DrawMode, რომ ხელით ვხატოთ
         CBBeneName.DrawMode = DrawMode.OwnerDrawFixed
         CBBeneSurname.DrawMode = DrawMode.OwnerDrawFixed
+        CBPer.DrawMode = DrawMode.OwnerDrawFixed ' დავამატეთ CBPer
 
         ' მივაბათ DrawItem ივენთი CBBeneName-სთვის
         AddHandler CBBeneName.DrawItem, AddressOf ComboBox_DrawItem
 
         ' მივაბათ DrawItem ივენთი CBBeneSurname-სთვის
         AddHandler CBBeneSurname.DrawItem, AddressOf ComboBox_DrawItem
+
+        ' მივაბათ DrawItem ივენთი CBPer-სთვის
+        AddHandler CBPer.DrawItem, AddressOf ComboBox_DrawItem
 
         Debug.WriteLine("კომბობოქსების DrawMode შეცვლილია")
     End Sub
@@ -481,6 +487,18 @@ Public Class NewRecordForm
     Private Sub CBBeneSurname_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneSurname.SelectedIndexChanged
         ' ბენეფიციარის მდგომარეობის შემოწმება
         CheckBeneficiaryAvailability()
+    End Sub
+
+    ''' <summary>
+    ''' CBPer-ს SelectedIndexChanged ივენთი - თერაპევტის არჩევისას
+    ''' </summary>
+    Private Sub CBPer_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBPer.SelectedIndexChanged
+        Try
+            ' შევამოწმოთ თერაპევტის მდგომარეობა
+            CheckTherapistAvailability()
+        Catch ex As Exception
+            MessageBox.Show($"შეცდომა თერაპევტის არჩევისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
@@ -868,10 +886,61 @@ Public Class NewRecordForm
             Dim occupiedSpaces As Dictionary(Of String, Boolean) = GetOccupiedSpaces(selectedDate)
             Dim groupSpaces As Dictionary(Of String, Boolean) = GetGroupSpaces(selectedDate)
 
+            ' ინფორმაცია დაკავებულ სივრცეებზე - ახალი ლექსიკონი
+            Dim spaceDetailsDict As New Dictionary(Of String, IList(Of Object))
+
+            ' მოვიპოვოთ ინფორმაცია ყველა სივრცეზე
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+
+            ' დროის შუალედი
+            Dim startTime As DateTime = selectedDate.AddMinutes(-30)
+            Dim endTime As DateTime = selectedDate.AddMinutes(90)
+
+            ' ავაგოთ სივრცის დეტალების ლექსიკონი
+            If scheduleData IsNot Nothing Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then
+                        Try
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
+                            Dim sessionDateTime As DateTime
+
+                            ' სივრცის სახელი K სვეტიდან (ინდექსი 10)
+                            Dim spaceName As String = row(10).ToString().Trim()
+
+                            ' პარსინგის მცდელობა
+                            If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                            System.Globalization.CultureInfo.InvariantCulture,
+                                            System.Globalization.DateTimeStyles.None,
+                                            sessionDateTime) OrElse
+                            DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
+                                If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                    ' დავიმახსოვროთ დეტალები ამ სივრცისთვის
+                                    spaceDetailsDict(spaceName) = row
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' გავაგრძელოთ შემდეგ ჩანაწერზე
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+            ' მიმდინარე არჩეული ღილაკი (თუ ასეთი არსებობს)
+            Dim selectedButton As Button = Nothing
+
             ' ყველა BTNS ღილაკის მოძებნა
             For Each btn As Button In Me.Controls.OfType(Of Button)()
                 If btn.Name.StartsWith("BTNS") Then
                     Dim spaceName As String = btn.Text.Trim()
+
+                    ' თუ ღილაკი უკვე ცისფერია (არჩეულია), დავიმახსოვროთ
+                    If btn.BackColor = Color.FromArgb(173, 216, 230) Then
+                        selectedButton = btn
+                    End If
 
                     If occupiedSpaces.ContainsKey(spaceName) AndAlso occupiedSpaces(spaceName) Then
                         ' დაკავებული სივრცე - ღია წითელი
@@ -886,13 +955,75 @@ Public Class NewRecordForm
                 End If
             Next
 
-            ' სტატუსის ტექსტის განახლება LMsgSpace ლეიბლში
-            LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
-            LMsgSpace.ForeColor = Color.DarkGreen
+            ' საწყისი მდგომარეობა ლეიბლისთვის - თუ ღილაკი არ არის არჩეული
+            If selectedButton Is Nothing Then
+                LMsgSpace.Text = "მოცემულ დროს სივრცე თავისუფალია"
+                LMsgSpace.ForeColor = Color.DarkGreen
+            Else
+                ' აღვადგინოთ არჩეული ღილაკი
+                selectedButton.BackColor = Color.FromArgb(173, 216, 230) ' ცისფერი
+
+                ' შესაბამისი ინფორმაციის ჩვენება
+                UpdateSpaceInfoLabel(selectedButton.Text, spaceDetailsDict)
+            End If
 
         Catch ex As Exception
             Debug.WriteLine($"InitializeSpaceButtons: შეცდომა - {ex.Message}")
             MessageBox.Show($"სივრცეების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' დამხმარე მეთოდი სივრცის ინფორმაციის ლეიბლის განახლებისთვის
+    ''' </summary>
+    ''' <param name="spaceName"></param>
+    ''' <param name="spaceDetails"></param>
+    ''' <remarks>განახლება - 2023-10-01</remarks>
+    Private Sub UpdateSpaceInfoLabel(spaceName As String, spaceDetails As Dictionary(Of String, IList(Of Object)))
+        Try
+            ' სივრცესთან დაკავშირებული ინფორმაცია
+            If spaceDetails.ContainsKey(spaceName) Then
+                ' დაკავებული სივრცე - დეტალური ინფორმაცია
+                Dim sessionDetails As IList(Of Object) = spaceDetails(spaceName)
+
+                ' ბენეფიციარი, თერაპევტი და თერაპიის ტიპი
+                Dim beneficiaryName As String = If(sessionDetails.Count > 3, sessionDetails(3).ToString(), "")
+                Dim beneficiarySurname As String = If(sessionDetails.Count > 4, sessionDetails(4).ToString(), "")
+                Dim therapistName As String = If(sessionDetails.Count > 8, sessionDetails(8).ToString(), "")
+                Dim therapyType As String = If(sessionDetails.Count > 9, sessionDetails(9).ToString(), "")
+
+                ' ჯგუფური სეანსის ინფორმაცია
+                Dim isGroup As Boolean = False
+                If sessionDetails.Count > 6 AndAlso Not String.IsNullOrEmpty(sessionDetails(6).ToString()) Then
+                    Boolean.TryParse(sessionDetails(6).ToString(), isGroup)
+                End If
+
+                ' ტექსტის მომზადება
+                Dim infoText As New System.Text.StringBuilder()
+
+                If isGroup Then
+                    infoText.AppendLine($"სივრცე '{spaceName}' დაკავებულია ჯგუფური სეანსით:")
+                    LMsgSpace.ForeColor = Color.DarkOrange
+                Else
+                    infoText.AppendLine($"სივრცე '{spaceName}' დაკავებულია:")
+                    LMsgSpace.ForeColor = Color.DarkRed
+                End If
+
+                infoText.AppendLine($"ბენეფიციარი: {beneficiaryName} {beneficiarySurname}")
+                infoText.AppendLine($"თერაპევტი: {therapistName}")
+                infoText.Append($"თერაპია: {therapyType}")
+
+                LMsgSpace.Text = infoText.ToString()
+            Else
+                ' თავისუფალი სივრცე
+                LMsgSpace.Text = $"სივრცე '{spaceName}' მოცემულ დროს თავისუფალია"
+                LMsgSpace.ForeColor = Color.DarkGreen
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateSpaceInfoLabel: შეცდომა - {ex.Message}")
+
+            ' შეცდომის შემთხვევაში ვაჩვენოთ უბრალო ტექსტი
+            LMsgSpace.Text = $"არჩეულია სივრცე: {spaceName}"
+            LMsgSpace.ForeColor = Color.Blue
         End Try
     End Sub
 
@@ -1085,6 +1216,11 @@ Public Class NewRecordForm
 
             ' განვაახლოთ ბენეფიციარის მდგომარეობა
             CheckBeneficiaryAvailability()
+
+            ' განვაახლოთ თერაპევტის მდგომარეობა
+            If CBPer.SelectedIndex > 0 Then
+                CheckTherapistAvailability()
+            End If
         Finally
             isUpdating = False
         End Try
@@ -1254,6 +1390,139 @@ Public Class NewRecordForm
             LMsgBene.ForeColor = Color.Gray
             CBBeneName.BackColor = SystemColors.Window
             CBBeneSurname.BackColor = SystemColors.Window
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაპევტის მდგომარეობის შემოწმება არჩეული თარიღისა და დროისთვის
+    ''' </summary>
+    Private Sub CheckTherapistAvailability()
+        Try
+            ' შევამოწმოთ გვაქვს თუ არა არჩეული თერაპევტი
+            If CBPer.SelectedIndex <= 0 Then
+                ' თუ თერაპევტი არ არის არჩეული ან არჩეულია "-აირჩიეთ-", გავასუფთაოთ ლეიბლი და ბექგრაუნდი
+                LMsgPer.Text = "აირჩიეთ თერაპევტი"
+                LMsgPer.ForeColor = Color.Black
+                CBPer.BackColor = SystemColors.Window
+                Return
+            End If
+
+            ' არჩეული თარიღი და დრო
+            Dim selectedDateTime As DateTime = GetSelectedDateTime() ' იგივე მეთოდი რასაც ბენეფიციარების შემთხვევაში ვიყენებთ
+
+            ' დროის შუალედის განსაზღვრა (30 წუთიანი შუალედი)
+            Dim startTime As DateTime = selectedDateTime.AddMinutes(-30)
+            Dim endTime As DateTime = selectedDateTime.AddMinutes(90)
+
+            ' არჩეული თერაპევტი
+            Dim therapistName As String = CBPer.Text.Trim()
+
+            ' DB-Schedule ფურცლიდან მონაცემების წამოღება
+            Dim scheduleData = dataService.GetData("DB-Schedule!A2:K")
+
+            ' თერაპევტის არსებული სესიების მოძებნა
+            Dim therapistSession As IList(Of Object) = Nothing
+            Dim isGroupSession As Boolean = False
+
+            If scheduleData IsNot Nothing AndAlso scheduleData.Count > 0 Then
+                For Each row In scheduleData
+                    If row.Count >= 11 Then ' K სვეტამდე (სივრცემდე)
+                        Try
+                            ' თერაპევტის სახელი (I სვეტი - ინდექსი 8)
+                            Dim rowTherapistName As String = If(row.Count > 8, row(8).ToString().Trim(), "")
+
+                            ' თარიღი და დრო F სვეტიდან (ინდექსი 5)
+                            Dim dateTimeStr As String = If(row.Count > 5, row(5).ToString(), "")
+                            Dim sessionDateTime As DateTime
+
+                            ' ვამოწმებთ თუ ეს იგივე თერაპევტია
+                            If String.Equals(rowTherapistName, therapistName, StringComparison.OrdinalIgnoreCase) Then
+
+                                ' პარსინგის მცდელობა
+                                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                                 System.Globalization.CultureInfo.InvariantCulture,
+                                                 System.Globalization.DateTimeStyles.None,
+                                                 sessionDateTime) OrElse
+                                DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                                    ' შევამოწმოთ ემთხვევა თუ არა საჭირო დროის შუალედს
+                                    If sessionDateTime >= startTime AndAlso sessionDateTime <= endTime Then
+                                        ' ნაპოვნია თერაპევტის სესია მოცემულ დროის შუალედში
+                                        therapistSession = row
+
+                                        ' შევამოწმოთ არის თუ არა ჯგუფური სესია (G სვეტი - ინდექსი 6)
+                                        If row.Count > 6 AndAlso Not String.IsNullOrEmpty(row(6).ToString()) Then
+                                            isGroupSession = Boolean.Parse(row(6).ToString())
+                                        End If
+
+                                        Exit For
+                                    End If
+                                End If
+                            End If
+                        Catch ex As Exception
+                            ' ვაგრძელებთ შემდეგ მწკრივზე შეცდომის შემთხვევაში
+                            Continue For
+                        End Try
+                    End If
+                Next
+            End If
+
+            ' თერაპევტის მდგომარეობის ვიზუალური ასახვა
+            If therapistSession IsNot Nothing Then
+                If isGroupSession Then
+                    ' ჯგუფური სეანსი - ყვითელი ინდიკატორი
+                    CBPer.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
+
+                    ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპიაზე და სივრცეზე
+                    Dim beneficiaryName As String = If(therapistSession.Count > 3, therapistSession(3).ToString(), "")
+                    Dim beneficiarySurname As String = If(therapistSession.Count > 4, therapistSession(4).ToString(), "")
+                    Dim therapyType As String = If(therapistSession.Count > 9, therapistSession(9).ToString(), "")
+                    Dim spaceName As String = If(therapistSession.Count > 10, therapistSession(10).ToString(), "")
+
+                    ' მრავალხაზიანი ტექსტი ლეიბლში
+                    Dim infoText As New System.Text.StringBuilder()
+                    infoText.AppendLine("მოცემულ დროს თერაპევტს აქვს ჯგუფური სეანსი:")
+                    infoText.AppendLine($"{beneficiaryName} {beneficiarySurname}")
+                    infoText.AppendLine($"თერაპია: {therapyType}")
+                    infoText.Append($"სივრცე: {spaceName}")
+
+                    LMsgPer.Text = infoText.ToString()
+                    LMsgPer.ForeColor = Color.DarkOrange
+                Else
+                    ' ჩვეულებრივი სეანსი - წითელი ინდიკატორი
+                    CBPer.BackColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
+
+                    ' დეტალური ინფორმაცია ბენეფიციარზე, თერაპიაზე და სივრცეზე
+                    Dim beneficiaryName As String = If(therapistSession.Count > 3, therapistSession(3).ToString(), "")
+                    Dim beneficiarySurname As String = If(therapistSession.Count > 4, therapistSession(4).ToString(), "")
+                    Dim therapyType As String = If(therapistSession.Count > 9, therapistSession(9).ToString(), "")
+                    Dim spaceName As String = If(therapistSession.Count > 10, therapistSession(10).ToString(), "")
+
+                    ' მრავალხაზიანი ტექსტი ლეიბლში
+                    Dim infoText As New System.Text.StringBuilder()
+                    infoText.AppendLine("მოცემულ დროს თერაპევტი დაკავებულია:")
+                    infoText.AppendLine($"{beneficiaryName} {beneficiarySurname}")
+                    infoText.AppendLine($"თერაპია: {therapyType}")
+                    infoText.Append($"სივრცე: {spaceName}")
+
+                    LMsgPer.Text = infoText.ToString()
+                    LMsgPer.ForeColor = Color.DarkRed
+                End If
+            Else
+                ' თერაპევტი თავისუფალია - მწვანე ინდიკატორი
+                CBPer.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
+
+                LMsgPer.Text = "მოცემულ დროს თერაპევტი თავისუფალია"
+                LMsgPer.ForeColor = Color.DarkGreen
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"CheckTherapistAvailability: შეცდომა - {ex.Message}")
+
+            ' შეცდომის შემთხვევაში ვაჩვენოთ ნეიტრალური სტატუსი
+            LMsgPer.Text = "თერაპევტის მდგომარეობის შემოწმება ვერ მოხერხდა"
+            LMsgPer.ForeColor = Color.Gray
+            CBPer.BackColor = SystemColors.Window
         End Try
     End Sub
 
