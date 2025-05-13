@@ -416,6 +416,9 @@ Public Class NewRecordForm
                 ' ინდექსი არავალიდურია ან არჩეულია პირველი ელემენტი, გამოვრთოთ გვარების ჩამონათვალი
                 CBBeneSurname.Enabled = False
 
+                ' ფორმის ვალიდაცია
+                ValidateFormInputs()
+
                 ' გავწმინდოთ ბექგრაუნდი და შეტყობინება
                 CBBeneName.BackColor = SystemColors.Window
                 CBBeneSurname.BackColor = SystemColors.Window
@@ -440,6 +443,8 @@ Public Class NewRecordForm
         If CBBeneName.SelectedIndex < 0 OrElse CBBeneName.Text <> CBBeneName.SelectedItem.ToString() Then
             CBBeneSurname.Enabled = False
         End If
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
     End Sub
     ''' <summary>
     ''' ბენეფიციარის გვარების ჩატვირთვა არჩეული სახელის შესაბამისად - განახლებული
@@ -487,6 +492,8 @@ Public Class NewRecordForm
     Private Sub CBBeneSurname_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneSurname.SelectedIndexChanged
         ' ბენეფიციარის მდგომარეობის შემოწმება
         CheckBeneficiaryAvailability()
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
     End Sub
 
     ''' <summary>
@@ -496,11 +503,31 @@ Public Class NewRecordForm
         Try
             ' შევამოწმოთ თერაპევტის მდგომარეობა
             CheckTherapistAvailability()
+            ' ფორმის ვალიდაცია
+            ValidateFormInputs()
+
         Catch ex As Exception
             MessageBox.Show($"შეცდომა თერაპევტის არჩევისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
+    ''' <summary>
+    ''' CBTer-ს SelectedIndexChanged ივენთი - თერაპევტის არჩევისას
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Sub CBTer_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBTer.SelectedIndexChanged
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
+    End Sub
+    ''' <summary>
+    ''' CBDaf-ს SelectedIndexChanged ივენთი - თერაპევტის არჩევისას
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Sub CBDaf_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBDaf.SelectedIndexChanged
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
+    End Sub
     ''' <summary>
     ''' BTNHourDown ღილაკზე დაჭერა - საათის შემცირება 1-ით
     ''' </summary>
@@ -825,6 +852,9 @@ Public Class NewRecordForm
         If Not isValidNumber Then
             TCost.Text = "0"
         End If
+
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
     End Sub
 
     ''' <summary>
@@ -1329,7 +1359,8 @@ Public Class NewRecordForm
                 LMsgSpace.Text = $"არჩეული სივრცე: {selectedSpace} (თავისუფალია)"
                 LMsgSpace.ForeColor = Color.DarkGreen
             End If
-
+            ' ფორმის ვალიდაცია
+            ValidateFormInputs()
             Debug.WriteLine($"SpaceButton_Click: არჩეულია სივრცე '{selectedSpace}'")
         Catch ex As Exception
             Debug.WriteLine($"SpaceButton_Click: შეცდომა - {ex.Message}")
@@ -1702,8 +1733,128 @@ Public Class NewRecordForm
             LWarning.Text = $"არჩეული სტატუსი: {rb.Text}"
             LWarning.ForeColor = Color.Blue
         End If
+        ' ფორმის ვალიდაცია
+        ValidateFormInputs()
     End Sub
 
+    ''' <summary>
+    ''' ფორმის ველების შემოწმება და შესაბამისი გაფრთხილებების ჩვენება
+    ''' </summary>
+    Private Sub ValidateFormInputs()
+        Try
+            ' ტექსტისთვის ბილდერი
+            Dim warningText As New System.Text.StringBuilder()
+            Dim warningColor As Color = Color.DarkRed
+            Dim isFormValid As Boolean = True
+
+            ' სივრცის შერჩევის სტატუსის შენახვა
+            Static selectedSpaceButton As Button = Nothing
+
+            ' 1. ბენეფიციარის შემოწმება
+            If CBBeneName.SelectedIndex <= 0 OrElse String.IsNullOrEmpty(CBBeneSurname.Text) Then
+                warningText.AppendLine("• გთხოვთ შეიყვანოთ ბენეფიციარი")
+                CBBeneName.BackColor = Color.MistyRose
+                CBBeneSurname.BackColor = Color.MistyRose
+                isFormValid = False
+            Else
+                CBBeneName.BackColor = SystemColors.Window
+                CBBeneSurname.BackColor = SystemColors.Window
+            End If
+
+            ' 2. თერაპევტის შემოწმება
+            If CBPer.SelectedIndex <= 0 Then
+                warningText.AppendLine("• გთხოვთ აირჩიოთ თერაპევტი")
+                CBPer.BackColor = Color.MistyRose
+                isFormValid = False
+            Else
+                CBPer.BackColor = SystemColors.Window
+            End If
+
+            ' 3. თერაპიის შემოწმება
+            If CBTer.SelectedIndex <= 0 Then
+                warningText.AppendLine("• გთხოვთ აირჩიოთ თერაპიის ტიპი")
+                CBTer.BackColor = Color.MistyRose
+                isFormValid = False
+            Else
+                CBTer.BackColor = SystemColors.Window
+            End If
+
+            ' 4. დაფინანსების შემოწმება
+            If CBDaf.SelectedIndex <= 0 Then
+                warningText.AppendLine("• გთხოვთ აირჩიოთ დაფინანსების პროგრამა")
+                CBDaf.BackColor = Color.MistyRose
+                isFormValid = False
+            Else
+                CBDaf.BackColor = SystemColors.Window
+            End If
+
+            ' 5. ფასის შემოწმება
+            Dim price As Decimal = 0
+            If Not Decimal.TryParse(TCost.Text.Replace(",", "."), price) OrElse price < 0 Then
+                warningText.AppendLine("• გთხოვთ შეიყვანოთ ვალიდური ფასი")
+                TCost.BackColor = Color.MistyRose
+                isFormValid = False
+            Else
+                TCost.BackColor = SystemColors.Window
+            End If
+
+            ' 6. სივრცის შემოწმება
+            Dim spaceSelected As Boolean = False
+            For Each btn As Button In Me.Controls.OfType(Of Button)()
+                If btn.Name.StartsWith("BTNS") AndAlso btn.BackColor = Color.FromArgb(173, 216, 230) Then
+                    spaceSelected = True
+                    selectedSpaceButton = btn
+                    Exit For
+                End If
+            Next
+
+            If Not spaceSelected Then
+                warningText.AppendLine("• გთხოვთ აირჩიოთ სივრცე")
+                isFormValid = False
+            End If
+
+            ' 7. დასრულების სტატუსის შემოწმება თუ საჭიროა
+            Dim selectedDateTime As DateTime = GetSelectedDateTime()
+            If selectedDateTime <= DateTime.Now Then
+                ' წარსული თარიღისთვის სტატუსი აუცილებელია
+                Dim statusSelected As Boolean = False
+                For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                    If rb.Name.StartsWith("RB") AndAlso rb.Checked Then
+                        statusSelected = True
+                        Exit For
+                    End If
+                Next
+
+                If Not statusSelected Then
+                    warningText.AppendLine("• გთხოვთ აირჩიოთ სესიის შესრულების სტატუსი")
+                    isFormValid = False
+                End If
+            End If
+
+            ' ღილაკის მართვა და ტექსტის დაყენება
+            If isFormValid Then
+                BtnAdd.Visible = True
+
+                ' ყველა ველი სწორია
+                warningText.Clear()
+                warningText.AppendLine("ყველა ველი შევსებულია!")
+                warningText.AppendLine("შეგიძლიათ დააჭიროთ დამატების ღილაკს.")
+                warningColor = Color.DarkGreen
+            Else
+                BtnAdd.Visible = False
+            End If
+
+            ' LWarning ლეიბლის განახლება
+            LWarning.Text = warningText.ToString()
+            LWarning.ForeColor = warningColor
+
+        Catch ex As Exception
+            Debug.WriteLine($"ValidateFormInputs: შეცდომა - {ex.Message}")
+            LWarning.Text = "ფორმის შემოწმებისას დაფიქსირდა შეცდომა"
+            LWarning.ForeColor = Color.DarkRed
+            BtnAdd.Visible = False
+        End Try
+    End Sub
     ''' <summary>
     ''' ValueChanged ივენთი აღარ გამოიყენება, მაგრამ რჩება დიზაინერში მიბმული
     ''' შევქმნით ცარიელ მეთოდს, რომელიც არაფერს აკეთებს

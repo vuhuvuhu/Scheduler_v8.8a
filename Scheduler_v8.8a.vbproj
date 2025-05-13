@@ -186,6 +186,9 @@
     <Content Include="Resources\AppImages\BtnAdd.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\AppImages\BtnClear.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\AppImages\BtnLeft.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

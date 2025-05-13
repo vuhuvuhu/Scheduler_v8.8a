@@ -200,24 +200,27 @@ Partial Class NewRecordForm
         'BtnAdd
         '
         Me.BtnAdd.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.BtnAdd.BackColor = System.Drawing.Color.FromArgb(CType(CType(192, Byte), Integer), CType(CType(255, Byte), Integer), CType(CType(192, Byte), Integer))
-        Me.BtnAdd.Location = New System.Drawing.Point(685, 532)
+        Me.BtnAdd.BackColor = System.Drawing.Color.Transparent
+        Me.BtnAdd.BackgroundImage = CType(resources.GetObject("BtnAdd.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAdd.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnAdd.Location = New System.Drawing.Point(730, 505)
         Me.BtnAdd.Name = "BtnAdd"
-        Me.BtnAdd.Size = New System.Drawing.Size(91, 23)
+        Me.BtnAdd.Size = New System.Drawing.Size(50, 50)
         Me.BtnAdd.TabIndex = 329
-        Me.BtnAdd.Text = "დამატება"
         Me.BtnAdd.UseVisualStyleBackColor = False
         Me.BtnAdd.Visible = False
         '
         'BtnClear
         '
         Me.BtnClear.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.BtnClear.Location = New System.Drawing.Point(685, 503)
+        Me.BtnClear.BackColor = System.Drawing.Color.Transparent
+        Me.BtnClear.BackgroundImage = CType(resources.GetObject("BtnClear.BackgroundImage"), System.Drawing.Image)
+        Me.BtnClear.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnClear.Location = New System.Drawing.Point(740, 459)
         Me.BtnClear.Name = "BtnClear"
-        Me.BtnClear.Size = New System.Drawing.Size(91, 23)
+        Me.BtnClear.Size = New System.Drawing.Size(40, 40)
         Me.BtnClear.TabIndex = 328
-        Me.BtnClear.Text = "გასუფთავება"
-        Me.BtnClear.UseVisualStyleBackColor = True
+        Me.BtnClear.UseVisualStyleBackColor = False
         '
         'RB5
         '
