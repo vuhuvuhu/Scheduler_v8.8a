@@ -806,7 +806,7 @@ Public Class NewRecordForm
     End Sub
 
     ''' <summary>
-    ''' TCost-ში კლავიშზე დაჭერის ივენთი - მხოლოდ ციფრების და წერტილის/მძიმის დაშვება
+    ''' გამართული ვერსია TCost_KeyPress ივენთისთვის
     ''' </summary>
     Private Sub TCost_KeyPress(sender As Object, e As KeyPressEventArgs) Handles TCost.KeyPress
         ' აქცეპტირებული სიმბოლოები: ციფრები, წაშლის კლავიში, წერტილი, მძიმე
@@ -833,58 +833,44 @@ Public Class NewRecordForm
     End Sub
 
     ''' <summary>
-    ''' TCost-ში ტექსტის შეცვლის ივენთი - დამატებითი ვალიდაცია
+    ''' გამართული ვერსია TCost_TextChanged ივენთისთვის, რომელიც შეინარჩუნებს შეყვანილ მნიშვნელობას
     ''' </summary>
     Private Sub TCost_TextChanged(sender As Object, e As EventArgs) Handles TCost.TextChanged
-        ' ტექსტის ვალიდაცია და კორექტირება
-        Dim text As String = TCost.Text
-
-        ' თუ ტექსტი ცარიელია, დავაყენოთ 0
-        If String.IsNullOrEmpty(text) Then
-            TCost.Text = "0"
-            Return
-        End If
-
-        ' შევამოწმოთ რომ ტექსტი რიცხვის ფორმატშია
-        Dim isValidNumber As Boolean = True
-
-        ' ვეცადოთ დავაკონვერტიროთ Double-ად
-        Dim value As Double
-        If Not Double.TryParse(text.Replace(",", "."), value) Then
-            isValidNumber = False
-        End If
-
-        ' თუ არ არის ვალიდური რიცხვი, დავაბრუნოთ 0 ან წინა ვალიდური მნიშვნელობა
-        If Not isValidNumber Then
-            TCost.Text = "0"
-        End If
+        ' ტექსტი რჩება უცვლელი შეყვანის დროს
+        ' ვალიდაცია მხოლოდ ფორმის დასრულებისას ხდება
 
         ' ფორმის ვალიდაცია
         ValidateFormInputs()
     End Sub
 
     ''' <summary>
-    ''' TCost-დან გასვლის ივენთი - რიცხვის ფორმატირება
+    ''' გამართული ვერსია TCost_Leave ივენთისთვის, რომელიც არ გაანულებს მნიშვნელობას
     ''' </summary>
     Private Sub TCost_Leave(sender As Object, e As EventArgs) Handles TCost.Leave
         Try
             ' ტექსტის ფორმატირება როგორც რიცხვის
             Dim text As String = TCost.Text.Replace(",", ".")
 
-            ' თუ ტექსტი ცარიელია ან არ არის რიცხვი, დავაყენოთ 0
-            Dim value As Double
-            If String.IsNullOrEmpty(text) OrElse Not Double.TryParse(text, value) Then
+            ' თუ ტექსტი ცარიელია, დავაყენოთ 0
+            If String.IsNullOrWhiteSpace(text) Then
                 TCost.Text = "0"
                 Return
             End If
 
-            ' ფორმატირება ორი ციფრით მძიმის შემდეგ
-            TCost.Text = String.Format("{0:0.00}", value)
+            ' მოვსინჯოთ რიცხვის პარსინგი
+            Dim value As Decimal
+            If Decimal.TryParse(text, value) Then
+                ' მხოლოდ მაშინ ვაფორმატირებთ, თუ ეს ნამდვილად რიცხვია
+                ' ფორმატირება ორი ციფრით მძიმის შემდეგ
+                TCost.Text = String.Format(CultureInfo.InvariantCulture, "{0:0.00}", value)
+            End If
+            ' თუ პარსინგი ვერ მოხერხდა, დავტოვოთ როგორც არის
         Catch ex As Exception
-            ' შეცდომის შემთხვევაში დავაყენოთ 0
-            TCost.Text = "0"
+            Debug.WriteLine($"TCost_Leave: შეცდომა - {ex.Message}")
+            ' ტექსტს არ ვცვლით შეცდომის შემთხვევაში
         End Try
     End Sub
+
     ''' <summary>
     ''' სივრცეების ღილაკების Click ივენთების მიბმა
     ''' </summary>
