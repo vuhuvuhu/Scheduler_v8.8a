@@ -2228,4 +2228,52 @@ Public Class NewRecordForm
             MessageBox.Show($"ბენეფიციარის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' BtnAddPer ღილაკზე დაჭერის ივენთი - თერაპევტის დამატება
+    ''' </summary>
+    Private Sub BtnAddPer_Click(sender As Object, e As EventArgs) Handles BtnAddPer.Click
+        Try
+            Debug.WriteLine("BtnAddPer_Click: თერაპევტის დამატების დაწყება")
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' თერაპევტის დამატების ფორმის გახსნა
+            Using addPerForm As New AddPerForm(dataService)
+                Dim result = addPerForm.ShowDialog()
+
+                ' შევამოწმოთ შედეგი
+                If result = DialogResult.OK AndAlso addPerForm.IsSuccess Then
+                    Debug.WriteLine($"BtnAddPer_Click: თერაპევტი დაემატა - {addPerForm.AddedName} {addPerForm.AddedSurname}")
+
+                    ' განვაახლოთ თერაპევტების ჩამონათვალი
+                    LoadTherapists()
+
+                    ' დავაყენოთ ახლად დამატებული თერაპევტი
+                    If CBPer.Items.Count > 0 Then
+                        ' თერაპევტების ჩამონათვალში ვეძებთ ახლად დამატებულ თერაპევტს
+                        Dim fullName = $"{addPerForm.AddedName} {addPerForm.AddedSurname}"
+
+                        For i As Integer = 0 To CBPer.Items.Count - 1
+                            If String.Equals(CBPer.Items(i).ToString(), fullName, StringComparison.OrdinalIgnoreCase) Then
+                                CBPer.SelectedIndex = i
+                                Exit For
+                            End If
+                        Next
+                    End If
+
+                    ' შევამოწმოთ თერაპევტის მდგომარეობა
+                    CheckTherapistAvailability()
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnAddPer_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"თერაპევტის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class
