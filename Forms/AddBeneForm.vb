@@ -407,4 +407,20 @@ Public Class AddBeneForm
             Return False ' შეცდომის შემთხვევაში ვაბრუნებთ False (ანუ ვამატებთ ახალს)
         End Try
     End Function
+
+    Private Sub TName_TextChanged(sender As Object, e As EventArgs) Handles TName.TextChanged
+        If TSurname.Text <> "" And TName.Text <> "" Then
+            BtnAdd.Visible = True
+        Else
+            BtnAdd.Visible = False
+        End If
+    End Sub
+
+    Private Sub TSurname_TextChanged(sender As Object, e As EventArgs) Handles TSurname.TextChanged
+        If TSurname.Text <> "" And TName.Text <> "" Then
+            BtnAdd.Visible = True
+        Else
+            BtnAdd.Visible = False
+        End If
+    End Sub
 End Class
