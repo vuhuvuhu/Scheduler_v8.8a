@@ -2165,4 +2165,67 @@ Public Class NewRecordForm
         ' ნაგულისხმევი სტატუსი, თუ არცერთი არ არის არჩეული
         Return "დაგეგმილი"
     End Function
+
+    ''' <summary>
+    ''' BtnAddBene ღილაკზე დაჭერის ჰენდლერი - ახალი ბენეფიციარის დამატება
+    ''' </summary>
+    Private Sub BtnAddBene_Click(sender As Object, e As EventArgs) Handles BtnAddBene.Click
+        Try
+            Debug.WriteLine("BtnAddBene_Click: ბენეფიციარის დამატების დაწყება")
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' ბენეფიციარის დამატების ფორმის გახსნა
+            Using addBeneForm As New AddBeneForm(dataService)
+                Dim result = addBeneForm.ShowDialog()
+
+                ' შევამოწმოთ შედეგი
+                If result = DialogResult.OK AndAlso addBeneForm.IsSuccess Then
+                    Debug.WriteLine($"BtnAddBene_Click: ბენეფიციარი დაემატა - {addBeneForm.AddedName} {addBeneForm.AddedSurname}")
+
+                    ' განვაახლოთ ბენეფიციარების ჩამონათვალი
+                    LoadBeneNames()
+
+                    ' დავაყენოთ ახლად დამატებული ბენეფიციარი
+                    If CBBeneName.Items.Count > 0 Then
+                        ' მოვძებნოთ დამატებული ბენეფიციარის სახელი ჩამონათვალში
+                        Dim nameIndex As Integer = -1
+                        For i As Integer = 0 To CBBeneName.Items.Count - 1
+                            If String.Equals(CBBeneName.Items(i).ToString(), addBeneForm.AddedName, StringComparison.OrdinalIgnoreCase) Then
+                                nameIndex = i
+                                Exit For
+                            End If
+                        Next
+
+                        ' თუ ვიპოვეთ, დავაყენოთ ეს სახელი
+                        If nameIndex > 0 Then
+                            CBBeneName.SelectedIndex = nameIndex
+
+                            ' ცოტა დავიცადოთ გვარების ჩატვირთვას
+                            Application.DoEvents()
+
+                            ' ახლა ვეძებთ გვარს
+                            For i As Integer = 0 To CBBeneSurname.Items.Count - 1
+                                If String.Equals(CBBeneSurname.Items(i).ToString(), addBeneForm.AddedSurname, StringComparison.OrdinalIgnoreCase) Then
+                                    CBBeneSurname.SelectedIndex = i
+                                    Exit For
+                                End If
+                            Next
+                        End If
+                    End If
+
+                    ' შევამოწმოთ ბენეფიციარის მდგომარეობა
+                    CheckBeneficiaryAvailability()
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnAddBene_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"ბენეფიციარის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class
