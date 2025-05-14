@@ -152,6 +152,32 @@ Public Class UC_Home
         Debug.WriteLine("UC_Home.SetDataService: მითითებულია მონაცემთა სერვისი")
     End Sub
     ''' <summary>
+    ''' მომხმარებლის სახელის განახლება
+    ''' </summary>
+    ''' <param name="userName">მომხმარებლის სახელი</param>
+    Public Sub UpdateUserName(userName As String)
+        Try
+            Debug.WriteLine($"UpdateUserName: მომხმარებლის სახელის განახლება '{userName}'")
+
+            ' პირდაპირ ლეიბლში დავაყენოთ სახელი
+            LUserName.Text = userName
+
+            ' ასევე, განვაახლოთ ViewModel
+            If viewModel IsNot Nothing Then
+                viewModel.UserName = userName
+                Debug.WriteLine($"UpdateUserName: ViewModel განახლდა, UserName='{viewModel.UserName}'")
+            End If
+
+            ' ძალით განვაახლოთ LUserName
+            LUserName.Refresh()
+            Application.DoEvents()
+
+            Debug.WriteLine($"UpdateUserName: LUserName.Text = '{LUserName.Text}'")
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateUserName: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
     ''' დროის ჩვენების განახლება ViewModel-დან
     ''' </summary>
     Private Sub UpdateTimeDisplay()
@@ -402,6 +428,7 @@ Public Class UC_Home
         Select Case e.PropertyName
             Case NameOf(viewModel.UserName)
                 LUserName.Text = viewModel.UserName
+                Debug.WriteLine($"ViewModel_PropertyChanged: UserName განახლდა '{viewModel.UserName}'")
             Case NameOf(viewModel.Greeting)
                 LWish.Text = viewModel.Greeting
             Case NameOf(viewModel.FormattedTime)
@@ -1031,15 +1058,82 @@ Public Class UC_Home
         End Try
     End Sub
     ''' <summary>
-    ''' რედაქტირების ღილაკზე დაჭერის დამმუშავებელი
+    ''' რედაქტირების ღილაკზე დაჭერის დამმუშავებელი - 
+    ''' ხსნის NewRecordForm-ს რედაქტირების რეჟიმში
     ''' </summary>
     Private Sub BtnEditSession_Click(sender As Object, e As EventArgs)
-        Dim btn = DirectCast(sender, Button)
-        Dim sessionId As Integer = CInt(btn.Tag)
+        Try
+            Dim btn = DirectCast(sender, Button)
+            Dim sessionId As Integer = CInt(btn.Tag)
 
-        ' აქ იქნება სესიის რედაქტირების ლოგიკა
-        MessageBox.Show($"სესიის რედაქტირება ID: {sessionId}")
-        ' შემდეგში შეიძლება გარე კლასს გადავაწოდოთ ეს ID ან გამოვიძახოთ რედაქტირების ფორმა
+            Debug.WriteLine($"BtnEditSession_Click: დაიწყო სესიის რედაქტირება, ID={sessionId}")
+
+            ' შევამოწმოთ გვაქვს თუ არა dataService
+            If dataService Is Nothing Then
+                ' ვეცადოთ მოვიპოვოთ Form1-დან
+                Dim mainForm = TryCast(Application.OpenForms("Form1"), Form1)
+                If mainForm IsNot Nothing Then
+                    ' ვცადოთ ავაღოთ მონაცემთა სერვისი Form1-დან რეფლექსიით
+                    Dim dataServiceField = mainForm.GetType().GetField("dataService", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+                    If dataServiceField IsNot Nothing Then
+                        Dim formDataService = dataServiceField.GetValue(mainForm)
+                        If TypeOf formDataService Is IDataService Then
+                            dataService = DirectCast(formDataService, IDataService)
+                            Debug.WriteLine("BtnEditSession_Click: dataService წარმატებით მიღებულია Form1-დან")
+                        End If
+                    End If
+                End If
+
+                ' თუ ver მოვიპოვეთ dataService, ვაჩვენოთ შეტყობინება და გამოვიდეთ
+                If dataService Is Nothing Then
+                    MessageBox.Show("მონაცემთა სერვისი არ არის ხელმისაწვდომი", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    Return
+                End If
+            End If
+
+            ' მოვიპოვოთ მომხმარებლის ელფოსტა
+            Dim userEmail As String = "უცნობი"
+            ' ვცადოთ Form1-დან მოვიპოვოთ მომხმარებლის ელფოსტა
+            Dim mainForm2 = TryCast(Application.OpenForms("Form1"), Form1)
+            If mainForm2 IsNot Nothing AndAlso mainForm2.GetType().GetMethod("GetUserEmail") IsNot Nothing Then
+                ' თუ GetUserEmail მეთოდი არსებობს, გამოვიყენოთ
+                userEmail = CType(mainForm2.GetType().GetMethod("GetUserEmail").Invoke(mainForm2, Nothing), String)
+                Debug.WriteLine($"BtnEditSession_Click: მომხმარებლის ელფოსტა = {userEmail}")
+            End If
+
+            ' შევქმნათ და გავხსნათ რედაქტირების ფორმა
+            Dim editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Home")
+
+            ' გავხსნათ ფორმა
+            Dim result = editForm.ShowDialog()
+
+            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
+            If result = DialogResult.OK Then
+                Debug.WriteLine($"BtnEditSession_Click: სესია ID={sessionId} წარმატებით განახლდა")
+
+                ' თუ გვაქვს RefreshAllData მეთოდი, გამოვიძახოთ
+                Try
+                    Dim refreshMethod = Me.GetType().GetMethod("RefreshAllData", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+                    If refreshMethod IsNot Nothing Then
+                        refreshMethod.Invoke(Me, Nothing)
+                        Debug.WriteLine("BtnEditSession_Click: RefreshAllData მეთოდი გამოძახებულია")
+                    Else
+                        ' ალტერნატიულად, გამოვიძახოთ LoadData
+                        Dim loadDataMethod = Me.GetType().GetMethod("LoadData", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+                        If loadDataMethod IsNot Nothing Then
+                            loadDataMethod.Invoke(Me, Nothing)
+                            Debug.WriteLine("BtnEditSession_Click: LoadData მეთოდი გამოძახებულია")
+                        End If
+                    End If
+                Catch ex As Exception
+                    Debug.WriteLine($"BtnEditSession_Click: შეცდომა მონაცემების განახლებისას: {ex.Message}")
+                End Try
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnEditSession_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
     ''' <summary>
     ''' სრულიად განაახლებს ყველა მონაცემს და UI ელემენტს

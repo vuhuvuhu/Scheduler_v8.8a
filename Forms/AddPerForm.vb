@@ -118,16 +118,32 @@ Public Class AddPerForm
     ''' TName ველის TextChanged ივენთი
     ''' </summary>
     Private Sub TName_TextChanged(sender As Object, e As EventArgs) Handles TName.TextChanged
+
+    End Sub
+    ''' <summary>
+    ''' TName ველის KeyPress ივენთი
+    ''' - მხოლოდ ქართული ან ინგლისური ასოების შეყვანის კონტროლი
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Sub TName_KeyPress(sender As Object, e As KeyPressEventArgs) Handles TName.KeyPress
         ValidateForm()
     End Sub
-
     ''' <summary>
     ''' TSurname ველის TextChanged ივენთი
     ''' </summary>
     Private Sub TSurname_TextChanged(sender As Object, e As EventArgs) Handles TSurname.TextChanged
+
+    End Sub
+    ''' <summary>
+    ''' TSurname ველის KeyPress ივენთი
+    ''' - მხოლოდ ქართული ან ინგლისური ასოების შეყვანის კონტროლი
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Sub TSurname_KeyPress(sender As Object, e As KeyPressEventArgs) Handles TSurname.KeyPress
         ValidateForm()
     End Sub
-
     ''' <summary>
     ''' პირადი ნომრის ველის KeyPress ივენთი
     ''' - მხოლოდ ციფრების შეყვანის კონტროლი
@@ -354,5 +370,6 @@ Public Class AddPerForm
             MessageBox.Show($"ფორმის გასუფთავების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
 
 End Class

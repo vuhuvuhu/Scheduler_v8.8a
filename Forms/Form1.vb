@@ -155,6 +155,15 @@ Public Class Form1
                     ' 8) Home გვერდის ჩვენება და მონაცემების ჩატვირთვა
                     ShowHome()
 
+                    ' 9) პირდაპირ განვაახლოთ მომხმარებლის სახელი (დავამატოთ ეს კოდი)
+                    If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed Then
+                        ' დავაყოვნოთ ცოტა, რომ დარწმუნებული ვიყოთ UI-ს აქვს დრო განახლებისთვის
+                        Application.DoEvents()
+                        System.Threading.Thread.Sleep(200)
+                        ' გამოვიძახოთ UpdateUserName მეთოდი
+                        homeControl.UpdateUserName(homeViewModel.UserName)
+                        Debug.WriteLine($"BtnLogin_Click: მომხმარებლის სახელი განახლდა = '{homeViewModel.UserName}'")
+                    End If
                 Catch ex As Exception
                     MessageBox.Show($"ავტორიზაცია ვერ შესრულდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
@@ -375,6 +384,15 @@ Public Class Form1
             End Try
         Else
             Debug.WriteLine("ShowHome: dataService არის Nothing, მონაცემების დატვირთვა შეუძლებელია")
+        End If
+        ' ბოლოს, დავრწმუნდეთ რომ მომხმარებლის სახელი განახლებულია
+        If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed AndAlso viewModel IsNot Nothing Then
+            ' დავაყოვნოთ ცოტა, რომ დარწმუნებული ვიყოთ UI-ს აქვს დრო განახლებისთვის
+            Application.DoEvents()
+
+            ' გამოვიძახოთ UpdateUserName მეთოდი
+            homeControl.UpdateUserName(homeViewModel.UserName)
+            Debug.WriteLine($"ShowHome: მომხმარებლის სახელი განახლდა = '{homeViewModel.UserName}'")
         End If
 
         Debug.WriteLine("ShowHome: დასრულებულია")

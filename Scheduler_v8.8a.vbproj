@@ -104,10 +104,22 @@
     <Compile Include="Forms\AddBeneForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\AddDafForm.Designer.vb">
+      <DependentUpon>AddDafForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AddDafForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\AddPerForm.Designer.vb">
       <DependentUpon>AddPerForm.vb</DependentUpon>
     </Compile>
     <Compile Include="Forms\AddPerForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\AddTerForm.Designer.vb">
+      <DependentUpon>AddTerForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AddTerForm.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\Form1.vb">
@@ -164,8 +176,14 @@
     <EmbeddedResource Include="Forms\AddBeneForm.resx">
       <DependentUpon>AddBeneForm.vb</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AddDafForm.resx">
+      <DependentUpon>AddDafForm.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\AddPerForm.resx">
       <DependentUpon>AddPerForm.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AddTerForm.resx">
+      <DependentUpon>AddTerForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\Form1.resx">
       <DependentUpon>Form1.vb</DependentUpon>

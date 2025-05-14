@@ -113,7 +113,7 @@ Public Class NewRecordForm
     ' აქ უკვე არსებულ კოდს ვამატებთ შემდეგ მეთოდებს და ივენთებს:
 
     ''' <summary>
-    ''' ფორმის ჩატვირთვა - დამატებულია საათის, წუთის და ხანგძლივობის ელემენტების ინიციალიზაცია
+    ''' ფორმის ჩატვირთვის ივენთი - დამატებულია საათის, წუთის და ხანგძლივობის ელემენტების ინიციალიზაცია
     ''' </summary>
     Private Sub NewRecordForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
@@ -122,10 +122,23 @@ Public Class NewRecordForm
                 ' ახალი ჩანაწერის დამატების რეჟიმი - ღია მწვანე ფონი
                 Me.BackColor = Color.FromArgb(200, 255, 200) ' ღია მწვანე
                 Me.Text = $"ახალი {recordType} - დამატება"
+
+                ' ჩანაწერის ნომრის (ID) მოპოვება
+                Dim maxId As Integer = GetMaxRecordId()
+                LN.Text = (maxId + 1).ToString()
+
+                ' BtnAdd ტექსტის დაყენება
+                BtnAdd.Text = "დამატება"
             Else
                 ' რედაქტირების რეჟიმი - ღია ყვითელი ფონი
                 Me.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
                 Me.Text = $"{recordType} - რედაქტირება (ID: {_editRecordId})"
+
+                ' ID-ის დაყენება
+                LN.Text = _editRecordId.ToString()
+
+                ' BtnAdd ტექსტის დაყენება
+                BtnAdd.Text = "შენახვა"
             End If
 
             ' მიმდინარე თარიღის და დროის დაყენება
@@ -134,17 +147,8 @@ Public Class NewRecordForm
             ' ავტორიზირებული მომხმარებლის ელ.ფოსტის გამოყენება
             LAutor.Text = _userEmail
 
-            ' ჩანაწერის ნომრის (ID) მოპოვება რეჟიმის მიხედვით
-            If _isAddMode Then
-                ' ახალი ჩანაწერისთვის - მივიღოთ მაქსიმალური ID + 1
-                Dim maxId As Integer = GetMaxRecordId()
-                LN.Text = (maxId + 1).ToString()
-            Else
-                ' რედაქტირების რეჟიმისთვის - გამოვიყენოთ არსებული ID
-                LN.Text = _editRecordId.ToString()
-            End If
-
-            TCost.Text = "" ' ცარიელი ნაცვლად "0"-ისა
+            ' TCost ცარიელი ნაცვლად "0"-ისა
+            TCost.Text = ""
 
             ' LWarning-ის ინიციალიზაცია
             LWarning.Text = "გთხოვთ შეავსოთ ყველა აუცილებელი ველი"
@@ -203,11 +207,328 @@ Public Class NewRecordForm
             ' რადიობუტონების ივენთების მიბმა
             AttachRadioButtonHandlers()
 
+            ' რედაქტირების რეჟიმში ჩავტვირთოთ არსებული ჩანაწერის მონაცემები
+            If Not _isAddMode Then
+                ' ცოტა დავიცადოთ, რომ კომბობოქსები მოასწრონ ჩატვირთვა
+                Application.DoEvents()
+                System.Threading.Thread.Sleep(500)
+
+                ' ჩავტვირთოთ მონაცემები
+                LoadRecordData()
+            End If
+
         Catch ex As Exception
             MessageBox.Show($"შეცდომა ფორმის ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"NewRecordForm_Load შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
+    ''' არსებული ჩანაწერის მონაცემების ჩატვირთვა ID-ის მიხედვით
+    ''' </summary>
+    Private Sub LoadRecordData()
+        Try
+            Debug.WriteLine($"LoadRecordData: ვტვირთავ ჩანაწერს ID={_editRecordId}, ტიპი={recordType}")
+
+            ' ჩანაწერის ტიპის მიხედვით განვსაზღვროთ ფურცლის სახელი და დიაპაზონი
+            Dim sheetName As String = ""
+            Select Case recordType.ToLower()
+                Case "სესია"
+                    sheetName = "DB-Schedule"
+                Case "დაბადების დღე"
+                    sheetName = "DB-Personal"
+                Case "დავალება"
+                    sheetName = "DB-Tasks"
+                Case Else
+                    sheetName = "DB-Schedule"
+            End Select
+
+            ' ჩავტვირთოთ ყველა ჩანაწერი ფურცლიდან
+            Dim data = dataService.GetData($"{sheetName}!A2:O")
+
+            If data Is Nothing OrElse data.Count = 0 Then
+                MessageBox.Show($"ჩანაწერი ID={_editRecordId} ვერ მოიძებნა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' ვეძებთ ჩანაწერს ID-ის მიხედვით
+            Dim recordRow As IList(Of Object) = Nothing
+            For Each row In data
+                If row.Count > 0 AndAlso Not String.IsNullOrEmpty(row(0)?.ToString()) Then
+                    Dim id As Integer
+                    If Integer.TryParse(row(0).ToString(), id) AndAlso id = _editRecordId Then
+                        recordRow = row
+                        Debug.WriteLine($"LoadRecordData: ნაპოვნია ჩანაწერი ID={_editRecordId}")
+                        Exit For
+                    End If
+                End If
+            Next
+
+            ' თუ ჩანაწერი ვერ ვიპოვეთ
+            If recordRow Is Nothing Then
+                MessageBox.Show($"ჩანაწერი ID={_editRecordId} ვერ მოიძებნა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' ჩანაწერის ტიპის მიხედვით შევავსოთ შესაბამისი ველები
+            If recordType.ToLower() = "სესია" Then
+                LoadSessionData(recordRow)
+            ElseIf recordType.ToLower() = "დაბადების დღე" Then
+                ' აქ შეგვიძლია დავამატოთ დაბადების დღის მონაცემების ჩატვირთვის ლოგიკა
+            ElseIf recordType.ToLower() = "დავალება" Then
+                ' აქ შეგვიძლია დავამატოთ დავალების მონაცემების ჩატვირთვის ლოგიკა
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"LoadRecordData: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ჩანაწერის მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
+    ''' <summary>
+    ''' სესიის მონაცემების ჩატვირთვა და ფორმის ველების შევსება
+    ''' </summary>
+    Private Sub LoadSessionData(sessionRow As IList(Of Object))
+        Try
+            Debug.WriteLine("LoadSessionData: ვტვირთავ სესიის მონაცემებს")
+
+            ' A: ID - უკვე გვაქვს _editRecordId და LN
+            LN.Text = _editRecordId.ToString()
+
+            ' ცვლადები თარიღისა და დროისთვის
+            Dim sessionDateTime As DateTime = DateTime.Now
+            Dim dateTimeLoaded As Boolean = False
+
+            ' ვინახავთ ძველ სტატუსს ინფორმაციისთვის
+            Dim oldStatus As String = ""
+
+            ' F: თარიღი და დრო - ამას პირველად ვამუშავებთ, რადგან მასზეა დამოკიდებული რადიობუტონების ჩვენება
+            If sessionRow.Count > 5 AndAlso sessionRow(5) IsNot Nothing Then
+                Dim dateTimeStr = sessionRow(5).ToString().Trim()
+
+                ' პარსინგის მცდელობა
+                If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
+                                  System.Globalization.CultureInfo.InvariantCulture,
+                                  System.Globalization.DateTimeStyles.None,
+                                  sessionDateTime) OrElse
+               DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+
+                    ' დავაყენოთ თარიღი
+                    DTP1.Value = sessionDateTime.Date
+
+                    ' დავაყენოთ საათი და წუთები
+                    THour.Text = sessionDateTime.Hour.ToString("00")
+                    TMin.Text = sessionDateTime.Minute.ToString("00")
+
+                    dateTimeLoaded = True
+                    Debug.WriteLine($"LoadSessionData: თარიღი და დრო დაყენებულია - {sessionDateTime}")
+                End If
+            End If
+
+            ' D: ბენეფიციარის სახელი
+            If sessionRow.Count > 3 AndAlso sessionRow(3) IsNot Nothing Then
+                Dim beneName = sessionRow(3).ToString().Trim()
+
+                ' ვეძებთ და ვაყენებთ სახელს კომბობოქსში
+                For i As Integer = 0 To CBBeneName.Items.Count - 1
+                    If String.Equals(CBBeneName.Items(i).ToString(), beneName, StringComparison.OrdinalIgnoreCase) Then
+                        CBBeneName.SelectedIndex = i
+                        Debug.WriteLine($"LoadSessionData: ბენეფიციარის სახელი დაყენებულია - {beneName}")
+                        ' ვიცდით გვარების ჩატვირთვას
+                        Application.DoEvents()
+                        System.Threading.Thread.Sleep(300)
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' E: ბენეფიციარის გვარი
+            If sessionRow.Count > 4 AndAlso sessionRow(4) IsNot Nothing Then
+                Dim beneSurname = sessionRow(4).ToString().Trim()
+
+                ' ვეძებთ და ვაყენებთ გვარს კომბობოქსში
+                For i As Integer = 0 To CBBeneSurname.Items.Count - 1
+                    If String.Equals(CBBeneSurname.Items(i).ToString(), beneSurname, StringComparison.OrdinalIgnoreCase) Then
+                        CBBeneSurname.SelectedIndex = i
+                        Debug.WriteLine($"LoadSessionData: ბენეფიციარის გვარი დაყენებულია - {beneSurname}")
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' G: ხანგრძლივობა
+            If sessionRow.Count > 6 AndAlso sessionRow(6) IsNot Nothing Then
+                Dim duration As Integer = 60 ' ნაგულისხმევი
+                If Integer.TryParse(sessionRow(6).ToString(), duration) Then
+                    TDur.Text = duration.ToString()
+                    Debug.WriteLine($"LoadSessionData: ხანგრძლივობა დაყენებულია - {duration}")
+                End If
+            End If
+
+            ' H: ჯგუფური
+            If sessionRow.Count > 7 AndAlso sessionRow(7) IsNot Nothing Then
+                Dim isGroup As Boolean = False
+                If Boolean.TryParse(sessionRow(7).ToString(), isGroup) Then
+                    CBGroup.Checked = isGroup
+                    Debug.WriteLine($"LoadSessionData: ჯგუფური ჩეკბოქსი დაყენებულია - {isGroup}")
+                End If
+            End If
+
+            ' I: თერაპევტი
+            If sessionRow.Count > 8 AndAlso sessionRow(8) IsNot Nothing Then
+                Dim therapistName = sessionRow(8).ToString().Trim()
+
+                ' ვეძებთ და ვაყენებთ თერაპევტს კომბობოქსში
+                For i As Integer = 0 To CBPer.Items.Count - 1
+                    If String.Equals(CBPer.Items(i).ToString(), therapistName, StringComparison.OrdinalIgnoreCase) Then
+                        CBPer.SelectedIndex = i
+                        Debug.WriteLine($"LoadSessionData: თერაპევტი დაყენებულია - {therapistName}")
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' J: თერაპიის ტიპი
+            If sessionRow.Count > 9 AndAlso sessionRow(9) IsNot Nothing Then
+                Dim therapyType = sessionRow(9).ToString().Trim()
+
+                ' ვეძებთ და ვაყენებთ თერაპიის ტიპს კომბობოქსში
+                For i As Integer = 0 To CBTer.Items.Count - 1
+                    If String.Equals(CBTer.Items(i).ToString(), therapyType, StringComparison.OrdinalIgnoreCase) Then
+                        CBTer.SelectedIndex = i
+                        Debug.WriteLine($"LoadSessionData: თერაპიის ტიპი დაყენებულია - {therapyType}")
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' K: სივრცე
+            If sessionRow.Count > 10 AndAlso sessionRow(10) IsNot Nothing Then
+                Dim spaceName = sessionRow(10).ToString().Trim()
+
+                ' ვპოულობთ შესაბამის სივრცის ღილაკს და ვაჭერთ
+                For Each btn As Button In Me.Controls.OfType(Of Button)()
+                    If btn.Name.StartsWith("BTNS") AndAlso String.Equals(btn.Text, spaceName, StringComparison.OrdinalIgnoreCase) Then
+                        ' ხელოვნურად გამოვიწვიოთ ღილაკზე დაჭერის ივენთი
+                        Dim btnClickMethod = btn.GetType().GetMethod("OnClick", Reflection.BindingFlags.NonPublic Or Reflection.BindingFlags.Instance)
+                        If btnClickMethod IsNot Nothing Then
+                            btnClickMethod.Invoke(btn, New Object() {EventArgs.Empty})
+                            Debug.WriteLine($"LoadSessionData: სივრცე დაყენებულია - {spaceName}")
+                        End If
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' L: ფასი
+            If sessionRow.Count > 11 AndAlso sessionRow(11) IsNot Nothing Then
+                Dim price As Decimal = 0
+                If Decimal.TryParse(sessionRow(11).ToString().Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, price) Then
+                    TCost.Text = price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                    Debug.WriteLine($"LoadSessionData: ფასი დაყენებულია - {price}")
+                End If
+            End If
+
+            ' M: სტატუსი
+            If sessionRow.Count > 12 AndAlso sessionRow(12) IsNot Nothing Then
+                oldStatus = sessionRow(12).ToString().Trim()
+                Debug.WriteLine($"LoadSessionData: სესიის სტატუსი არის '{oldStatus}'")
+            End If
+
+            ' N: დაფინანსების პროგრამა
+            If sessionRow.Count > 13 AndAlso sessionRow(13) IsNot Nothing Then
+                Dim fundingProgram = sessionRow(13).ToString().Trim()
+
+                ' ვეძებთ და ვაყენებთ დაფინანსების პროგრამას კომბობოქსში
+                For i As Integer = 0 To CBDaf.Items.Count - 1
+                    If String.Equals(CBDaf.Items(i).ToString(), fundingProgram, StringComparison.OrdinalIgnoreCase) Then
+                        CBDaf.SelectedIndex = i
+                        Debug.WriteLine($"LoadSessionData: დაფინანსების პროგრამა დაყენებულია - {fundingProgram}")
+                        Exit For
+                    End If
+                Next
+            End If
+
+            ' O: კომენტარი
+            If sessionRow.Count > 14 AndAlso sessionRow(14) IsNot Nothing Then
+                TCom.Text = sessionRow(14).ToString()
+                Debug.WriteLine("LoadSessionData: კომენტარი დაყენებულია")
+            End If
+
+            ' ახლა გავაკეთოთ რადიობუტონების ხილვადობის კონტროლი
+            If dateTimeLoaded Then
+                ' შევამოწმოთ არის თუ არა თარიღი წარსულში
+                Dim isPastDate As Boolean = sessionDateTime < DateTime.Now
+                Debug.WriteLine($"LoadSessionData: თარიღი არის წარსულში: {isPastDate}")
+
+                If isPastDate Then
+                    ' წარსული თარიღისთვის - გამოვაჩინოთ რადიობუტონები, მაგრამ არ მოვნიშნოთ
+                    LPlan.Visible = False
+
+                    ' გავხადოთ ყველა რადიობუტონი ხილული მაგრამ არ მოვნიშნოთ არცერთი
+                    For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                        If rb.Name.StartsWith("RB") Then
+                            rb.Visible = True
+                            rb.Checked = False
+                        End If
+                    Next
+
+                    Debug.WriteLine("LoadSessionData: რადიობუტონები გამოჩნდა, ძველი სტატუსი იყო: " + oldStatus)
+
+                    ' შეტყობინება რომ აირჩიოს სტატუსი
+                    LWarning.Text = $"ძველი სტატუსი: '{oldStatus}'. გთხოვთ აირჩიოთ ახალი სტატუსი."
+                    LWarning.ForeColor = Color.DarkOrange
+                Else
+                    ' მომავალი თარიღისთვის
+                    LPlan.Visible = True
+
+                    ' დავმალოთ ყველა რადიობუტონი
+                    For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                        rb.Visible = False
+                        rb.Checked = False
+                    Next
+
+                    Debug.WriteLine("LoadSessionData: მომავალი თარიღი, რადიობუტონები დამალულია")
+                End If
+            Else
+                ' თუ თარიღი ვერ ჩაიტვირთა, მაშინ სტატუსის მიხედვით ვიმოქმედოთ
+                Debug.WriteLine("LoadSessionData: თარიღი ვერ ჩაიტვირთა, ვმოქმედებთ სტატუსის მიხედვით")
+
+                If oldStatus.ToLower() = "დაგეგმილი" Then
+                    ' დავმალოთ რადიობუტონები და გამოვაჩინოთ LPlan
+                    LPlan.Visible = True
+                    For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                        rb.Visible = False
+                        rb.Checked = False
+                    Next
+                Else
+                    ' გამოვაჩინოთ რადიობუტონები და ვთხოვოთ მომხმარებელს არჩევა
+                    LPlan.Visible = False
+                    For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
+                        If rb.Name.StartsWith("RB") Then
+                            rb.Visible = True
+                            rb.Checked = False
+                        End If
+                    Next
+
+                    ' შეტყობინება რომ აირჩიოს სტატუსი
+                    LWarning.Text = $"ძველი სტატუსი: '{oldStatus}'. გთხოვთ აირჩიოთ ახალი სტატუსი."
+                    LWarning.ForeColor = Color.DarkOrange
+                End If
+            End If
+
+            ' BtnAdd ტექსტის შეცვლა
+            BtnAdd.Text = "შენახვა"
+
+            ' ვალიდაცია - შეგვიძლია გამოვიყენოთ ValidateFormInputs, თუ ის არ ბლოკავს შენახვას რადიობუტონების არ მონიშვნის გამო
+            ValidateFormInputs()
+
+            Debug.WriteLine("LoadSessionData: სესიის მონაცემების ჩატვირთვა დასრულებულია")
+
+        Catch ex As Exception
+            Debug.WriteLine($"LoadSessionData: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
     ''' <summary>
     ''' ფორმის დახურვისას მივხსნათ ივენთის მიბმები
     ''' </summary>
@@ -315,8 +636,11 @@ Public Class NewRecordForm
 
         Debug.WriteLine("კომბობოქსების DrawMode შეცვლილია")
     End Sub
-
-    ' დამატებითი მეთოდი კომბობოქსის ელემენტების დასახატად
+    ''' <summary>
+    ''' დამატებითი მეთოდი კომბობოქსის ელემენტების დასახატად
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
     Private Sub ComboBox_DrawItem(sender As Object, e As DrawItemEventArgs)
         Try
             If e.Index < 0 Then Return
@@ -2231,6 +2555,7 @@ Public Class NewRecordForm
 
     ''' <summary>
     ''' BtnAddPer ღილაკზე დაჭერის ივენთი - თერაპევტის დამატება
+    ''' ბენეფიციარის ლოგიკის გამოყენებით კომბობოქსის განახლებისთვის
     ''' </summary>
     Private Sub BtnAddPer_Click(sender As Object, e As EventArgs) Handles BtnAddPer.Click
         Try
@@ -2255,25 +2580,237 @@ Public Class NewRecordForm
 
                     ' დავაყენოთ ახლად დამატებული თერაპევტი
                     If CBPer.Items.Count > 0 Then
-                        ' თერაპევტების ჩამონათვალში ვეძებთ ახლად დამატებულ თერაპევტს
-                        Dim fullName = $"{addPerForm.AddedName} {addPerForm.AddedSurname}"
+                        ' ვეძებთ ახლად დამატებული თერაპევტის სრულ სახელს ჩამონათვალში
+                        Dim fullName As String = $"{addPerForm.AddedName} {addPerForm.AddedSurname}"
+                        Dim therapistIndex As Integer = -1
 
                         For i As Integer = 0 To CBPer.Items.Count - 1
                             If String.Equals(CBPer.Items(i).ToString(), fullName, StringComparison.OrdinalIgnoreCase) Then
-                                CBPer.SelectedIndex = i
+                                therapistIndex = i
                                 Exit For
                             End If
                         Next
+
+                        ' თუ ვიპოვეთ, დავაყენოთ ეს თერაპევტი არჩეულად
+                        If therapistIndex > 0 Then
+                            CBPer.SelectedIndex = therapistIndex
+                            Debug.WriteLine($"BtnAddPer_Click: ახლად დამატებული თერაპევტი '{fullName}' წარმატებით აირჩა, ინდექსი {therapistIndex}")
+                        Else
+                            Debug.WriteLine($"BtnAddPer_Click: ახლად დამატებული თერაპევტი '{fullName}' ვერ მოიძებნა ჩამონათვალში")
+                        End If
                     End If
+
+                    ' განვაახლოთ UI
+                    Application.DoEvents()
 
                     ' შევამოწმოთ თერაპევტის მდგომარეობა
                     CheckTherapistAvailability()
+
+                    ' შეტყობინება მომხმარებლისთვის
+                    MessageBox.Show($"თერაპევტი '{addPerForm.AddedName} {addPerForm.AddedSurname}' წარმატებით დაემატა",
+                                 "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 End If
             End Using
 
         Catch ex As Exception
             Debug.WriteLine($"BtnAddPer_Click შეცდომა: {ex.Message}")
             MessageBox.Show($"თერაპევტის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' BtnAddTer ღილაკზე დაჭერის ივენთი - თერაპიის ტიპის დამატება
+    ''' </summary>
+    Private Sub BtnAddTer_Click(sender As Object, e As EventArgs) Handles BtnAddTer.Click
+        Try
+            Debug.WriteLine("BtnAddTer_Click: თერაპიის ტიპის დამატების დაწყება")
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' თერაპიის ტიპის დამატების ფორმის გახსნა
+            Using addTerForm As New AddTerForm(dataService)
+                Dim result = addTerForm.ShowDialog()
+
+                ' შევამოწმოთ შედეგი
+                If result = DialogResult.OK AndAlso addTerForm.IsSuccess Then
+                    Debug.WriteLine($"BtnAddTer_Click: თერაპიის ტიპი დაემატა - {addTerForm.AddedTherapy}")
+
+                    ' მცირე დაყოვნება, რათა მონაცემები დარეგისტრირდეს Google Sheets-ში
+                    System.Threading.Thread.Sleep(500)
+
+                    ' განვაახლოთ თერაპიის ტიპების ჩამონათვალი ძალდატანებით და ახალი ტიპის მითითებით
+                    'LoadTherapyTypes(True, addTerForm.AddedTherapy)
+
+                    ' UI-ის განახლების უზრუნველყოფა
+                    Application.DoEvents()
+
+                    ' შეტყობინება მომხმარებლისთვის
+                    MessageBox.Show($"თერაპიის ტიპი '{addTerForm.AddedTherapy}' წარმატებით დაემატა და აირჩა",
+                              "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                    ' ფორმის ვალიდაცია
+                    ValidateFormInputs()
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnAddTer_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"თერაპიის ტიპის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' დაფინანსების პროგრამების ჩატვირთვა DB-Program ფურცლიდან - გაუმჯობესებული
+    ''' </summary>
+    ''' <param name="forceRefresh">ძალდატანებითი განახლება</param>
+    ''' <param name="newProgram">ახლად დამატებული დაფინანსების პროგრამა (არასავალდებულო)</param>
+    Private Sub LoadFundingPrograms(Optional forceRefresh As Boolean = False, Optional newProgram As String = "")
+        Try
+            Debug.WriteLine($"LoadFundingPrograms: დაიწყო ჩატვირთვა, forceRefresh={forceRefresh}, newProgram={newProgram}")
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' დაყოვნება ძალდატანებითი განახლების შემთხვევაში
+            If forceRefresh Then
+                ' მოიცადეთ ცოტა ხანი, რომ Google Sheets-მა მოასწროს განახლება
+                System.Threading.Thread.Sleep(1000)
+                Debug.WriteLine("LoadFundingPrograms: დაყოვნება 1 წამი ძალდატანებითი განახლებისთვის")
+            End If
+
+            ' B სვეტის წაკითხვა DB-Program ფურცლიდან
+            Dim rows = dataService.GetData("DB-Program!B2:B")
+
+            ' თუ მონაცემები არ არის, გამოვიდეთ ფუნქციიდან
+            If rows Is Nothing OrElse rows.Count = 0 Then
+                MessageBox.Show("დაფინანსების პროგრამების მონაცემები ვერ მოიძებნა", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' მიმდინარე არჩეული დაფინანსების პროგრამა (თუ არის)
+            Dim currentSelectedProgram As String = ""
+            If CBDaf.SelectedIndex > 0 Then
+                currentSelectedProgram = CBDaf.SelectedItem.ToString()
+                Debug.WriteLine($"LoadFundingPrograms: მიმდინარე არჩეული დაფინანსების პროგრამა - {currentSelectedProgram}")
+            End If
+
+            ' გავასუფთაოთ კომბობოქსი
+            CBDaf.Items.Clear()
+
+            ' დავამატოთ პირველი ელემენტი - მინიშნება
+            CBDaf.Items.Add("- აირჩიეთ დაფინანსების პროგრამა -")
+
+            ' დაფინანსების პროგრამების სია
+            Dim programs As New List(Of String)
+            Dim newProgramFound As Boolean = False
+
+            For Each row In rows
+                If row.Count > 0 AndAlso Not String.IsNullOrEmpty(row(0)?.ToString().Trim()) Then
+                    Dim programName = row(0).ToString().Trim()
+                    programs.Add(programName)
+
+                    ' შევამოწმოთ არის თუ არა ეს ახალი დაფინანსების პროგრამა
+                    If Not String.IsNullOrEmpty(newProgram) AndAlso
+                       String.Equals(programName, newProgram, StringComparison.OrdinalIgnoreCase) Then
+                        newProgramFound = True
+                        Debug.WriteLine($"LoadFundingPrograms: ნაპოვნია ახალი დაფინანსების პროგრამა - {programName}")
+                    End If
+                End If
+            Next
+
+            ' დავალაგოთ ანბანის მიხედვით
+            programs.Sort()
+            Debug.WriteLine($"LoadFundingPrograms: ნაპოვნია {programs.Count} დაფინანსების პროგრამა")
+
+            ' დავამატოთ კომბობოქსში
+            For Each program In programs
+                CBDaf.Items.Add(program)
+            Next
+
+            ' ავირჩიოთ შესაბამისი ელემენტი
+            If Not String.IsNullOrEmpty(newProgram) AndAlso newProgramFound Then
+                ' ვეძებთ ახალი დაფინანსების პროგრამის ინდექსს
+                For i As Integer = 0 To CBDaf.Items.Count - 1
+                    If String.Equals(CBDaf.Items(i).ToString(), newProgram, StringComparison.OrdinalIgnoreCase) Then
+                        CBDaf.SelectedIndex = i
+                        Debug.WriteLine($"LoadFundingPrograms: ახალი დაფინანსების პროგრამა არჩეულია - ინდექსი {i}")
+                        Exit For
+                    End If
+                Next
+            ElseIf Not String.IsNullOrEmpty(currentSelectedProgram) Then
+                ' ვცდილობთ წინა არჩეული დაფინანსების პროგრამის ხელახლა არჩევას
+                For i As Integer = 0 To CBDaf.Items.Count - 1
+                    If String.Equals(CBDaf.Items(i).ToString(), currentSelectedProgram, StringComparison.OrdinalIgnoreCase) Then
+                        CBDaf.SelectedIndex = i
+                        Debug.WriteLine($"LoadFundingPrograms: წინა დაფინანსების პროგრამა კვლავ არჩეულია - ინდექსი {i}")
+                        Exit For
+                    End If
+                Next
+            Else
+                ' ავირჩიოთ პირველი ელემენტი (მინიშნება)
+                CBDaf.SelectedIndex = 0
+                Debug.WriteLine("LoadFundingPrograms: არჩეულია პირველი ელემენტი (მინიშნება)")
+            End If
+
+            ' ძალდატანებითი განახლება UI-სთვის
+            CBDaf.Refresh()
+            Application.DoEvents()
+
+            Debug.WriteLine("LoadFundingPrograms: დაფინანსების პროგრამების ჩატვირთვა დასრულდა წარმატებით")
+
+        Catch ex As Exception
+            Debug.WriteLine($"LoadFundingPrograms: შეცდომა - {ex.Message}")
+            MessageBox.Show($"შეცდომა დაფინანსების პროგრამების ჩატვირთვისას: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' BtnAddDaf ღილაკზე დაჭერის ივენთი - დაფინანსების პროგრამის დამატება
+    ''' </summary>
+    Private Sub BtnAddDaf_Click(sender As Object, e As EventArgs) Handles BtnAddDaf.Click
+        Try
+            Debug.WriteLine("BtnAddDaf_Click: დაფინანსების პროგრამის დამატების დაწყება")
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' დაფინანსების პროგრამის დამატების ფორმის გახსნა
+            Using addDafForm As New AddDafForm(dataService)
+                Dim result = addDafForm.ShowDialog()
+
+                ' შევამოწმოთ შედეგი
+                If result = DialogResult.OK AndAlso addDafForm.IsSuccess Then
+                    Debug.WriteLine($"BtnAddDaf_Click: დაფინანსების პროგრამა დაემატა - {addDafForm.AddedProgram}")
+
+                    ' მცირე დაყოვნება, რათა მონაცემები დარეგისტრირდეს Google Sheets-ში
+                    System.Threading.Thread.Sleep(500)
+
+                    ' განვაახლოთ დაფინანსების პროგრამების ჩამონათვალი ძალდატანებით და ახალი პროგრამის მითითებით
+                    LoadFundingPrograms(True, addDafForm.AddedProgram)
+
+                    ' UI-ის განახლების უზრუნველყოფა
+                    Application.DoEvents()
+
+                    ' შეტყობინება მომხმარებლისთვის
+                    MessageBox.Show($"დაფინანსების პროგრამა '{addDafForm.AddedProgram}' წარმატებით დაემატა და აირჩა",
+                              "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                    ' ფორმის ვალიდაცია
+                    ValidateFormInputs()
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnAddDaf_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"დაფინანსების პროგრამის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
