@@ -665,19 +665,19 @@ Public Class Form1
             Dim calendarViewModel As New CalendarViewModel()
 
             ' UC_Calendar კონტროლის შექმნა
-            'Dim calendarControl As New UC_Calendar(calendarViewModel)
-            'calendarControl.Dock = DockStyle.Fill
+            Dim calendarControl As New UC_Calendar(calendarViewModel)
+            calendarControl.Dock = DockStyle.Fill
 
             ' მონაცემთა სერვისის მითითება
             If dataService IsNot Nothing Then
-                'calendarControl.SetDataService(dataService)
+                calendarControl.SetDataService(dataService)
             End If
 
             ' მომხმარებლის ელფოსტის მითითება
-            'calendarControl.SetUserEmail(If(viewModel?.Email, "უცნობი"))
+            calendarControl.SetUserEmail(If(viewModel?.Email, "უცნობი"))
 
             ' დავამატოთ კონტროლი პანელზე
-            'pnlMain.Controls.Add(calendarControl)
+            pnlMain.Controls.Add(calendarControl)
 
             Debug.WriteLine("ShowCalendar: კალენდრის გვერდი წარმატებით გამოჩნდა")
         Catch ex As Exception
