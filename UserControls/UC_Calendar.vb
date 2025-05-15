@@ -37,569 +37,389 @@ Public Class UC_Calendar
     Private pnlDaySessions As Panel
     Private btnAddSession As Button
 
+
+    ' ამ ცვლადებს დაამატეთ კლასის დასაწყისში (ვარაუდობთ რომ ფაილი უკვე გაქვთ შექმნილი)
+
+
+
+    Private spaces As List(Of String) = New List(Of String)()
+    Private timeIntervals As List(Of DateTime) = New List(Of DateTime)()
+    Private gridCells(,) As Panel ' უჯრედები სესიების განთავსებისთვის
+    Private calendarContentPanel As Panel = Nothing
+
     ''' <summary>
-    ''' კონსტრუქტორი: შექმნის კალენდრის კონტროლს
+    ''' მონაცემთა სერვისის მითითება
     ''' </summary>
-    ''' <param name="calendarViewModel">CalendarViewModel ობიექტი</param>
-    Public Sub New(calendarViewModel As CalendarViewModel)
-        Try
-            ' კონტროლების ინიციალიზაცია
-            InitializeComponent()
+    Public Sub SetDataService(service As IDataService)
+        dataService = service
+        Debug.WriteLine("UC_Calendar_Advanced.SetDataService: მითითებულია მონაცემთა სერვისი")
 
-            ' ViewModel-ის შენახვა
-            viewModel = calendarViewModel
+        ' სივრცეებისა და სესიების ჩატვირთვა
+        LoadSpaces()
+        LoadSessions()
 
-            ' კალენდრის UI კონტროლების შექმნა
-            CreateCalendarControls()
-
-            ' ViewModel-ის PropertyChanged ივენთის მიბმა
-            AddHandler viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
-
-            ' საწყისი მონაცემების განახლება
-            UpdateCalendarUI()
-
-            Debug.WriteLine("UC_Calendar.New: კალენდრის კონტროლი წარმატებით შეიქმნა")
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Calendar.New: შეცდომა - {ex.Message}")
-            MessageBox.Show($"კალენდრის ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
+        ' კალენდრის ხედის განახლება
+        UpdateCalendarView()
     End Sub
 
     ''' <summary>
-    ''' კალენდრის UI კონტროლების შექმნა
+    ''' მომხმარებლის ელფოსტის მითითება
     ''' </summary>
-    Private Sub CreateCalendarControls()
-        Try
-            ' კალენდრის ნავიგაციის პანელი
-            Dim pnlNavigation As New Panel()
-            pnlNavigation.Dock = DockStyle.Top
-            pnlNavigation.Height = 40
-            pnlNavigation.BackColor = Color.FromArgb(200, 200, 255)
-            Controls.Add(pnlNavigation)
-
-            ' წინა თვის ღილაკი
-            btnPrevMonth = New Button()
-            btnPrevMonth.Text = "◀"
-            btnPrevMonth.Width = 40
-            btnPrevMonth.Height = 30
-            btnPrevMonth.Location = New Point(10, 5)
-            btnPrevMonth.BackColor = Color.White
-            AddHandler btnPrevMonth.Click, AddressOf BtnPrevMonth_Click
-            pnlNavigation.Controls.Add(btnPrevMonth)
-
-            ' თვისა და წლის ლეიბლი
-            lblMonthYear = New Label()
-            lblMonthYear.AutoSize = True
-            lblMonthYear.Font = New Font("Sylfaen", 14, FontStyle.Bold)
-            lblMonthYear.Location = New Point(100, 8)
-            pnlNavigation.Controls.Add(lblMonthYear)
-
-            ' შემდეგი თვის ღილაკი
-            btnNextMonth = New Button()
-            btnNextMonth.Text = "▶"
-            btnNextMonth.Width = 40
-            btnNextMonth.Height = 30
-            btnNextMonth.Location = New Point(300, 5)
-            btnNextMonth.BackColor = Color.White
-            AddHandler btnNextMonth.Click, AddressOf BtnNextMonth_Click
-            pnlNavigation.Controls.Add(btnNextMonth)
-
-            ' დღევანდელ დღეზე დაბრუნების ღილაკი
-            btnToday = New Button()
-            btnToday.Text = "დღეს"
-            btnToday.Width = 80
-            btnToday.Height = 30
-            btnToday.Location = New Point(350, 5)
-            btnToday.BackColor = Color.White
-            AddHandler btnToday.Click, AddressOf BtnToday_Click
-            pnlNavigation.Controls.Add(btnToday)
-
-            ' კალენდრის პანელი
-            pnlCalendar = New Panel()
-            pnlCalendar.Dock = DockStyle.Left
-            pnlCalendar.Width = 500
-            pnlCalendar.BackColor = Color.White
-            Controls.Add(pnlCalendar)
-
-            ' კვირის დღეების სათაურები
-            Dim dayNames() As String = {"ორშ", "სამ", "ოთხ", "ხუთ", "პარ", "შაბ", "კვი"}
-            For i As Integer = 0 To 6
-                Dim lblDay As New Label()
-                lblDay.Text = dayNames(i)
-                lblDay.Width = 70
-                lblDay.Height = 30
-                lblDay.Location = New Point(i * 70 + 10, 10)
-                lblDay.TextAlign = ContentAlignment.MiddleCenter
-                lblDay.Font = New Font("Sylfaen", 10, FontStyle.Bold)
-                lblDay.BackColor = Color.FromArgb(230, 230, 250)
-                pnlCalendar.Controls.Add(lblDay)
-            Next
-
-            ' კალენდრის დღეების ღილაკების შექმნა
-            For i As Integer = 0 To 41
-                calendarButtons(i) = New Button()
-                calendarButtons(i).Width = 70
-                calendarButtons(i).Height = 70
-                calendarButtons(i).BackColor = Color.White
-                calendarButtons(i).FlatStyle = FlatStyle.Flat
-                calendarButtons(i).Tag = i ' შევინახოთ ინდექსი Tag-ში
-
-                ' ღილაკზე დაჭერის ივენთი
-                AddHandler calendarButtons(i).Click, AddressOf CalendarDay_Click
-
-                ' ღილაკის პოზიციის დაყენება (6x7 ბადე)
-                Dim row As Integer = i \ 7
-                Dim col As Integer = i Mod 7
-                calendarButtons(i).Location = New Point(col * 70 + 10, row * 70 + 40)
-
-                pnlCalendar.Controls.Add(calendarButtons(i))
-            Next
-
-            ' დღის დეტალების პანელი
-            pnlDayDetails = New Panel()
-            pnlDayDetails.Dock = DockStyle.Fill
-            pnlDayDetails.BackColor = Color.FromArgb(245, 245, 250)
-            Controls.Add(pnlDayDetails)
-
-            ' შერჩეული თარიღის ლეიბლი
-            lblSelectedDate = New Label()
-            lblSelectedDate.AutoSize = True
-            lblSelectedDate.Font = New Font("Sylfaen", 14, FontStyle.Bold)
-            lblSelectedDate.Location = New Point(10, 10)
-            pnlDayDetails.Controls.Add(lblSelectedDate)
-
-            ' სესიის დამატების ღილაკი
-            btnAddSession = New Button()
-            btnAddSession.Text = "სესიის დამატება"
-            btnAddSession.Width = 150
-            btnAddSession.Height = 30
-            btnAddSession.Location = New Point(300, 10)
-            btnAddSession.BackColor = Color.FromArgb(200, 255, 200)
-            AddHandler btnAddSession.Click, AddressOf BtnAddSession_Click
-            pnlDayDetails.Controls.Add(btnAddSession)
-
-            ' დღის სესიების პანელი
-            pnlDaySessions = New Panel()
-            pnlDaySessions.Location = New Point(10, 50)
-            pnlDaySessions.Width = pnlDayDetails.Width - 20
-            pnlDaySessions.Height = pnlDayDetails.Height - 60
-            pnlDaySessions.AutoScroll = True
-            pnlDayDetails.Controls.Add(pnlDaySessions)
-
-            ' დავაკავშიროთ პანელის Resize ივენთი
-            AddHandler pnlDayDetails.Resize, AddressOf PnlDayDetails_Resize
-
-            Debug.WriteLine("CreateCalendarControls: კალენდრის კონტროლები წარმატებით შეიქმნა")
-        Catch ex As Exception
-            Debug.WriteLine($"CreateCalendarControls: შეცდომა - {ex.Message}")
-            MessageBox.Show($"კალენდრის კონტროლების შექმნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
+    Public Sub SetUserEmail(email As String)
+        userEmail = email
+        Debug.WriteLine($"UC_Calendar_Advanced.SetUserEmail: მითითებულია მომხმარებლის ელფოსტა: {email}")
     End Sub
 
     ''' <summary>
-    ''' დღის დეტალების პანელის ზომის ცვლილებაზე რეაგირება
+    ''' დროის ინტერვალების ინიციალიზაცია
     ''' </summary>
-    Private Sub PnlDayDetails_Resize(sender As Object, e As EventArgs)
-        ' დავარეგულიროთ დღის სესიების პანელის ზომა
-        pnlDaySessions.Width = pnlDayDetails.Width - 20
-        pnlDaySessions.Height = pnlDayDetails.Height - 60
-    End Sub
+    Private Sub InitializeTimeIntervals()
+        ' გავასუფთავოთ სია
+        timeIntervals.Clear()
 
-    ''' <summary>
-    ''' ViewModel-ის PropertyChanged ივენთის დამმუშავებელი
-    ''' </summary>
-    Private Sub ViewModel_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
-        ' UI ნაკადის შემოწმება
-        If Me.InvokeRequired Then
-            Me.Invoke(Sub() ViewModel_PropertyChanged(sender, e))
-            Return
+        ' საწყისი და საბოლოო დრო
+        Dim startTime As DateTime
+        Dim endTime As DateTime
+
+        ' ვამოწმებთ, არჩეულია თუ არა კომბობოქსები
+        If cbStart.SelectedItem IsNot Nothing AndAlso cbFinish.SelectedItem IsNot Nothing Then
+            Dim startTimeString As String = cbStart.SelectedItem.ToString()
+            Dim endTimeString As String = cbFinish.SelectedItem.ToString()
+
+            ' ვქმნით DateTime ობიექტებს
+            Dim baseDate As DateTime = DateTime.Today
+            Dim startHour As Integer = Integer.Parse(startTimeString.Split(":"c)(0))
+            Dim startMinute As Integer = Integer.Parse(startTimeString.Split(":"c)(1))
+            Dim endHour As Integer = Integer.Parse(endTimeString.Split(":"c)(0))
+            Dim endMinute As Integer = Integer.Parse(endTimeString.Split(":"c)(1))
+
+            startTime = baseDate.AddHours(startHour).AddMinutes(startMinute)
+            endTime = baseDate.AddHours(endHour).AddMinutes(endMinute)
+        Else
+            ' საწყისი მნიშვნელობები
+            startTime = DateTime.Today.AddHours(9) ' 09:00
+            endTime = DateTime.Today.AddHours(20) ' 20:00
         End If
 
-        ' შესაბამისი UI კომპონენტების განახლება
-        Select Case e.PropertyName
-            Case NameOf(viewModel.SelectedMonth)
-                UpdateCalendarUI()
-            Case NameOf(viewModel.SelectedDate)
-                UpdateSelectedDayUI()
-            Case NameOf(viewModel.SelectedDaySessions)
-                UpdateDaySessionsUI()
-        End Select
+        ' ინტერვალების შექმნა ნახევარი საათით
+        Dim currentTime As DateTime = startTime
+        While currentTime <= endTime
+            timeIntervals.Add(currentTime)
+            currentTime = currentTime.AddMinutes(30)
+        End While
+
+        Debug.WriteLine($"InitializeTimeIntervals: შექმნილია {timeIntervals.Count} დროის ინტერვალი")
     End Sub
 
     ''' <summary>
-    ''' კალენდრის UI-ის განახლება
+    ''' კალენდრის ხედის განახლება
     ''' </summary>
-    Private Sub UpdateCalendarUI()
-        ' თვისა და წლის განახლება
-        lblMonthYear.Text = $"{viewModel.MonthName} {viewModel.Year}"
-
-        ' გამოვთვალოთ პირველი დღის პოზიცია
-        Dim firstDayOfMonth As DateTime = viewModel.SelectedMonth
-        Dim firstDayOfWeek As Integer = CInt(firstDayOfMonth.DayOfWeek)
-
-        ' შევცვალოთ 0 (კვირა) 7-ზე ქართული კალენდრისთვის
-        If firstDayOfWeek = 0 Then firstDayOfWeek = 7
-
-        ' პოზიციის კორექტირება (ორშაბათი პირველი დღე)
-        Dim startPos As Integer = firstDayOfWeek - 1
-
-        ' დღეების რაოდენობა თვეში
-        Dim daysInMonth As Integer = DateTime.DaysInMonth(viewModel.SelectedMonth.Year, viewModel.SelectedMonth.Month)
-
-        ' წინა თვის თარიღები
-        Dim prevMonth As DateTime = firstDayOfMonth.AddMonths(-1)
-        Dim daysInPrevMonth As Integer = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month)
-
-        ' გავასუფთავოთ ყველა ღილაკი
-        For i As Integer = 0 To 41
-            calendarButtons(i).Text = ""
-            calendarButtons(i).ForeColor = Color.Black
-            calendarButtons(i).BackColor = Color.White
-            calendarButtons(i).Tag = Nothing
-        Next
-
-        ' წინა თვის დღეები
-        For i As Integer = 0 To startPos - 1
-            Dim day As Integer = daysInPrevMonth - startPos + i + 1
-            calendarButtons(i).Text = day.ToString()
-            calendarButtons(i).ForeColor = Color.Gray
-            calendarButtons(i).Tag = New DateTime(prevMonth.Year, prevMonth.Month, day)
-        Next
-
-        ' მიმდინარე თვის დღეები
-        For i As Integer = 1 To daysInMonth
-            Dim pos As Integer = startPos + i - 1
-            calendarButtons(pos).Text = i.ToString()
-            calendarButtons(pos).Tag = New DateTime(viewModel.SelectedMonth.Year, viewModel.SelectedMonth.Month, i)
-
-            ' დღევანდელი დღის გამოყოფა
-            If viewModel.SelectedMonth.Year = DateTime.Today.Year AndAlso
-               viewModel.SelectedMonth.Month = DateTime.Today.Month AndAlso
-               i = DateTime.Today.Day Then
-                calendarButtons(pos).BackColor = Color.LightBlue
+    Private Sub UpdateCalendarView()
+        Try
+            ' პირველ ჯერზე წამოვიღოთ მონაცემები თუ ცარიელია
+            If spaces.Count = 0 Then
+                LoadSpaces()
             End If
 
-            ' შერჩეული დღის გამოყოფა
-            If viewModel.SelectedDate.Year = viewModel.SelectedMonth.Year AndAlso
-               viewModel.SelectedDate.Month = viewModel.SelectedMonth.Month AndAlso
-               i = viewModel.SelectedDate.Day Then
-                calendarButtons(pos).BackColor = Color.FromArgb(200, 200, 255)
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                LoadSessions()
             End If
-        Next
 
-        ' შემდეგი თვის დღეები
-        Dim nextMonth As DateTime = firstDayOfMonth.AddMonths(1)
-        Dim nextMonthDay As Integer = 1
-        For i As Integer = startPos + daysInMonth To 41
-            calendarButtons(i).Text = nextMonthDay.ToString()
-            calendarButtons(i).ForeColor = Color.Gray
-            calendarButtons(i).Tag = New DateTime(nextMonth.Year, nextMonth.Month, nextMonthDay)
-            nextMonthDay += 1
-        Next
+            ' განვაახლოთ დროის ინტერვალები
+            InitializeTimeIntervals()
 
-        ' სესიების ჩვენება კალენდარში
-        ShowSessionsInCalendar()
+            ' შევამოწმოთ, რომელი ხედია არჩეული
+            If rbDay.Checked Then
+                ' დღის ხედი
+                If RBSpace.Checked Then
+                    ' სივრცეების მიხედვით
+                    lblInfo.Text = "დღის ხედი, სივრცეებით"
+                    ShowDayViewBySpace()
+                ElseIf RBPer.Checked Then
+                    ' თერაპევტების მიხედვით
+                    lblInfo.Text = "დღის ხედი, თერაპევტებით"
+                    ShowDayViewByTherapist()
+                ElseIf RBBene.Checked Then
+                    ' ბენეფიციარების მიხედვით
+                    lblInfo.Text = "დღის ხედი, ბენეფიციარებით"
+                    ShowDayViewByBeneficiary()
+                End If
+            ElseIf rbWeek.Checked Then
+                ' კვირის ხედი
+                lblInfo.Text = "კვირის ხედი - მუშავდება"
+                ShowWeekView()
+            ElseIf rbMonth.Checked Then
+                ' თვის ხედი
+                lblInfo.Text = "თვის ხედი - მუშავდება"
+                ShowMonthView()
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateCalendarView: შეცდომა - {ex.Message}")
+            MessageBox.Show($"კალენდრის ხედის განახლების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
-    ''' სესიების ჩვენება კალენდარში
+    ''' სივრცეების ჩატვირთვა მონაცემთა წყაროდან
     ''' </summary>
-    Private Sub ShowSessionsInCalendar()
-        ' სესიების რაოდენობა თითოეული დღისთვის
-        Dim sessionsPerDay As New Dictionary(Of DateTime, Integer)
+    Private Sub LoadSpaces()
+        Try
+            ' გავასუფთავოთ სივრცეების სია
+            spaces.Clear()
 
-        ' სესიების სტატუსების საკონტროლოდ
-        Dim hasCompletedSessions As New Dictionary(Of DateTime, Boolean)
-        Dim hasCancelledSessions As New Dictionary(Of DateTime, Boolean)
-        Dim hasOverdueSessions As New Dictionary(Of DateTime, Boolean)
-
-        ' დავთვალოთ სესიები დღეების მიხედვით
-        For Each session In viewModel.Sessions
-            Dim sessionDate As DateTime = session.DateTime.Date
-
-            ' დავთვალოთ სესიების რაოდენობა დღეში
-            If sessionsPerDay.ContainsKey(sessionDate) Then
-                sessionsPerDay(sessionDate) += 1
-            Else
-                sessionsPerDay(sessionDate) = 1
+            ' შევამოწმოთ მონაცემთა სერვისი
+            If dataService Is Nothing Then
+                Debug.WriteLine("LoadSpaces: მონაცემთა სერვისი არ არის ინიციალიზებული")
+                Return
             End If
 
-            ' შევამოწმოთ სესიის სტატუსი
-            Dim status As String = session.Status.Trim().ToLower()
-            If status = "შესრულებული" Then
-                hasCompletedSessions(sessionDate) = True
-            ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
-                hasCancelledSessions(sessionDate) = True
-            ElseIf session.IsOverdue Then
-                hasOverdueSessions(sessionDate) = True
+            ' წამოვიღოთ უნიკალური სივრცეები ყველა სესიიდან
+            Dim spaceSet As New HashSet(Of String)()
+
+            ' წამოვიღოთ ყველა სესია ან გამოვიყენოთ ლოკალური ასლი
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                LoadSessions()
             End If
-        Next
 
-        ' განვაახლოთ კალენდრის ღილაკები
-        For i As Integer = 0 To 41
-            If calendarButtons(i).Tag IsNot Nothing AndAlso TypeOf calendarButtons(i).Tag Is DateTime Then
-                Dim buttonDate As DateTime = CType(calendarButtons(i).Tag, DateTime)
+            ' ამოვკრიბოთ უნიკალური სივრცეები
+            For Each session In allSessions
+                If Not String.IsNullOrEmpty(session.Space?.Trim()) Then
+                    spaceSet.Add(session.Space.Trim())
+                End If
+            Next
 
-                ' სესიების ინდიკატორები
-                If sessionsPerDay.ContainsKey(buttonDate) Then
-                    Dim sessionsCount As Integer = sessionsPerDay(buttonDate)
+            ' დავამატოთ სივრცეები სიაში
+            spaces.AddRange(spaceSet.OrderBy(Function(s) s))
 
-                    ' დავამატოთ სესიების რაოდენობა ტექსტში
-                    calendarButtons(i).Text = $"{calendarButtons(i).Text} ({sessionsCount})"
+            ' თუ ვერ ვიპოვეთ სივრცეები სესიებიდან, ცხრილიდან წამოვიღოთ უშუალოდ
+            If spaces.Count = 0 AndAlso dataService IsNot Nothing Then
+                ' ცხრილიდან სივრცეების წამოღება
+                Dim spacesData = dataService.GetData("DB-Space!B2:B")
 
-                    ' ფერის ცვლილება სტატუსის მიხედვით
-                    If hasOverdueSessions.ContainsKey(buttonDate) AndAlso hasOverdueSessions(buttonDate) Then
-                        ' ვადაგადაცილებული სესიები - წითელი ფონი
-                        calendarButtons(i).BackColor = Color.FromArgb(255, 200, 200)
-                    ElseIf hasCancelledSessions.ContainsKey(buttonDate) AndAlso hasCancelledSessions(buttonDate) Then
-                        ' გაუქმებული სესიები - ნაცრისფერი ფონი
-                        calendarButtons(i).BackColor = Color.FromArgb(200, 200, 200)
-                    ElseIf hasCompletedSessions.ContainsKey(buttonDate) AndAlso hasCompletedSessions(buttonDate) Then
-                        ' შესრულებული სესიები - მწვანე ფონი
-                        calendarButtons(i).BackColor = Color.FromArgb(200, 255, 200)
-                    Else
-                        ' დაგეგმილი სესიები - ყვითელი ფონი
-                        calendarButtons(i).BackColor = Color.FromArgb(255, 255, 200)
-                    End If
+                If spacesData IsNot Nothing Then
+                    For Each row In spacesData
+                        If row.Count > 0 AndAlso row(0) IsNot Nothing AndAlso Not String.IsNullOrEmpty(row(0).ToString().Trim()) Then
+                            spaceSet.Add(row(0).ToString().Trim())
+                        End If
+                    Next
+
+                    ' დავამატოთ სივრცეები სიაში
+                    spaces.AddRange(spaceSet.OrderBy(Function(s) s))
                 End If
             End If
-        Next
+
+            Debug.WriteLine($"LoadSpaces: ჩატვირთულია {spaces.Count} სივრცე")
+        Catch ex As Exception
+            Debug.WriteLine($"LoadSpaces: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 
     ''' <summary>
-    ''' შერჩეული დღის UI-ის განახლება
+    ''' ყველა სესიის ჩატვირთვა
     ''' </summary>
-    Private Sub UpdateSelectedDayUI()
-        ' შერჩეული თარიღის ლეიბლის განახლება
-        lblSelectedDate.Text = viewModel.SelectedDate.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
-
-        ' განვაახლოთ კალენდრის ღილაკების არჩევა
-        UpdateCalendarUI()
-
-        ' განვაახლოთ დღის სესიების ჩვენება
-        UpdateDaySessionsUI()
-    End Sub
-
-    ''' <summary>
-    ''' დღის სესიების UI-ის განახლება
-    ''' </summary>
-    Private Sub UpdateDaySessionsUI()
-        ' გავასუფთავოთ დღის სესიების პანელი
-        pnlDaySessions.Controls.Clear()
-
-        ' თუ არ არის სესიები, ვაჩვენოთ შეტყობინება
-        If viewModel.SelectedDaySessions.Count = 0 Then
-            Dim lblNoSessions As New Label()
-            lblNoSessions.Text = "არ არის სესიები ამ დღეს"
-            lblNoSessions.AutoSize = True
-            lblNoSessions.Location = New Point(10, 10)
-            lblNoSessions.Font = New Font("Sylfaen", 12, FontStyle.Regular)
-            pnlDaySessions.Controls.Add(lblNoSessions)
-            Return
-        End If
-
-        ' ვაჩვენოთ ყველა სესია
-        Dim yPos As Integer = 10
-        For Each session In viewModel.SelectedDaySessions
-            ' სესიის პანელი
-            Dim pnlSession As New Panel()
-            pnlSession.Width = pnlDaySessions.Width - 30
-            pnlSession.Height = 100
-            pnlSession.Location = New Point(10, yPos)
-            pnlSession.BorderStyle = BorderStyle.FixedSingle
-
-            ' სესიის ფონის ფერი სტატუსის მიხედვით
-            Dim status As String = session.Status.Trim().ToLower()
-            If status = "შესრულებული" Then
-                pnlSession.BackColor = Color.FromArgb(220, 255, 220) ' მწვანე
-            ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
-                pnlSession.BackColor = Color.FromArgb(230, 230, 230) ' ნაცრისფერი
-            ElseIf session.IsOverdue Then
-                pnlSession.BackColor = Color.FromArgb(255, 220, 220) ' წითელი
-            Else
-                pnlSession.BackColor = Color.FromArgb(255, 255, 220) ' ყვითელი
-            End If
-
-            ' სესიის დრო
-            Dim lblTime As New Label()
-            lblTime.Text = session.DateTime.ToString("HH:mm")
-            lblTime.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-            lblTime.Location = New Point(10, 10)
-            lblTime.AutoSize = True
-            pnlSession.Controls.Add(lblTime)
-
-            ' სესიის ხანგრძლივობა
-            Dim lblDuration As New Label()
-            lblDuration.Text = $"{session.Duration} წთ"
-            lblDuration.Font = New Font("Segoe UI", 10, FontStyle.Regular)
-            lblDuration.Location = New Point(10, 35)
-            lblDuration.AutoSize = True
-            pnlSession.Controls.Add(lblDuration)
-
-            ' ბენეფიციარი
-            Dim lblBeneficiary As New Label()
-            lblBeneficiary.Text = session.FullName
-            lblBeneficiary.Font = New Font("Sylfaen", 12, FontStyle.Bold)
-            lblBeneficiary.Location = New Point(100, 10)
-            lblBeneficiary.AutoSize = True
-            pnlSession.Controls.Add(lblBeneficiary)
-
-            ' თერაპევტი
-            Dim lblTherapist As New Label()
-            lblTherapist.Text = $"თერაპევტი: {session.TherapistName}"
-            lblTherapist.Font = New Font("Sylfaen", 10, FontStyle.Regular)
-            lblTherapist.Location = New Point(100, 35)
-            lblTherapist.AutoSize = True
-            pnlSession.Controls.Add(lblTherapist)
-
-            ' თერაპიის ტიპი
-            Dim lblTherapyType As New Label()
-            lblTherapyType.Text = $"თერაპია: {session.TherapyType}"
-            lblTherapyType.Font = New Font("Sylfaen", 10, FontStyle.Regular)
-            lblTherapyType.Location = New Point(100, 55)
-            lblTherapyType.AutoSize = True
-            pnlSession.Controls.Add(lblTherapyType)
-
-            ' სტატუსი
-            Dim lblStatus As New Label()
-            lblStatus.Text = $"სტატუსი: {session.Status}"
-            lblStatus.Font = New Font("Sylfaen", 10, FontStyle.Regular)
-            lblStatus.Location = New Point(100, 75)
-            lblStatus.AutoSize = True
-            pnlSession.Controls.Add(lblStatus)
-
-            ' რედაქტირების ღილაკი
-            Dim btnEdit As New Button()
-            btnEdit.Text = "✎"
-            btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
-            btnEdit.Width = 30
-            btnEdit.Height = 30
-            btnEdit.Location = New Point(pnlSession.Width - 40, 10)
-            btnEdit.FlatStyle = FlatStyle.Flat
-            btnEdit.Tag = session.Id ' შევინახოთ სესიის ID
-            AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
-            pnlSession.Controls.Add(btnEdit)
-
-            ' დავამატოთ სესიის პანელი
-            pnlDaySessions.Controls.Add(pnlSession)
-
-            ' გადავიდეთ შემდეგ პოზიციაზე
-            yPos += 110
-        Next
-    End Sub
-
-    ''' <summary>
-    ''' წინა თვის ღილაკზე დაჭერის დამმუშავებელი
-    ''' </summary>
-    Private Sub BtnPrevMonth_Click(sender As Object, e As EventArgs)
-        viewModel.PreviousMonth()
-    End Sub
-
-    ''' <summary>
-    ''' შემდეგი თვის ღილაკზე დაჭერის დამმუშავებელი
-    ''' </summary>
-    Private Sub BtnNextMonth_Click(sender As Object, e As EventArgs)
-        viewModel.NextMonth()
-    End Sub
-
-    ''' <summary>
-    ''' დღევანდელ დღეზე დაბრუნების ღილაკზე დაჭერის დამმუშავებელი
-    ''' </summary>
-    Private Sub BtnToday_Click(sender As Object, e As EventArgs)
-        ' დავაყენოთ მიმდინარე თვე და დღევანდელი თარიღი
-        viewModel.CurrentMonth()
-        viewModel.SelectedDate = DateTime.Today
-    End Sub
-
-    ''' <summary>
-    ''' კალენდრის დღეზე დაჭერის დამმუშავებელი
-    ''' </summary>
-    Private Sub CalendarDay_Click(sender As Object, e As EventArgs)
-        Dim btn = TryCast(sender, Button)
-        If btn IsNot Nothing AndAlso btn.Tag IsNot Nothing AndAlso TypeOf btn.Tag Is DateTime Then
-            ' დავაყენოთ შერჩეული თარიღი
-            viewModel.SelectedDate = CType(btn.Tag, DateTime)
-
-            ' თუ შერჩეული თარიღი სხვა თვეშია, შევცვალოთ თვეც
-            If viewModel.SelectedDate.Month <> viewModel.SelectedMonth.Month OrElse
-               viewModel.SelectedDate.Year <> viewModel.SelectedMonth.Year Then
-                viewModel.SelectedMonth = New DateTime(viewModel.SelectedDate.Year, viewModel.SelectedDate.Month, 1)
-            End If
-        End If
-    End Sub
-
-    ''' <summary>
-    ''' სესიის დამატების ღილაკზე დაჭერის დამმუშავებელი
-    ''' </summary>
-    Private Sub BtnAddSession_Click(sender As Object, e As EventArgs)
+    Private Sub LoadSessions()
         Try
-            ' შევამოწმოთ გვაქვს თუ არა მონაცემთა სერვისი
+            ' შევამოწმოთ მონაცემთა სერვისი
             If dataService Is Nothing Then
-                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Debug.WriteLine("LoadSessions: მონაცემთა სერვისი არ არის ინიციალიზებული")
                 Return
             End If
 
-            ' მომხმარებლის ავტორიზაციის შემოწმება
-            If String.IsNullOrEmpty(userEmail) Then
-                MessageBox.Show("სესიის დამატებისთვის საჭიროა ავტორიზაცია", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
+            ' ჩავტვირთოთ სესიები
+            allSessions = dataService.GetAllSessions()
+            Debug.WriteLine($"LoadSessions: ჩატვირთულია {allSessions.Count} სესია")
 
-            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
-            For Each frm As Form In Application.OpenForms
-                If TypeOf frm Is NewRecordForm Then
-                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
-                    Debug.WriteLine("BtnAddSession_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
-                    frm.Focus()
+        Catch ex As Exception
+            Debug.WriteLine($"LoadSessions: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ჩვენება დღის ხედის სივრცეების მიხედვით
+    ''' </summary>
+    Private Sub ShowDayViewBySpace()
+        Try
+            ' გავასუფთავოთ კალენდრის პანელი
+            pnlCalendarGrid.Controls.Clear()
+
+            ' შევამოწმოთ არის თუ არა სივრცეები ჩატვირთული
+            If spaces.Count = 0 Then
+                ' თუ არა, ჩავტვირთოთ სივრცეები
+                LoadSpaces()
+
+                ' თუ მაინც ცარიელია, გამოვიდეთ
+                If spaces.Count = 0 Then
+                    Dim lblNoSpaces As New Label()
+                    lblNoSpaces.Text = "სივრცეები არ არის ხელმისაწვდომი"
+                    lblNoSpaces.AutoSize = True
+                    lblNoSpaces.Location = New Point(20, 20)
+                    pnlCalendarGrid.Controls.Add(lblNoSpaces)
                     Return
                 End If
-            Next
-
-            Debug.WriteLine("BtnAddSession_Click: იხსნება ახალი სესიის დამატების ფორმა")
-
-            ' შევქმნათ ახალი სესიის ფორმა
-            Dim newSessionForm As New NewRecordForm(dataService, "სესია", userEmail, "UC_Calendar")
-
-            ' დავაყენოთ არჩეული თარიღი
-            ' რეფლექსიით მოვძებნოთ DateTimePicker კონტროლი სახელით DTP1
-            For Each ctrl As Control In newSessionForm.Controls
-                If ctrl.Name = "DTP1" AndAlso TypeOf ctrl Is DateTimePicker Then
-                    DirectCast(ctrl, DateTimePicker).Value = viewModel.SelectedDate
-                    Debug.WriteLine($"BtnAddSession_Click: DTP1 თარიღი დაყენებულია: {viewModel.SelectedDate:dd.MM.yyyy}")
-                    Exit For
-                End If
-            Next
-
-            ' გავხსნათ ფორმა
-            Debug.WriteLine("BtnAddSession_Click: ფორმა იხსნება ShowDialog-ით")
-            Dim result = newSessionForm.ShowDialog()
-
-            ' თუ დავამატეთ სესია, განვაახლოთ მონაცემები
-            If result = DialogResult.OK Then
-                Debug.WriteLine("BtnAddSession_Click: ფორმა დაიხურა DialogResult.OK-ით, ვაახლებთ მონაცემებს")
-                LoadMonthSessions()
-            Else
-                Debug.WriteLine($"BtnAddSession_Click: ფორმა დაიხურა შედეგით: {result}")
             End If
 
+            ' სვეტების რაოდენობა: იმდენი უჯრედი, რამდენი სივრცეც გვაქვს
+            Dim cellsPerRow As Integer = spaces.Count
+
+            ' დროის ინტერვალების რაოდენობა
+            Dim rowCount As Integer = timeIntervals.Count
+
+            ' უჯრედის ზომები
+            Const COLUMN_WIDTH As Integer = 150
+            Const ROW_HEIGHT As Integer = 60
+            Const TIME_COLUMN_WIDTH As Integer = 80
+
+            ' ხილული სივრცე გრიდისთვის
+            Dim contentWidth As Integer = TIME_COLUMN_WIDTH + (cellsPerRow * COLUMN_WIDTH)
+            Dim contentHeight As Integer = (rowCount + 1) * ROW_HEIGHT ' +1 სათაურის მწკრივისთვის
+
+            ' შევქმნათ კონტენტის პანელი
+            calendarContentPanel = New Panel()
+            calendarContentPanel.Size = New Size(contentWidth, contentHeight)
+            calendarContentPanel.Location = New Point(0, 0)
+            calendarContentPanel.BackColor = Color.White
+            pnlCalendarGrid.Controls.Add(calendarContentPanel)
+
+            ' შევქმნათ სივრცეების სათაურების მწკრივი
+            ' დროის ცარიელი უჯრედი
+            Dim emptyCell As New Label()
+            emptyCell.Size = New Size(TIME_COLUMN_WIDTH, ROW_HEIGHT)
+            emptyCell.Location = New Point(0, 0)
+            emptyCell.BackColor = Color.FromArgb(230, 230, 250)
+            emptyCell.BorderStyle = BorderStyle.FixedSingle
+            calendarContentPanel.Controls.Add(emptyCell)
+
+            For i As Integer = 0 To cellsPerRow - 1
+                ' სივრცის სათაური
+                Dim headerLabel As New Label()
+                headerLabel.Text = spaces(i)
+                headerLabel.TextAlign = ContentAlignment.MiddleCenter
+                headerLabel.Size = New Size(COLUMN_WIDTH, ROW_HEIGHT)
+                headerLabel.Location = New Point(TIME_COLUMN_WIDTH + (i * COLUMN_WIDTH), 0)
+                headerLabel.BackColor = Color.FromArgb(230, 230, 250)
+                headerLabel.BorderStyle = BorderStyle.FixedSingle
+                calendarContentPanel.Controls.Add(headerLabel)
+            Next
+
+            ' შევქმნათ დროის ინტერვალების სვეტი
+            For i As Integer = 0 To rowCount - 1
+                ' დროის ლეიბლი
+                Dim timeLabel As New Label()
+                timeLabel.Text = timeIntervals(i).ToString("HH:mm")
+                timeLabel.TextAlign = ContentAlignment.MiddleRight
+                timeLabel.Size = New Size(TIME_COLUMN_WIDTH, ROW_HEIGHT)
+                timeLabel.Location = New Point(0, ROW_HEIGHT + (i * ROW_HEIGHT))
+                timeLabel.BackColor = Color.FromArgb(240, 240, 240)
+                timeLabel.BorderStyle = BorderStyle.FixedSingle
+                calendarContentPanel.Controls.Add(timeLabel)
+            Next
+
+            ' შევქმნათ უჯრედები გრიდისთვის
+            ReDim gridCells(cellsPerRow - 1, rowCount - 1)
+
+            For col As Integer = 0 To cellsPerRow - 1
+                For row As Integer = 0 To rowCount - 1
+                    ' ახალი უჯრედი
+                    Dim cell As New Panel()
+                    cell.Size = New Size(COLUMN_WIDTH, ROW_HEIGHT)
+                    cell.Location = New Point(TIME_COLUMN_WIDTH + (col * COLUMN_WIDTH), ROW_HEIGHT + (row * ROW_HEIGHT))
+                    cell.BackColor = Color.White
+                    cell.BorderStyle = BorderStyle.FixedSingle
+
+                    ' შევინახოთ უჯრედი მასივში
+                    gridCells(col, row) = cell
+
+                    ' დავამატოთ უჯრედი კონტენტის პანელზე
+                    calendarContentPanel.Controls.Add(cell)
+                Next
+            Next
+
+            ' თუ სესიები გვაქვს, განვათავსოთ გრიდზე
+            If allSessions IsNot Nothing AndAlso allSessions.Count > 0 Then
+                ' ფილტრაცია არჩეული დღის მიხედვით
+                Dim selectedDate As DateTime = DTPCalendar.Value.Date
+                Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+
+                ' განვათავსოთ სესიები გრიდზე
+                PlaceSessionsOnGrid(daySessions)
+            End If
+
+            Debug.WriteLine("ShowDayViewBySpace: დღის ხედი სივრცეების მიხედვით წარმატებით გამოჩნდა")
         Catch ex As Exception
-            Debug.WriteLine($"BtnAddSession_Click: შეცდომა - {ex.Message}")
-            Debug.WriteLine($"BtnAddSession_Click: StackTrace - {ex.StackTrace}")
-            MessageBox.Show($"სესიის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"ShowDayViewBySpace: შეცდომა - {ex.Message}")
+            MessageBox.Show($"დღის ხედის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     ''' <summary>
-    ''' სესიის რედაქტირების ღილაკზე დაჭერის დამმუშავებელი
+    ''' სესიების განთავსება გრიდზე
     ''' </summary>
-    Private Sub BtnEditSession_Click(sender As Object, e As EventArgs)
+    Private Sub PlaceSessionsOnGrid(sessions As List(Of SessionModel))
         Try
-            Dim btn = TryCast(sender, Button)
-            If btn Is Nothing OrElse btn.Tag Is Nothing Then Return
+            ' შევამოწმოთ უჯრედები და სესიები
+            If gridCells Is Nothing OrElse sessions Is Nothing OrElse sessions.Count = 0 Then
+                Return
+            End If
 
-            Dim sessionId As Integer = Convert.ToInt32(btn.Tag)
+            ' განვათავსოთ თითოეული სესია
+            For Each session In sessions
+                ' ვიპოვოთ სივრცის ინდექსი
+                Dim spaceIndex As Integer = spaces.IndexOf(session.Space)
 
-            ' შევამოწმოთ გვაქვს თუ არა მონაცემთა სერვისი
+                ' თუ სივრცე ნაპოვნია
+                If spaceIndex >= 0 Then
+                    ' ვიპოვოთ დროის ინდექსი
+                    Dim timeIndex As Integer = GetTimeIndexForSession(session)
+
+                    ' თუ დრო ჩვენი ინტერვალების ფარგლებშია
+                    If timeIndex >= 0 AndAlso
+                   spaceIndex < gridCells.GetLength(0) AndAlso
+                   timeIndex < gridCells.GetLength(1) Then
+
+                        ' სესიის ხანგრძლივობის გათვალისწინება (რამდენ უჯრედს დაიკავებს)
+                        Dim durationInCells As Integer = CalculateSessionHeight(session)
+
+                        ' შეზღუდვა მაქსიმალური რაოდენობით
+                        Dim lastRowIndex As Integer = Math.Min(timeIndex + durationInCells - 1, gridCells.GetLength(1) - 1)
+
+                        ' სესიის სრული სიმაღლე
+                        Dim sessionHeight As Integer = (lastRowIndex - timeIndex + 1) * gridCells(spaceIndex, timeIndex).Height
+
+                        ' შევქმნათ სესიის პანელი
+                        Dim sessionPanel As New Panel()
+                        sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 2, sessionHeight)
+                        sessionPanel.Location = New Point(1, 1)
+                        sessionPanel.BackColor = GetSessionColor(session)
+
+                        ' სესიის ინფორმაციის დამატება
+                        AddSessionInfo(sessionPanel, session)
+
+                        ' სესიის დამატება უჯრედზე
+                        gridCells(spaceIndex, timeIndex).Controls.Add(sessionPanel)
+
+                        ' სესიის ID-ის შენახვა Tag-ში დაჭერაზე რეაგირებისთვის
+                        sessionPanel.Tag = session.Id
+                        AddHandler sessionPanel.Click, AddressOf SessionPanel_Click
+                    End If
+                End If
+            Next
+        Catch ex As Exception
+            Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის უჯრედზე დაჭერის დამუშავება
+    ''' </summary>
+    Private Sub SessionPanel_Click(sender As Object, e As EventArgs)
+        Try
+            Dim panel = DirectCast(sender, Panel)
+            Dim sessionId As Integer = CInt(panel.Tag)
+
+            ' სესიის რედაქტირების ფორმის გახსნა...
+            Debug.WriteLine($"SessionPanel_Click: გამოძახება სესიისთვის ID={sessionId}")
+
+            ' შევამოწმოთ გვაქვს თუ არა dataService
             If dataService Is Nothing Then
                 MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
@@ -615,130 +435,224 @@ Public Class UC_Calendar
             Next
 
             ' შევქმნათ რედაქტირების ფორმა
-            Dim editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Calendar")
+            Dim editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Calendar_Advanced")
 
             ' გავხსნათ ფორმა
             If editForm.ShowDialog() = DialogResult.OK Then
                 ' თუ რედაქტირება წარმატებით დასრულდა, განვაახლოთ მონაცემები
-                LoadMonthSessions()
+                LoadSessions()
+                UpdateCalendarView()
             End If
         Catch ex As Exception
-            Debug.WriteLine($"BtnEditSession_Click: შეცდომა - {ex.Message}")
-            MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"SessionPanel_Click: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
     ''' <summary>
-    ''' არჩეული თვის სესიების ჩატვირთვა
+    ''' სესიის დროის ინდექსის პოვნა
     ''' </summary>
-    Public Sub LoadMonthSessions()
+    Private Function GetTimeIndexForSession(session As SessionModel) As Integer
+        ' ნაგულისხმევი მნიშვნელობა
+        Dim result As Integer = -1
+
+        ' ვამოწმებთ სესიის თარიღს
+        Dim sessionTime As DateTime = session.DateTime
+
+        ' ვამოწმებთ ყველა ინტერვალს
+        For i As Integer = 0 To timeIntervals.Count - 1
+            ' ვნახავთ, რომელ ინტერვალს ემთხვევა სესიის დრო
+            If sessionTime.Hour = timeIntervals(i).Hour AndAlso
+           sessionTime.Minute = timeIntervals(i).Minute Then
+                result = i
+                Exit For
+            End If
+
+            ' თუ სესიის დრო ორ ინტერვალს შორისაა, ვირჩევთ უახლოეს
+            If i < timeIntervals.Count - 1 AndAlso
+           sessionTime >= timeIntervals(i) AndAlso
+           sessionTime < timeIntervals(i + 1) Then
+                result = i
+                Exit For
+            End If
+        Next
+
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' სესიის ხანგრძლივობის გათვლა უჯრედებში
+    ''' </summary>
+    Private Function CalculateSessionHeight(session As SessionModel) As Integer
+        ' სესიის ხანგრძლივობა წუთებში
+        Dim durationMinutes As Integer = session.Duration
+
+        ' მინიმუმ 1 უჯრედი
+        If durationMinutes <= 30 Then
+            Return 1
+        End If
+
+        ' ვთვლით, რამდენი ნახევარსაათიანი ინტერვალი დასჭირდება
+        Return CInt(Math.Ceiling(durationMinutes / 30.0))
+    End Function
+
+    ''' <summary>
+    ''' სესიის ფერის განსაზღვრა სტატუსის მიხედვით
+    ''' </summary>
+    Private Function GetSessionColor(session As SessionModel) As Color
+        ' სტატუსის მიხედვით ფერის შერჩევა
+        Dim status As String = session.Status.Trim().ToLower()
+
+        If status = "შესრულებული" Then
+            Return Color.FromArgb(220, 255, 220) ' მწვანე
+        ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
+            Return Color.FromArgb(230, 230, 230) ' ნაცრისფერი
+        ElseIf session.IsOverdue Then
+            Return Color.FromArgb(255, 220, 220) ' წითელი
+        Else
+            Return Color.FromArgb(255, 255, 220) ' ყვითელი
+        End If
+    End Function
+
+    ''' <summary>
+    ''' სესიის ინფორმაციის დამატება პანელზე
+    ''' </summary>
+    Private Sub AddSessionInfo(panel As Panel, session As SessionModel)
         Try
-            ' შევამოწმოთ გვაქვს თუ არა dataService
-            If dataService Is Nothing Then
-                Debug.WriteLine("LoadMonthSessions: dataService არ არის ინიციალიზებული")
-                Return
-            End If
+            ' დრო
+            Dim lblTime As New Label()
+            lblTime.Text = session.DateTime.ToString("HH:mm")
+            lblTime.AutoSize = True
+            lblTime.Location = New Point(5, 3)
+            lblTime.Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            panel.Controls.Add(lblTime)
 
-            ' მოვიპოვოთ არჩეული თვის პირველი და ბოლო დღის თარიღები
-            Dim firstDayOfMonth As New DateTime(viewModel.SelectedMonth.Year, viewModel.SelectedMonth.Month, 1)
-            Dim lastDayOfMonth As New DateTime(viewModel.SelectedMonth.Year, viewModel.SelectedMonth.Month, DateTime.DaysInMonth(viewModel.SelectedMonth.Year, viewModel.SelectedMonth.Month))
+            ' ბენეფიციარი
+            Dim lblBeneficiary As New Label()
+            lblBeneficiary.Text = session.FullName
+            lblBeneficiary.AutoSize = True
+            lblBeneficiary.Location = New Point(5, 20)
+            lblBeneficiary.Font = New Font("Sylfaen", 9, FontStyle.Bold)
+            panel.Controls.Add(lblBeneficiary)
 
-            ' 1 კვირა გამოვაჩინოთ წინა და შემდეგი თვიდანაც (კალენდრის სრულად შესავსებად)
-            Dim startDate As DateTime = firstDayOfMonth.AddDays(-7)
-            Dim endDate As DateTime = lastDayOfMonth.AddDays(7)
-
-            Debug.WriteLine($"LoadMonthSessions: პერიოდი {startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy}")
-
-            ' წამოვიღოთ ყველა სესია მონაცემთა ბაზიდან
-            Dim allSessions = dataService.GetAllSessions()
-            Debug.WriteLine($"LoadMonthSessions: მიღებულია {allSessions.Count} სესია")
-
-            ' გავფილტროთ არჩეული პერიოდისთვის
-            Dim monthSessions As New List(Of SessionModel)
-            For Each session In allSessions
-                Dim sessionDate As DateTime = session.DateTime.Date
-                If sessionDate >= startDate.Date AndAlso sessionDate <= endDate.Date Then
-                    monthSessions.Add(session)
-                End If
-            Next
-
-            Debug.WriteLine($"LoadMonthSessions: გაფილტრულია {monthSessions.Count} სესია")
-
-            ' გადავცეთ გაფილტრული სესიები ViewModel-ს
-            viewModel.LoadMonthSessions(monthSessions)
-
-            ' განვაახლოთ UI
-            UpdateCalendarUI()
+            ' თერაპევტი
+            Dim lblTherapist As New Label()
+            lblTherapist.Text = session.TherapistName
+            lblTherapist.AutoSize = True
+            lblTherapist.Location = New Point(5, 37)
+            lblTherapist.Font = New Font("Sylfaen", 8)
+            panel.Controls.Add(lblTherapist)
 
         Catch ex As Exception
-            Debug.WriteLine($"LoadMonthSessions: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"AddSessionInfo: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
     ''' <summary>
-    ''' მონაცემთა სერვისის მითითება
+    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
     ''' </summary>
-    Public Sub SetDataService(service As IDataService)
-        dataService = service
-        Debug.WriteLine("UC_Calendar.SetDataService: მითითებულია მონაცემთა სერვისი")
-
-        ' ჩავტვირთოთ საწყისი მონაცემები
-        LoadMonthSessions()
+    Private Sub ShowDayViewByTherapist()
+        ' თერაპევტების ხედით ჩვენება
+        Dim lblNotImplemented As New Label()
+        lblNotImplemented.Text = "თერაპევტების ხედი ჯერ არ არის იმპლემენტირებული"
+        lblNotImplemented.AutoSize = True
+        lblNotImplemented.Location = New Point(20, 20)
+        pnlCalendarGrid.Controls.Clear()
+        pnlCalendarGrid.Controls.Add(lblNotImplemented)
     End Sub
 
     ''' <summary>
-    ''' მომხმარებლის ელფოსტის მითითება
+    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
     ''' </summary>
-    Public Sub SetUserEmail(email As String)
-        userEmail = email
-        viewModel.UserEmail = email
-        Debug.WriteLine($"UC_Calendar.SetUserEmail: მითითებულია მომხმარებლის ელფოსტა: {email}")
+    Private Sub ShowDayViewByBeneficiary()
+        ' ბენეფიციარების ხედით ჩვენება
+        Dim lblNotImplemented As New Label()
+        lblNotImplemented.Text = "ბენეფიციარების ხედი ჯერ არ არის იმპლემენტირებული"
+        lblNotImplemented.AutoSize = True
+        lblNotImplemented.Location = New Point(20, 20)
+        pnlCalendarGrid.Controls.Clear()
+        pnlCalendarGrid.Controls.Add(lblNotImplemented)
+    End Sub
+
+    ''' <summary>
+    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
+    ''' </summary>
+    Private Sub ShowWeekView()
+        ' კვირის ხედი
+        Dim lblNotImplemented As New Label()
+        lblNotImplemented.Text = "კვირის ხედი ჯერ არ არის იმპლემენტირებული"
+        lblNotImplemented.AutoSize = True
+        lblNotImplemented.Location = New Point(20, 20)
+        pnlCalendarGrid.Controls.Clear()
+        pnlCalendarGrid.Controls.Add(lblNotImplemented)
+    End Sub
+
+    ''' <summary>
+    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
+    ''' </summary>
+    Private Sub ShowMonthView()
+        ' თვის ხედი
+        Dim lblNotImplemented As New Label()
+        lblNotImplemented.Text = "თვის ხედი ჯერ არ არის იმპლემენტირებული"
+        lblNotImplemented.AutoSize = True
+        lblNotImplemented.Location = New Point(20, 20)
+        pnlCalendarGrid.Controls.Clear()
+        pnlCalendarGrid.Controls.Add(lblNotImplemented)
+    End Sub
+
+    ' ივენთ ჰენდლერები რომლებიც უნდა დაუკავშიროთ კონტროლებს Form-ის ინიციალიზაციაში
+
+    ''' <summary>
+    ''' კალენდრის თარიღის ცვლილების დამუშავება
+    ''' </summary>
+    Private Sub DTPCalendar_ValueChanged(sender As Object, e As EventArgs)
+        ' განვაახლოთ თარიღის ლეიბლი
+        lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
+
+        ' განვაახლოთ კალენდრის ხედი
+        UpdateCalendarView()
+    End Sub
+
+    ''' <summary>
+    ''' კალენდრის ხედის ცვლილება (დღე/კვირა/თვე)
+    ''' </summary>
+    Private Sub ViewType_CheckedChanged(sender As Object, e As EventArgs)
+        UpdateCalendarView()
+    End Sub
+
+    ''' <summary>
+    ''' ფილტრის ცვლილება (სივრცე/თერაპევტი/ბენეფიციარი)
+    ''' </summary>
+    Private Sub FilterType_CheckedChanged(sender As Object, e As EventArgs)
+        UpdateCalendarView()
+    End Sub
+
+    ''' <summary>
+    ''' საწყისი/საბოლოო დროის ცვლილება
+    ''' </summary>
+    Private Sub TimeRange_SelectedIndexChanged(sender As Object, e As EventArgs)
+        ' ვამოწმებთ ორივე დრო არის თუ არა არჩეული და ვალიდურია თუ არა
+        If cbStart.SelectedIndex < 0 OrElse cbFinish.SelectedIndex < 0 Then
+            Return
+        End If
+
+        ' განვაახლოთ კალენდარის ხედი
+        UpdateCalendarView()
     End Sub
 
     ''' <summary>
     ''' ივენთი, რომელიც გაეშვება UserControl-ის ჩატვირთვისას
     ''' </summary>
-    Private Sub UC_Calendar_Load(sender As Object, e As EventArgs) Handles Me.Load
+    Private Sub UC_Calendar_Advanced_Load(sender As Object, e As EventArgs) Handles Me.Load
         Try
-            Debug.WriteLine("UC_Calendar_Load: კალენდრის კონტროლი იტვირთება")
+            ' საწყისი პარამეტრების დაყენება (თუ ისინი არ არის დაყენებული)
+            InitializeTimeIntervals()
 
-            ' შევამოწმოთ არის თუ არა კონტროლები ინიციალიზებული
-            If pnlCalendar Is Nothing OrElse pnlDayDetails Is Nothing OrElse pnlDaySessions Is Nothing Then
-                Debug.WriteLine("UC_Calendar_Load: ყველა კონტროლი არ არის ინიციალიზებული")
-                Return
-            End If
+            ' კალენდრის განახლება
+            UpdateCalendarView()
 
-            ' განვაახლოთ UI
-            UpdateCalendarUI()
-
-            Debug.WriteLine("UC_Calendar_Load: კალენდრის კონტროლი წარმატებით ჩაიტვირთა")
+            Debug.WriteLine("UC_Calendar_Advanced_Load: კალენდრის კონტროლი წარმატებით ჩაიტვირთა")
         Catch ex As Exception
-            Debug.WriteLine($"UC_Calendar_Load: შეცდომა - {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ივენთი, რომელიც გაეშვება UserControl-ის ზომის ცვლილებისას
-    ''' </summary>
-    Private Sub UC_Calendar_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        ' შევამოწმოთ კონტროლების არსებობა ინიციალიზაციის დასრულებამდე
-        If pnlCalendar Is Nothing OrElse pnlDayDetails Is Nothing OrElse pnlDaySessions Is Nothing Then
-            Debug.WriteLine("UC_Calendar_Resize: ზოგიერთი კონტროლი არ არის ინიციალიზებული")
-            Return ' გამოვიდეთ მეთოდიდან თუ კონტროლები არ არის მზად
-        End If
-
-        ' დავარეგულიროთ ზოგიერთი კონტროლის ზომა მშობელი კონტროლის ზომაზე დამოკიდებულებით
-        Try
-            pnlCalendar.Height = Me.Height
-            pnlDaySessions.Width = pnlDayDetails.Width - 20
-            pnlDaySessions.Height = pnlDayDetails.Height - 60
-
-            ' განვაახლოთ კალენდრის კონტროლები
-            UpdateCalendarUI()
-
-            Debug.WriteLine("UC_Calendar_Resize: კონტროლების ზომები წარმატებით განახლდა")
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Calendar_Resize: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"UC_Calendar_Advanced_Load: შეცდომა - {ex.Message}")
         End Try
     End Sub
 End Class
