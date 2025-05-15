@@ -136,6 +136,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Models\BirthdayModel.vb" />
+    <Compile Include="Models\CalendarViewModel.vb" />
     <Compile Include="Models\HomeViewModel.vb" />
     <Compile Include="Models\MainViewModel.vb" />
     <Compile Include="Models\SessionModel.vb" />
@@ -162,6 +163,12 @@
     <Compile Include="Services\IDataService.vb" />
     <Compile Include="Services\SheetDataService.vb" />
     <Compile Include="Services\UserService.vb" />
+    <Compile Include="UserControls\UC_Calendar.Designer.vb">
+      <DependentUpon>UC_Calendar.vb</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\UC_Calendar.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="UserControls\UC_Home.Designer.vb">
       <DependentUpon>UC_Home.vb</DependentUpon>
     </Compile>
@@ -196,6 +203,9 @@
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\UC_Calendar.resx">
+      <DependentUpon>UC_Calendar.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\UC_Home.resx">
       <DependentUpon>UC_Home.vb</DependentUpon>

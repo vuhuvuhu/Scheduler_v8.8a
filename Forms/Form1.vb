@@ -636,16 +636,54 @@ Public Class Form1
     ''' Menu ItemClicked: MenuStrip-ის ივენთის დამმუშავებელი
     ''' </summary>
     Private Sub mainMenu_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles mainMenu.ItemClicked
+        ' ჯერ ჩავინიშნოთ, რომელი პუნქტი აირჩია მომხმარებელმა
+        Dim menuItemText = e.ClickedItem.Text
+        Debug.WriteLine($"mainMenu_ItemClicked: მომხმარებელმა აირჩია '{menuItemText}'")
+
         ' კონკრეტული მენიუს პუნქტების დაჭერის დამუშავება
-        If e.ClickedItem.Text = "საწყისი" Then
+        If menuItemText = "საწყისი" Then
             ShowHome()
-        ElseIf e.ClickedItem.Text = "კალენდარი" Then
-            ' TODO: კალენდრის გვერდის ჩვენება
-            MessageBox.Show("კალენდრის ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-        ElseIf e.ClickedItem.Text = "ბაზები" Then
+        ElseIf menuItemText = "კალენდარი" Then
+            ShowCalendar()
+        ElseIf menuItemText = "ბაზები" Then
             ' TODO: ბაზების გვერდის ჩვენება
             MessageBox.Show("ბაზების ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
+    End Sub
+
+    ''' <summary>
+    ''' კალენდრის გვერდის ჩვენება
+    ''' </summary>
+    Private Sub ShowCalendar()
+        Try
+            Debug.WriteLine("ShowCalendar: დაიწყო")
+
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' ახალი CalendarViewModel-ის შექმნა
+            Dim calendarViewModel As New CalendarViewModel()
+
+            ' UC_Calendar კონტროლის შექმნა
+            'Dim calendarControl As New UC_Calendar(calendarViewModel)
+            'calendarControl.Dock = DockStyle.Fill
+
+            ' მონაცემთა სერვისის მითითება
+            If dataService IsNot Nothing Then
+                'calendarControl.SetDataService(dataService)
+            End If
+
+            ' მომხმარებლის ელფოსტის მითითება
+            'calendarControl.SetUserEmail(If(viewModel?.Email, "უცნობი"))
+
+            ' დავამატოთ კონტროლი პანელზე
+            'pnlMain.Controls.Add(calendarControl)
+
+            Debug.WriteLine("ShowCalendar: კალენდრის გვერდი წარმატებით გამოჩნდა")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowCalendar: შეცდომა - {ex.Message}")
+            MessageBox.Show($"კალენდრის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
     ''' <summary>
     ''' ამოწმებს და აღწერს კონტროლის ხილვადობის მდგომარეობას დებაგირებისთვის
