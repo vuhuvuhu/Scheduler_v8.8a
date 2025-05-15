@@ -59,7 +59,8 @@ Public Class MenuManager
         mnuAdmin.DropDownItems.Add(mnuUserRegistration)
 
         menu.Items.AddRange({mnuHome, mnuCalendar, mnuDatabases, mnuGraphs, mnuDocuments, mnuFinances, mnuAdmin})
-        AddHandlers()
+        ' არ მივაბათ OnMenuItemClicked ივენთი მენიუს ელემენტებს
+        ' AddHandlers() - ეს ხაზი არის წაშლილი
         ShowOnlyHomeMenu()
     End Sub
 
@@ -125,17 +126,6 @@ Public Class MenuManager
         End Select
     End Sub
 
-    Private Sub AddHandlers()
-        Dim items = {mnuHome, mnuCalendar, mnuDatabases, mnuGraphs, mnuDocuments, mnuFinances, mnuAdmin,
-                     mnuSchedule, mnuBeneficiaries, mnuTherapists, mnuTherapies, mnuFunding, mnuUserRegistration}
-        For Each it As ToolStripMenuItem In items
-            AddHandler it.Click, AddressOf OnMenuItemClicked
-        Next
-    End Sub
-
-    Private Sub OnMenuItemClicked(sender As Object, e As EventArgs)
-        Dim itm = DirectCast(sender, ToolStripMenuItem)
-        MessageBox.Show(itm.Text)
-    End Sub
-
+    ' შემდეგი მეთოდები წაშლილია:
+    ' Private Sub AddHandlers() და Private Sub OnMenuItemClicked(sender As Object, e As EventArgs)
 End Class

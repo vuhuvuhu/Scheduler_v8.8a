@@ -42,144 +42,158 @@ Public Class UC_Calendar
     ''' </summary>
     ''' <param name="calendarViewModel">CalendarViewModel ობიექტი</param>
     Public Sub New(calendarViewModel As CalendarViewModel)
-        ' კონტროლების ინიციალიზაცია
-        InitializeComponent()
+        Try
+            ' კონტროლების ინიციალიზაცია
+            InitializeComponent()
 
-        ' ViewModel-ის შენახვა
-        viewModel = calendarViewModel
+            ' ViewModel-ის შენახვა
+            viewModel = calendarViewModel
 
-        ' კალენდრის UI კონტროლების შექმნა
-        CreateCalendarControls()
+            ' კალენდრის UI კონტროლების შექმნა
+            CreateCalendarControls()
 
-        ' ViewModel-ის PropertyChanged ივენთის მიბმა
-        AddHandler viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
+            ' ViewModel-ის PropertyChanged ივენთის მიბმა
+            AddHandler viewModel.PropertyChanged, AddressOf ViewModel_PropertyChanged
 
-        ' საწყისი მონაცემების განახლება
-        UpdateCalendarUI()
+            ' საწყისი მონაცემების განახლება
+            UpdateCalendarUI()
+
+            Debug.WriteLine("UC_Calendar.New: კალენდრის კონტროლი წარმატებით შეიქმნა")
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Calendar.New: შეცდომა - {ex.Message}")
+            MessageBox.Show($"კალენდრის ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
     ''' კალენდრის UI კონტროლების შექმნა
     ''' </summary>
     Private Sub CreateCalendarControls()
-        ' კალენდრის ნავიგაციის პანელი
-        Dim pnlNavigation As New Panel()
-        pnlNavigation.Dock = DockStyle.Top
-        pnlNavigation.Height = 40
-        pnlNavigation.BackColor = Color.FromArgb(200, 200, 255)
-        Controls.Add(pnlNavigation)
+        Try
+            ' კალენდრის ნავიგაციის პანელი
+            Dim pnlNavigation As New Panel()
+            pnlNavigation.Dock = DockStyle.Top
+            pnlNavigation.Height = 40
+            pnlNavigation.BackColor = Color.FromArgb(200, 200, 255)
+            Controls.Add(pnlNavigation)
 
-        ' წინა თვის ღილაკი
-        btnPrevMonth = New Button()
-        btnPrevMonth.Text = "◀"
-        btnPrevMonth.Width = 40
-        btnPrevMonth.Height = 30
-        btnPrevMonth.Location = New Point(10, 5)
-        btnPrevMonth.BackColor = Color.White
-        AddHandler btnPrevMonth.Click, AddressOf BtnPrevMonth_Click
-        pnlNavigation.Controls.Add(btnPrevMonth)
+            ' წინა თვის ღილაკი
+            btnPrevMonth = New Button()
+            btnPrevMonth.Text = "◀"
+            btnPrevMonth.Width = 40
+            btnPrevMonth.Height = 30
+            btnPrevMonth.Location = New Point(10, 5)
+            btnPrevMonth.BackColor = Color.White
+            AddHandler btnPrevMonth.Click, AddressOf BtnPrevMonth_Click
+            pnlNavigation.Controls.Add(btnPrevMonth)
 
-        ' თვისა და წლის ლეიბლი
-        lblMonthYear = New Label()
-        lblMonthYear.AutoSize = True
-        lblMonthYear.Font = New Font("Sylfaen", 14, FontStyle.Bold)
-        lblMonthYear.Location = New Point(100, 8)
-        pnlNavigation.Controls.Add(lblMonthYear)
+            ' თვისა და წლის ლეიბლი
+            lblMonthYear = New Label()
+            lblMonthYear.AutoSize = True
+            lblMonthYear.Font = New Font("Sylfaen", 14, FontStyle.Bold)
+            lblMonthYear.Location = New Point(100, 8)
+            pnlNavigation.Controls.Add(lblMonthYear)
 
-        ' შემდეგი თვის ღილაკი
-        btnNextMonth = New Button()
-        btnNextMonth.Text = "▶"
-        btnNextMonth.Width = 40
-        btnNextMonth.Height = 30
-        btnNextMonth.Location = New Point(300, 5)
-        btnNextMonth.BackColor = Color.White
-        AddHandler btnNextMonth.Click, AddressOf BtnNextMonth_Click
-        pnlNavigation.Controls.Add(btnNextMonth)
+            ' შემდეგი თვის ღილაკი
+            btnNextMonth = New Button()
+            btnNextMonth.Text = "▶"
+            btnNextMonth.Width = 40
+            btnNextMonth.Height = 30
+            btnNextMonth.Location = New Point(300, 5)
+            btnNextMonth.BackColor = Color.White
+            AddHandler btnNextMonth.Click, AddressOf BtnNextMonth_Click
+            pnlNavigation.Controls.Add(btnNextMonth)
 
-        ' დღევანდელ დღეზე დაბრუნების ღილაკი
-        btnToday = New Button()
-        btnToday.Text = "დღეს"
-        btnToday.Width = 80
-        btnToday.Height = 30
-        btnToday.Location = New Point(350, 5)
-        btnToday.BackColor = Color.White
-        AddHandler btnToday.Click, AddressOf BtnToday_Click
-        pnlNavigation.Controls.Add(btnToday)
+            ' დღევანდელ დღეზე დაბრუნების ღილაკი
+            btnToday = New Button()
+            btnToday.Text = "დღეს"
+            btnToday.Width = 80
+            btnToday.Height = 30
+            btnToday.Location = New Point(350, 5)
+            btnToday.BackColor = Color.White
+            AddHandler btnToday.Click, AddressOf BtnToday_Click
+            pnlNavigation.Controls.Add(btnToday)
 
-        ' კალენდრის პანელი
-        pnlCalendar = New Panel()
-        pnlCalendar.Dock = DockStyle.Left
-        pnlCalendar.Width = 500
-        pnlCalendar.BackColor = Color.White
-        Controls.Add(pnlCalendar)
+            ' კალენდრის პანელი
+            pnlCalendar = New Panel()
+            pnlCalendar.Dock = DockStyle.Left
+            pnlCalendar.Width = 500
+            pnlCalendar.BackColor = Color.White
+            Controls.Add(pnlCalendar)
 
-        ' კვირის დღეების სათაურები
-        Dim dayNames() As String = {"ორშ", "სამ", "ოთხ", "ხუთ", "პარ", "შაბ", "კვი"}
-        For i As Integer = 0 To 6
-            Dim lblDay As New Label()
-            lblDay.Text = dayNames(i)
-            lblDay.Width = 70
-            lblDay.Height = 30
-            lblDay.Location = New Point(i * 70 + 10, 10)
-            lblDay.TextAlign = ContentAlignment.MiddleCenter
-            lblDay.Font = New Font("Sylfaen", 10, FontStyle.Bold)
-            lblDay.BackColor = Color.FromArgb(230, 230, 250)
-            pnlCalendar.Controls.Add(lblDay)
-        Next
+            ' კვირის დღეების სათაურები
+            Dim dayNames() As String = {"ორშ", "სამ", "ოთხ", "ხუთ", "პარ", "შაბ", "კვი"}
+            For i As Integer = 0 To 6
+                Dim lblDay As New Label()
+                lblDay.Text = dayNames(i)
+                lblDay.Width = 70
+                lblDay.Height = 30
+                lblDay.Location = New Point(i * 70 + 10, 10)
+                lblDay.TextAlign = ContentAlignment.MiddleCenter
+                lblDay.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+                lblDay.BackColor = Color.FromArgb(230, 230, 250)
+                pnlCalendar.Controls.Add(lblDay)
+            Next
 
-        ' კალენდრის დღეების ღილაკების შექმნა
-        For i As Integer = 0 To 41
-            calendarButtons(i) = New Button()
-            calendarButtons(i).Width = 70
-            calendarButtons(i).Height = 70
-            calendarButtons(i).BackColor = Color.White
-            calendarButtons(i).FlatStyle = FlatStyle.Flat
-            calendarButtons(i).Tag = i ' შევინახოთ ინდექსი Tag-ში
+            ' კალენდრის დღეების ღილაკების შექმნა
+            For i As Integer = 0 To 41
+                calendarButtons(i) = New Button()
+                calendarButtons(i).Width = 70
+                calendarButtons(i).Height = 70
+                calendarButtons(i).BackColor = Color.White
+                calendarButtons(i).FlatStyle = FlatStyle.Flat
+                calendarButtons(i).Tag = i ' შევინახოთ ინდექსი Tag-ში
 
-            ' ღილაკზე დაჭერის ივენთი
-            AddHandler calendarButtons(i).Click, AddressOf CalendarDay_Click
+                ' ღილაკზე დაჭერის ივენთი
+                AddHandler calendarButtons(i).Click, AddressOf CalendarDay_Click
 
-            ' ღილაკის პოზიციის დაყენება (6x7 ბადე)
-            Dim row As Integer = i \ 7
-            Dim col As Integer = i Mod 7
-            calendarButtons(i).Location = New Point(col * 70 + 10, row * 70 + 40)
+                ' ღილაკის პოზიციის დაყენება (6x7 ბადე)
+                Dim row As Integer = i \ 7
+                Dim col As Integer = i Mod 7
+                calendarButtons(i).Location = New Point(col * 70 + 10, row * 70 + 40)
 
-            pnlCalendar.Controls.Add(calendarButtons(i))
-        Next
+                pnlCalendar.Controls.Add(calendarButtons(i))
+            Next
 
-        ' დღის დეტალების პანელი
-        pnlDayDetails = New Panel()
-        pnlDayDetails.Dock = DockStyle.Fill
-        pnlDayDetails.BackColor = Color.FromArgb(245, 245, 250)
-        Controls.Add(pnlDayDetails)
+            ' დღის დეტალების პანელი
+            pnlDayDetails = New Panel()
+            pnlDayDetails.Dock = DockStyle.Fill
+            pnlDayDetails.BackColor = Color.FromArgb(245, 245, 250)
+            Controls.Add(pnlDayDetails)
 
-        ' შერჩეული თარიღის ლეიბლი
-        lblSelectedDate = New Label()
-        lblSelectedDate.AutoSize = True
-        lblSelectedDate.Font = New Font("Sylfaen", 14, FontStyle.Bold)
-        lblSelectedDate.Location = New Point(10, 10)
-        pnlDayDetails.Controls.Add(lblSelectedDate)
+            ' შერჩეული თარიღის ლეიბლი
+            lblSelectedDate = New Label()
+            lblSelectedDate.AutoSize = True
+            lblSelectedDate.Font = New Font("Sylfaen", 14, FontStyle.Bold)
+            lblSelectedDate.Location = New Point(10, 10)
+            pnlDayDetails.Controls.Add(lblSelectedDate)
 
-        ' სესიის დამატების ღილაკი
-        btnAddSession = New Button()
-        btnAddSession.Text = "სესიის დამატება"
-        btnAddSession.Width = 150
-        btnAddSession.Height = 30
-        btnAddSession.Location = New Point(300, 10)
-        btnAddSession.BackColor = Color.FromArgb(200, 255, 200)
-        AddHandler btnAddSession.Click, AddressOf BtnAddSession_Click
-        pnlDayDetails.Controls.Add(btnAddSession)
+            ' სესიის დამატების ღილაკი
+            btnAddSession = New Button()
+            btnAddSession.Text = "სესიის დამატება"
+            btnAddSession.Width = 150
+            btnAddSession.Height = 30
+            btnAddSession.Location = New Point(300, 10)
+            btnAddSession.BackColor = Color.FromArgb(200, 255, 200)
+            AddHandler btnAddSession.Click, AddressOf BtnAddSession_Click
+            pnlDayDetails.Controls.Add(btnAddSession)
 
-        ' დღის სესიების პანელი
-        pnlDaySessions = New Panel()
-        pnlDaySessions.Location = New Point(10, 50)
-        pnlDaySessions.Width = pnlDayDetails.Width - 20
-        pnlDaySessions.Height = pnlDayDetails.Height - 60
-        pnlDaySessions.AutoScroll = True
-        pnlDayDetails.Controls.Add(pnlDaySessions)
+            ' დღის სესიების პანელი
+            pnlDaySessions = New Panel()
+            pnlDaySessions.Location = New Point(10, 50)
+            pnlDaySessions.Width = pnlDayDetails.Width - 20
+            pnlDaySessions.Height = pnlDayDetails.Height - 60
+            pnlDaySessions.AutoScroll = True
+            pnlDayDetails.Controls.Add(pnlDaySessions)
 
-        ' დავაკავშიროთ პანელის Resize ივენთი
-        AddHandler pnlDayDetails.Resize, AddressOf PnlDayDetails_Resize
+            ' დავაკავშიროთ პანელის Resize ივენთი
+            AddHandler pnlDayDetails.Resize, AddressOf PnlDayDetails_Resize
+
+            Debug.WriteLine("CreateCalendarControls: კალენდრის კონტროლები წარმატებით შეიქმნა")
+        Catch ex As Exception
+            Debug.WriteLine($"CreateCalendarControls: შეცდომა - {ex.Message}")
+            MessageBox.Show($"კალენდრის კონტროლების შექმნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
@@ -685,22 +699,46 @@ Public Class UC_Calendar
     ''' ივენთი, რომელიც გაეშვება UserControl-ის ჩატვირთვისას
     ''' </summary>
     Private Sub UC_Calendar_Load(sender As Object, e As EventArgs) Handles Me.Load
-        Debug.WriteLine("UC_Calendar_Load: კალენდრის კონტროლი ჩაიტვირთა")
+        Try
+            Debug.WriteLine("UC_Calendar_Load: კალენდრის კონტროლი იტვირთება")
 
-        ' განვაახლოთ UI
-        UpdateCalendarUI()
+            ' შევამოწმოთ არის თუ არა კონტროლები ინიციალიზებული
+            If pnlCalendar Is Nothing OrElse pnlDayDetails Is Nothing OrElse pnlDaySessions Is Nothing Then
+                Debug.WriteLine("UC_Calendar_Load: ყველა კონტროლი არ არის ინიციალიზებული")
+                Return
+            End If
+
+            ' განვაახლოთ UI
+            UpdateCalendarUI()
+
+            Debug.WriteLine("UC_Calendar_Load: კალენდრის კონტროლი წარმატებით ჩაიტვირთა")
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Calendar_Load: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 
     ''' <summary>
     ''' ივენთი, რომელიც გაეშვება UserControl-ის ზომის ცვლილებისას
     ''' </summary>
     Private Sub UC_Calendar_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        ' დავარეგულიროთ ზოგიერთი კონტროლის ზომა მშობელი კონტროლის ზომაზე დამოკიდებულებით
-        pnlCalendar.Height = Me.Height
-        pnlDaySessions.Width = pnlDayDetails.Width - 20
-        pnlDaySessions.Height = pnlDayDetails.Height - 60
+        ' შევამოწმოთ კონტროლების არსებობა ინიციალიზაციის დასრულებამდე
+        If pnlCalendar Is Nothing OrElse pnlDayDetails Is Nothing OrElse pnlDaySessions Is Nothing Then
+            Debug.WriteLine("UC_Calendar_Resize: ზოგიერთი კონტროლი არ არის ინიციალიზებული")
+            Return ' გამოვიდეთ მეთოდიდან თუ კონტროლები არ არის მზად
+        End If
 
-        ' განვაახლოთ კალენდრის კონტროლები
-        UpdateCalendarUI()
+        ' დავარეგულიროთ ზოგიერთი კონტროლის ზომა მშობელი კონტროლის ზომაზე დამოკიდებულებით
+        Try
+            pnlCalendar.Height = Me.Height
+            pnlDaySessions.Width = pnlDayDetails.Width - 20
+            pnlDaySessions.Height = pnlDayDetails.Height - 60
+
+            ' განვაახლოთ კალენდრის კონტროლები
+            UpdateCalendarUI()
+
+            Debug.WriteLine("UC_Calendar_Resize: კონტროლების ზომები წარმატებით განახლდა")
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Calendar_Resize: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 End Class

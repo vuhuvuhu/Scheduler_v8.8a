@@ -322,44 +322,41 @@ Public Class Form1
     ''' მთავარი გვერდის ჩვენება UC_Home-ის გამოყენებით
     ''' </summary>
     Private Sub ShowHome()
-        Debug.WriteLine("ShowHome: დაიწყო - ამჟამინდელი UC_Home მდგომარეობა:")
+        Try
+            Debug.WriteLine("ShowHome: დაიწყო - ამჟამინდელი UC_Home მდგომარეობა:")
 
-        ' ამჟამინდელი home კონტროლის დიაგნოსტიკა
-        If homeControl IsNot Nothing Then
-            Debug.WriteLine($"ShowHome: არსებული homeControl - Disposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
-        Else
-            Debug.WriteLine("ShowHome: homeControl არის Nothing")
-        End If
+            ' ამჟამინდელი home კონტროლის დიაგნოსტიკა
+            If homeControl IsNot Nothing Then
+                Debug.WriteLine($"ShowHome: არსებული homeControl - Disposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
+            Else
+                Debug.WriteLine("ShowHome: homeControl არის Nothing")
+            End If
 
-        ' შევამოწმოთ pnlMain
-        Debug.WriteLine($"ShowHome: pnlMain - Controls={pnlMain.Controls.Count}, Visible={pnlMain.Visible}")
+            ' შევამოწმოთ pnlMain
+            Debug.WriteLine($"ShowHome: pnlMain - Controls={pnlMain.Controls.Count}, Visible={pnlMain.Visible}")
 
-        ' ამოცანა: UC_Home კონტროლის ჩვენება და განახლება
-        If homeControl Is Nothing OrElse homeControl.IsDisposed Then
+            ' პირველ რიგში გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' ამოცანა: UC_Home კონტროლის ჩვენება და განახლება
+            ' ცვლილება: ყოველთვის შევქმნათ ახალი homeControl
+            ' მიუხედავად მისი არსებული მდგომარეობისა
             Debug.WriteLine("ShowHome: ახალი homeControl-ის შექმნა")
             homeControl = New UC_Home(homeViewModel)
             homeControl.Dock = DockStyle.Fill
             pnlMain.Controls.Add(homeControl)
             Debug.WriteLine($"ShowHome: შეიქმნა ახალი homeControl - Disposed={homeControl.IsDisposed}, Visible={homeControl.Visible}")
-        Else
-            Debug.WriteLine("ShowHome: homeControl უკვე არსებობს და ვალიდურია")
-        End If
 
-        ' გავხადოთ homeControl წინა პლანზე
-        homeControl.BringToFront()
-        Debug.WriteLine($"ShowHome: homeControl.BringToFront() გამოძახებულია")
+            ' გავხადოთ homeControl წინა პლანზე
+            homeControl.BringToFront()
+            Debug.WriteLine($"ShowHome: homeControl.BringToFront() გამოძახებულია")
 
-        ' შეგვიძლია ასევე გამოვიძახოთ Refresh
-        homeControl.Refresh()
-        Debug.WriteLine($"ShowHome: homeControl.Refresh() გამოძახებულია")
+            ' შეგვიძლია ასევე გამოვიძახოთ Refresh
+            homeControl.Refresh()
+            Debug.WriteLine($"ShowHome: homeControl.Refresh() გამოძახებულია")
 
-        ' ინსტრუმენტების ხილვადობის განახლება
-        SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
-        If homeControl Is Nothing OrElse homeControl.IsDisposed Then
-            Debug.WriteLine("ShowHome: ახალი homeControl-ის შექმნა")
-            homeControl = New UC_Home(homeViewModel)
-            homeControl.Dock = DockStyle.Fill
-            pnlMain.Controls.Add(homeControl)
+            ' ინსტრუმენტების ხილვადობის განახლება
+            SetToolsVisibility(viewModel.IsAuthorized, viewModel.Role)
 
             ' დავამატოთ მონაცემთა სერვისის მითითება
             If dataService IsNot Nothing Then
@@ -368,34 +365,35 @@ Public Class Form1
             Else
                 Debug.WriteLine("ShowHome: dataService არის Nothing, homeControl-ს არ აქვს მონაცემთა წყარო")
             End If
-        Else
-            ' არსებული homeControl-ისთვისაც განვაახლოთ სერვისი
+
+            ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას
             If dataService IsNot Nothing Then
-                homeControl.SetDataService(dataService)
+                Try
+                    Debug.WriteLine("ShowHome: LoadHomeDataAsync() გამოძახება...")
+                    LoadHomeDataAsync()
+                Catch ex As Exception
+                    Debug.WriteLine($"ShowHome: მონაცემების დატვირთვის შეცდომა: {ex.Message}")
+                End Try
+            Else
+                Debug.WriteLine("ShowHome: dataService არის Nothing, მონაცემების დატვირთვა შეუძლებელია")
             End If
-        End If
-        ' ყველა შემთხვევაში ვცდილობთ მონაცემების ჩატვირთვას
-        If dataService IsNot Nothing Then
-            Try
-                Debug.WriteLine("ShowHome: LoadHomeDataAsync() გამოძახება...")
-                LoadHomeDataAsync()
-            Catch ex As Exception
-                Debug.WriteLine($"ShowHome: მონაცემების დატვირთვის შეცდომა: {ex.Message}")
-            End Try
-        Else
-            Debug.WriteLine("ShowHome: dataService არის Nothing, მონაცემების დატვირთვა შეუძლებელია")
-        End If
-        ' ბოლოს, დავრწმუნდეთ რომ მომხმარებლის სახელი განახლებულია
-        If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed AndAlso viewModel IsNot Nothing Then
-            ' დავაყოვნოთ ცოტა, რომ დარწმუნებული ვიყოთ UI-ს აქვს დრო განახლებისთვის
-            Application.DoEvents()
 
-            ' გამოვიძახოთ UpdateUserName მეთოდი
-            homeControl.UpdateUserName(homeViewModel.UserName)
-            Debug.WriteLine($"ShowHome: მომხმარებლის სახელი განახლდა = '{homeViewModel.UserName}'")
-        End If
+            ' ბოლოს, დავრწმუნდეთ რომ მომხმარებლის სახელი განახლებულია
+            If homeControl IsNot Nothing AndAlso Not homeControl.IsDisposed AndAlso viewModel IsNot Nothing Then
+                ' დავაყოვნოთ ცოტა, რომ დარწმუნებული ვიყოთ UI-ს აქვს დრო განახლებისთვის
+                Application.DoEvents()
 
-        Debug.WriteLine("ShowHome: დასრულებულია")
+                ' გამოვიძახოთ UpdateUserName მეთოდი
+                homeControl.UpdateUserName(homeViewModel.UserName)
+                Debug.WriteLine($"ShowHome: მომხმარებლის სახელი განახლდა = '{homeViewModel.UserName}'")
+            End If
+
+            Debug.WriteLine("ShowHome: დასრულებულია")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowHome: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"ShowHome: StackTrace - {ex.StackTrace}")
+            MessageBox.Show($"მთავარი გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
@@ -636,19 +634,246 @@ Public Class Form1
     ''' Menu ItemClicked: MenuStrip-ის ივენთის დამმუშავებელი
     ''' </summary>
     Private Sub mainMenu_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles mainMenu.ItemClicked
-        ' ჯერ ჩავინიშნოთ, რომელი პუნქტი აირჩია მომხმარებელმა
-        Dim menuItemText = e.ClickedItem.Text
-        Debug.WriteLine($"mainMenu_ItemClicked: მომხმარებელმა აირჩია '{menuItemText}'")
+        Try
+            ' ჯერ ჩავინიშნოთ, რომელი პუნქტი აირჩია მომხმარებელმა
+            Dim menuItemText = e.ClickedItem.Text
+            Debug.WriteLine($"mainMenu_ItemClicked: მომხმარებელმა აირჩია '{menuItemText}'")
 
-        ' კონკრეტული მენიუს პუნქტების დაჭერის დამუშავება
-        If menuItemText = "საწყისი" Then
-            ShowHome()
-        ElseIf menuItemText = "კალენდარი" Then
-            ShowCalendar()
-        ElseIf menuItemText = "ბაზები" Then
-            ' TODO: ბაზების გვერდის ჩვენება
-            MessageBox.Show("ბაზების ფუნქციონალი ჯერ არ არის იმპლემენტირებული", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-        End If
+            ' კონკრეტული მენიუს პუნქტების დაჭერის დამუშავება
+            Select Case menuItemText
+                Case "საწყისი"
+                    ShowHome()
+                Case "კალენდარი"
+                    ShowCalendar()
+                Case "ბაზები", "განრიგი", "ბენეფიციარები", "თერაპევტები", "თერაპიები", "დაფინანსება"
+                    ' დროებითი UI-ის ჩვენება შეტყობინების გარეშე
+                    ShowTemporaryDatabasesUI(menuItemText)
+                Case "გრაფიკები"
+                    ' დროებითი გრაფიკების UI-ის ჩვენება
+                    ShowTemporaryGraphsUI()
+                Case "დოკუმენტები"
+                    ' დროებითი დოკუმენტების UI-ის ჩვენება
+                    ShowTemporaryDocumentsUI()
+                Case "ფინანსები"
+                    ' დროებითი ფინანსების UI-ის ჩვენება
+                    ShowTemporaryFinancesUI()
+                Case "ადმინისტრირება", "მომხმარებელთა რეგისტრაცია"
+                    ' დროებითი ადმინისტრირების UI-ის ჩვენება
+                    ShowTemporaryAdminUI(menuItemText)
+            End Select
+        Catch ex As Exception
+            Debug.WriteLine($"mainMenu_ItemClicked: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბაზების დროებითი ინტერფეისის ჩვენება (შეტყობინების გარეშე)
+    ''' </summary>
+    Private Sub ShowTemporaryDatabasesUI(menuItemText As String)
+        Try
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' შევქმნათ დროებითი პანელი
+            Dim tempPanel As New Panel()
+            tempPanel.Dock = DockStyle.Fill
+            tempPanel.BackColor = Color.FromArgb(245, 245, 250)
+
+            ' დავამატოთ სათაური
+            Dim titleLabel As New Label()
+            titleLabel.Text = $"{menuItemText} - მუშავდება"
+            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
+            titleLabel.AutoSize = True
+            titleLabel.Location = New Point(20, 20)
+            tempPanel.Controls.Add(titleLabel)
+
+            ' დავამატოთ აღწერა
+            Dim descLabel As New Label()
+            descLabel.Text = $"'{menuItemText}'-ს ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
+                          Environment.NewLine & Environment.NewLine &
+                          "გთხოვთ სცადოთ მოგვიანებით."
+            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
+            descLabel.AutoSize = True
+            descLabel.Location = New Point(20, 60)
+            tempPanel.Controls.Add(descLabel)
+
+            ' დროებითი მონაცემების ჩვენება
+            Dim dataPanel As New Panel()
+            dataPanel.BorderStyle = BorderStyle.FixedSingle
+            dataPanel.Width = tempPanel.Width - 40
+            dataPanel.Height = 300
+            dataPanel.Location = New Point(20, 120)
+            dataPanel.BackColor = Color.White
+            dataPanel.AutoScroll = True
+            tempPanel.Controls.Add(dataPanel)
+
+            ' დავამატოთ პანელი მთავარ კონტეინერზე
+            pnlMain.Controls.Add(tempPanel)
+
+            Debug.WriteLine($"ShowTemporaryDatabasesUI: დროებითი ინტერფეისი გამოჩნდა - {menuItemText}")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTemporaryDatabasesUI: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' გრაფიკების დროებითი ინტერფეისის ჩვენება
+    ''' </summary>
+    Private Sub ShowTemporaryGraphsUI()
+        Try
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' შევქმნათ დროებითი პანელი
+            Dim tempPanel As New Panel()
+            tempPanel.Dock = DockStyle.Fill
+            tempPanel.BackColor = Color.FromArgb(230, 245, 230)
+
+            ' დავამატოთ სათაური
+            Dim titleLabel As New Label()
+            titleLabel.Text = "გრაფიკები - მუშავდება"
+            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
+            titleLabel.AutoSize = True
+            titleLabel.Location = New Point(20, 20)
+            tempPanel.Controls.Add(titleLabel)
+
+            ' დავამატოთ აღწერა
+            Dim descLabel As New Label()
+            descLabel.Text = "გრაფიკების ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
+                          Environment.NewLine & Environment.NewLine &
+                          "გთხოვთ სცადოთ მოგვიანებით."
+            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
+            descLabel.AutoSize = True
+            descLabel.Location = New Point(20, 60)
+            tempPanel.Controls.Add(descLabel)
+
+            ' დავამატოთ პანელი მთავარ კონტეინერზე
+            pnlMain.Controls.Add(tempPanel)
+
+            Debug.WriteLine("ShowTemporaryGraphsUI: დროებითი ინტერფეისი გამოჩნდა - გრაფიკები")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTemporaryGraphsUI: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' დოკუმენტების დროებითი ინტერფეისის ჩვენება
+    ''' </summary>
+    Private Sub ShowTemporaryDocumentsUI()
+        Try
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' შევქმნათ დროებითი პანელი
+            Dim tempPanel As New Panel()
+            tempPanel.Dock = DockStyle.Fill
+            tempPanel.BackColor = Color.FromArgb(245, 240, 230)
+
+            ' დავამატოთ სათაური
+            Dim titleLabel As New Label()
+            titleLabel.Text = "დოკუმენტები - მუშავდება"
+            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
+            titleLabel.AutoSize = True
+            titleLabel.Location = New Point(20, 20)
+            tempPanel.Controls.Add(titleLabel)
+
+            ' დავამატოთ აღწერა
+            Dim descLabel As New Label()
+            descLabel.Text = "დოკუმენტების ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
+                          Environment.NewLine & Environment.NewLine &
+                          "გთხოვთ სცადოთ მოგვიანებით."
+            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
+            descLabel.AutoSize = True
+            descLabel.Location = New Point(20, 60)
+            tempPanel.Controls.Add(descLabel)
+
+            ' დავამატოთ პანელი მთავარ კონტეინერზე
+            pnlMain.Controls.Add(tempPanel)
+
+            Debug.WriteLine("ShowTemporaryDocumentsUI: დროებითი ინტერფეისი გამოჩნდა - დოკუმენტები")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTemporaryDocumentsUI: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ფინანსების დროებითი ინტერფეისის ჩვენება
+    ''' </summary>
+    Private Sub ShowTemporaryFinancesUI()
+        Try
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' შევქმნათ დროებითი პანელი
+            Dim tempPanel As New Panel()
+            tempPanel.Dock = DockStyle.Fill
+            tempPanel.BackColor = Color.FromArgb(230, 230, 245)
+
+            ' დავამატოთ სათაური
+            Dim titleLabel As New Label()
+            titleLabel.Text = "ფინანსები - მუშავდება"
+            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
+            titleLabel.AutoSize = True
+            titleLabel.Location = New Point(20, 20)
+            tempPanel.Controls.Add(titleLabel)
+
+            ' დავამატოთ აღწერა
+            Dim descLabel As New Label()
+            descLabel.Text = "ფინანსების ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
+                          Environment.NewLine & Environment.NewLine &
+                          "გთხოვთ სცადოთ მოგვიანებით."
+            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
+            descLabel.AutoSize = True
+            descLabel.Location = New Point(20, 60)
+            tempPanel.Controls.Add(descLabel)
+
+            ' დავამატოთ პანელი მთავარ კონტეინერზე
+            pnlMain.Controls.Add(tempPanel)
+
+            Debug.WriteLine("ShowTemporaryFinancesUI: დროებითი ინტერფეისი გამოჩნდა - ფინანსები")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTemporaryFinancesUI: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ადმინისტრირების დროებითი ინტერფეისის ჩვენება
+    ''' </summary>
+    Private Sub ShowTemporaryAdminUI(menuItemText As String)
+        Try
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' შევქმნათ დროებითი პანელი
+            Dim tempPanel As New Panel()
+            tempPanel.Dock = DockStyle.Fill
+            tempPanel.BackColor = Color.FromArgb(245, 230, 230)
+
+            ' დავამატოთ სათაური
+            Dim titleLabel As New Label()
+            titleLabel.Text = $"{menuItemText} - მუშავდება"
+            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
+            titleLabel.AutoSize = True
+            titleLabel.Location = New Point(20, 20)
+            tempPanel.Controls.Add(titleLabel)
+
+            ' დავამატოთ აღწერა
+            Dim descLabel As New Label()
+            descLabel.Text = $"'{menuItemText}'-ს ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
+                          Environment.NewLine & Environment.NewLine &
+                          "გთხოვთ სცადოთ მოგვიანებით."
+            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
+            descLabel.AutoSize = True
+            descLabel.Location = New Point(20, 60)
+            tempPanel.Controls.Add(descLabel)
+
+            ' დავამატოთ პანელი მთავარ კონტეინერზე
+            pnlMain.Controls.Add(tempPanel)
+
+            Debug.WriteLine($"ShowTemporaryAdminUI: დროებითი ინტერფეისი გამოჩნდა - {menuItemText}")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTemporaryAdminUI: შეცდომა - {ex.Message}")
+        End Try
     End Sub
 
     ''' <summary>

@@ -22,16 +22,412 @@ Partial Class UC_Calendar
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        Me.pnlFIlter = New System.Windows.Forms.Panel()
+        Me.BtnAddSchedule = New System.Windows.Forms.Button()
+        Me.BtnRef = New System.Windows.Forms.Button()
+        Me.BtnHDown = New System.Windows.Forms.Button()
+        Me.BtnHUp = New System.Windows.Forms.Button()
+        Me.BtnVDown = New System.Windows.Forms.Button()
+        Me.BtnVUp = New System.Windows.Forms.Button()
+        Me.RBSpace = New System.Windows.Forms.RadioButton()
+        Me.DTPCalendar = New System.Windows.Forms.DateTimePicker()
+        Me.RBPer = New System.Windows.Forms.RadioButton()
+        Me.RBBene = New System.Windows.Forms.RadioButton()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.CheckBox7 = New System.Windows.Forms.CheckBox()
+        Me.CBSurname = New System.Windows.Forms.ComboBox()
+        Me.CheckBox6 = New System.Windows.Forms.CheckBox()
+        Me.CBName = New System.Windows.Forms.ComboBox()
+        Me.CheckBox5 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox1 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox4 = New System.Windows.Forms.CheckBox()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.CheckBox3 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox2 = New System.Windows.Forms.CheckBox()
+        Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.rbDay = New System.Windows.Forms.RadioButton()
+        Me.rbWeek = New System.Windows.Forms.RadioButton()
+        Me.rbMonth = New System.Windows.Forms.RadioButton()
+        Me.cbStart = New System.Windows.Forms.ComboBox()
+        Me.cbFinish = New System.Windows.Forms.ComboBox()
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.GroupBox2 = New System.Windows.Forms.GroupBox()
+        Me.pnlFIlter.SuspendLayout()
+        Me.GroupBox1.SuspendLayout()
+        Me.GroupBox2.SuspendLayout()
         Me.SuspendLayout()
+        '
+        'pnlFIlter
+        '
+        Me.pnlFIlter.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.pnlFIlter.Controls.Add(Me.GroupBox2)
+        Me.pnlFIlter.Controls.Add(Me.CBSurname)
+        Me.pnlFIlter.Controls.Add(Me.CBName)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox1)
+        Me.pnlFIlter.Controls.Add(Me.Label3)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox6)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox4)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox2)
+        Me.pnlFIlter.Controls.Add(Me.Label4)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox7)
+        Me.pnlFIlter.Controls.Add(Me.DTPCalendar)
+        Me.pnlFIlter.Controls.Add(Me.cbFinish)
+        Me.pnlFIlter.Controls.Add(Me.Label1)
+        Me.pnlFIlter.Controls.Add(Me.cbStart)
+        Me.pnlFIlter.Controls.Add(Me.GroupBox1)
+        Me.pnlFIlter.Controls.Add(Me.BtnAddSchedule)
+        Me.pnlFIlter.Controls.Add(Me.BtnRef)
+        Me.pnlFIlter.Controls.Add(Me.BtnHDown)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox3)
+        Me.pnlFIlter.Controls.Add(Me.BtnHUp)
+        Me.pnlFIlter.Controls.Add(Me.BtnVDown)
+        Me.pnlFIlter.Controls.Add(Me.BtnVUp)
+        Me.pnlFIlter.Controls.Add(Me.CheckBox5)
+        Me.pnlFIlter.Controls.Add(Me.Label2)
+        Me.pnlFIlter.Location = New System.Drawing.Point(0, 0)
+        Me.pnlFIlter.Name = "pnlFIlter"
+        Me.pnlFIlter.Size = New System.Drawing.Size(1302, 80)
+        Me.pnlFIlter.TabIndex = 0
+        '
+        'BtnAddSchedule
+        '
+        Me.BtnAddSchedule.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnAddSchedule.Location = New System.Drawing.Point(1193, 13)
+        Me.BtnAddSchedule.Name = "BtnAddSchedule"
+        Me.BtnAddSchedule.Size = New System.Drawing.Size(50, 50)
+        Me.BtnAddSchedule.TabIndex = 45
+        Me.BtnAddSchedule.Text = "ჩანაწერის დამატება"
+        Me.BtnAddSchedule.UseVisualStyleBackColor = True
+        '
+        'BtnRef
+        '
+        Me.BtnRef.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnRef.Location = New System.Drawing.Point(1249, 13)
+        Me.BtnRef.Name = "BtnRef"
+        Me.BtnRef.Size = New System.Drawing.Size(50, 50)
+        Me.BtnRef.TabIndex = 46
+        Me.BtnRef.Text = "განახლება"
+        Me.BtnRef.UseVisualStyleBackColor = True
+        '
+        'BtnHDown
+        '
+        Me.BtnHDown.Location = New System.Drawing.Point(866, 26)
+        Me.BtnHDown.Name = "BtnHDown"
+        Me.BtnHDown.Size = New System.Drawing.Size(20, 20)
+        Me.BtnHDown.TabIndex = 44
+        Me.BtnHDown.Text = "-"
+        Me.BtnHDown.UseVisualStyleBackColor = True
+        '
+        'BtnHUp
+        '
+        Me.BtnHUp.Location = New System.Drawing.Point(918, 26)
+        Me.BtnHUp.Name = "BtnHUp"
+        Me.BtnHUp.Size = New System.Drawing.Size(20, 20)
+        Me.BtnHUp.TabIndex = 43
+        Me.BtnHUp.Text = "+"
+        Me.BtnHUp.UseVisualStyleBackColor = True
+        '
+        'BtnVDown
+        '
+        Me.BtnVDown.Location = New System.Drawing.Point(892, 38)
+        Me.BtnVDown.Name = "BtnVDown"
+        Me.BtnVDown.Size = New System.Drawing.Size(20, 20)
+        Me.BtnVDown.TabIndex = 42
+        Me.BtnVDown.Text = "-"
+        Me.BtnVDown.UseVisualStyleBackColor = True
+        '
+        'BtnVUp
+        '
+        Me.BtnVUp.Location = New System.Drawing.Point(892, 13)
+        Me.BtnVUp.Name = "BtnVUp"
+        Me.BtnVUp.Size = New System.Drawing.Size(20, 20)
+        Me.BtnVUp.TabIndex = 41
+        Me.BtnVUp.Text = "+"
+        Me.BtnVUp.UseVisualStyleBackColor = True
+        '
+        'RBSpace
+        '
+        Me.RBSpace.AutoSize = True
+        Me.RBSpace.Location = New System.Drawing.Point(6, 10)
+        Me.RBSpace.Name = "RBSpace"
+        Me.RBSpace.Size = New System.Drawing.Size(63, 17)
+        Me.RBSpace.TabIndex = 28
+        Me.RBSpace.TabStop = True
+        Me.RBSpace.Text = "სივრცე"
+        Me.RBSpace.UseVisualStyleBackColor = True
+        '
+        'DTPCalendar
+        '
+        Me.DTPCalendar.Location = New System.Drawing.Point(71, 55)
+        Me.DTPCalendar.Name = "DTPCalendar"
+        Me.DTPCalendar.Size = New System.Drawing.Size(181, 20)
+        Me.DTPCalendar.TabIndex = 26
+        '
+        'RBPer
+        '
+        Me.RBPer.AutoSize = True
+        Me.RBPer.Location = New System.Drawing.Point(6, 33)
+        Me.RBPer.Name = "RBPer"
+        Me.RBPer.Size = New System.Drawing.Size(86, 17)
+        Me.RBPer.TabIndex = 29
+        Me.RBPer.TabStop = True
+        Me.RBPer.Text = "თერაპევტი"
+        Me.RBPer.UseVisualStyleBackColor = True
+        '
+        'RBBene
+        '
+        Me.RBBene.AutoSize = True
+        Me.RBBene.Location = New System.Drawing.Point(6, 56)
+        Me.RBBene.Name = "RBBene"
+        Me.RBBene.Size = New System.Drawing.Size(97, 17)
+        Me.RBBene.TabIndex = 30
+        Me.RBBene.TabStop = True
+        Me.RBBene.Text = "ბენეფიციარი"
+        Me.RBBene.UseVisualStyleBackColor = True
+        '
+        'Label2
+        '
+        Me.Label2.AutoSize = True
+        Me.Label2.Location = New System.Drawing.Point(200, 11)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(52, 13)
+        Me.Label2.TabIndex = 27
+        Me.Label2.Text = "ჩვენება:"
+        '
+        'CheckBox7
+        '
+        Me.CheckBox7.AutoSize = True
+        Me.CheckBox7.Location = New System.Drawing.Point(736, 8)
+        Me.CheckBox7.Name = "CheckBox7"
+        Me.CheckBox7.Size = New System.Drawing.Size(94, 17)
+        Me.CheckBox7.TabIndex = 40
+        Me.CheckBox7.Text = "გაუქმებული"
+        Me.CheckBox7.UseVisualStyleBackColor = True
+        '
+        'CBSurname
+        '
+        Me.CBSurname.FormattingEnabled = True
+        Me.CBSurname.Location = New System.Drawing.Point(494, 50)
+        Me.CBSurname.Name = "CBSurname"
+        Me.CBSurname.Size = New System.Drawing.Size(121, 21)
+        Me.CBSurname.TabIndex = 32
+        '
+        'CheckBox6
+        '
+        Me.CheckBox6.AutoSize = True
+        Me.CheckBox6.Location = New System.Drawing.Point(716, 29)
+        Me.CheckBox6.Name = "CheckBox6"
+        Me.CheckBox6.Size = New System.Drawing.Size(144, 17)
+        Me.CheckBox6.TabIndex = 39
+        Me.CheckBox6.Text = "პროგრამით გატარება"
+        Me.CheckBox6.UseVisualStyleBackColor = True
+        '
+        'CBName
+        '
+        Me.CBName.FormattingEnabled = True
+        Me.CBName.Location = New System.Drawing.Point(367, 50)
+        Me.CBName.Name = "CBName"
+        Me.CBName.Size = New System.Drawing.Size(121, 21)
+        Me.CBName.TabIndex = 31
+        '
+        'CheckBox5
+        '
+        Me.CheckBox5.AutoSize = True
+        Me.CheckBox5.Location = New System.Drawing.Point(656, 8)
+        Me.CheckBox5.Name = "CheckBox5"
+        Me.CheckBox5.Size = New System.Drawing.Size(74, 17)
+        Me.CheckBox5.TabIndex = 38
+        Me.CheckBox5.Text = "აღდგენა"
+        Me.CheckBox5.UseVisualStyleBackColor = True
+        '
+        'CheckBox1
+        '
+        Me.CheckBox1.AutoSize = True
+        Me.CheckBox1.Location = New System.Drawing.Point(444, 8)
+        Me.CheckBox1.Name = "CheckBox1"
+        Me.CheckBox1.Size = New System.Drawing.Size(90, 17)
+        Me.CheckBox1.TabIndex = 33
+        Me.CheckBox1.Text = "დაგეგმილი"
+        Me.CheckBox1.UseVisualStyleBackColor = True
+        '
+        'CheckBox4
+        '
+        Me.CheckBox4.AutoSize = True
+        Me.CheckBox4.Location = New System.Drawing.Point(570, 29)
+        Me.CheckBox4.Name = "CheckBox4"
+        Me.CheckBox4.Size = New System.Drawing.Size(140, 17)
+        Me.CheckBox4.TabIndex = 37
+        Me.CheckBox4.Text = "გაცდენა არასაპატიო"
+        Me.CheckBox4.UseVisualStyleBackColor = True
+        '
+        'Label3
+        '
+        Me.Label3.AutoSize = True
+        Me.Label3.Location = New System.Drawing.Point(364, 10)
+        Me.Label3.Name = "Label3"
+        Me.Label3.Size = New System.Drawing.Size(74, 13)
+        Me.Label3.TabIndex = 34
+        Me.Label3.Text = "შესრულება:"
+        '
+        'CheckBox3
+        '
+        Me.CheckBox3.AutoSize = True
+        Me.CheckBox3.Location = New System.Drawing.Point(444, 29)
+        Me.CheckBox3.Name = "CheckBox3"
+        Me.CheckBox3.Size = New System.Drawing.Size(120, 17)
+        Me.CheckBox3.TabIndex = 36
+        Me.CheckBox3.Text = "გაცდენა საპატიო"
+        Me.CheckBox3.UseVisualStyleBackColor = True
+        '
+        'CheckBox2
+        '
+        Me.CheckBox2.AutoSize = True
+        Me.CheckBox2.Location = New System.Drawing.Point(540, 8)
+        Me.CheckBox2.Name = "CheckBox2"
+        Me.CheckBox2.Size = New System.Drawing.Size(110, 17)
+        Me.CheckBox2.TabIndex = 35
+        Me.CheckBox2.Text = "შესრულებული"
+        Me.CheckBox2.UseVisualStyleBackColor = True
+        '
+        'GroupBox1
+        '
+        Me.GroupBox1.Controls.Add(Me.rbMonth)
+        Me.GroupBox1.Controls.Add(Me.rbWeek)
+        Me.GroupBox1.Controls.Add(Me.rbDay)
+        Me.GroupBox1.Location = New System.Drawing.Point(3, 0)
+        Me.GroupBox1.Name = "GroupBox1"
+        Me.GroupBox1.Size = New System.Drawing.Size(62, 75)
+        Me.GroupBox1.TabIndex = 1
+        Me.GroupBox1.TabStop = False
+        '
+        'rbDay
+        '
+        Me.rbDay.AutoSize = True
+        Me.rbDay.Location = New System.Drawing.Point(6, 9)
+        Me.rbDay.Name = "rbDay"
+        Me.rbDay.Size = New System.Drawing.Size(49, 17)
+        Me.rbDay.TabIndex = 0
+        Me.rbDay.TabStop = True
+        Me.rbDay.Text = "დღე"
+        Me.rbDay.UseVisualStyleBackColor = True
+        '
+        'rbWeek
+        '
+        Me.rbWeek.AutoSize = True
+        Me.rbWeek.Location = New System.Drawing.Point(6, 32)
+        Me.rbWeek.Name = "rbWeek"
+        Me.rbWeek.Size = New System.Drawing.Size(55, 17)
+        Me.rbWeek.TabIndex = 1
+        Me.rbWeek.TabStop = True
+        Me.rbWeek.Text = "კვირა"
+        Me.rbWeek.UseVisualStyleBackColor = True
+        '
+        'rbMonth
+        '
+        Me.rbMonth.AutoSize = True
+        Me.rbMonth.Location = New System.Drawing.Point(6, 55)
+        Me.rbMonth.Name = "rbMonth"
+        Me.rbMonth.Size = New System.Drawing.Size(47, 17)
+        Me.rbMonth.TabIndex = 2
+        Me.rbMonth.TabStop = True
+        Me.rbMonth.Text = "თვე"
+        Me.rbMonth.UseVisualStyleBackColor = True
+        '
+        'cbStart
+        '
+        Me.cbStart.FormattingEnabled = True
+        Me.cbStart.Location = New System.Drawing.Point(71, 8)
+        Me.cbStart.Name = "cbStart"
+        Me.cbStart.Size = New System.Drawing.Size(50, 21)
+        Me.cbStart.TabIndex = 47
+        Me.cbStart.Text = "09:00"
+        '
+        'cbFinish
+        '
+        Me.cbFinish.FormattingEnabled = True
+        Me.cbFinish.Location = New System.Drawing.Point(71, 32)
+        Me.cbFinish.Name = "cbFinish"
+        Me.cbFinish.Size = New System.Drawing.Size(50, 21)
+        Me.cbFinish.TabIndex = 48
+        Me.cbFinish.Text = "20:00"
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(127, 13)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(32, 13)
+        Me.Label1.TabIndex = 35
+        Me.Label1.Text = "-დან"
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(127, 35)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(32, 13)
+        Me.Label4.TabIndex = 36
+        Me.Label4.Text = "-მდე"
+        '
+        'GroupBox2
+        '
+        Me.GroupBox2.Controls.Add(Me.RBSpace)
+        Me.GroupBox2.Controls.Add(Me.RBPer)
+        Me.GroupBox2.Controls.Add(Me.RBBene)
+        Me.GroupBox2.Location = New System.Drawing.Point(257, -2)
+        Me.GroupBox2.Name = "GroupBox2"
+        Me.GroupBox2.Size = New System.Drawing.Size(101, 77)
+        Me.GroupBox2.TabIndex = 36
+        Me.GroupBox2.TabStop = False
         '
         'UC_Calendar
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.pnlFIlter)
         Me.Name = "UC_Calendar"
-        Me.Size = New System.Drawing.Size(990, 505)
+        Me.Size = New System.Drawing.Size(1302, 505)
+        Me.pnlFIlter.ResumeLayout(False)
+        Me.pnlFIlter.PerformLayout()
+        Me.GroupBox1.ResumeLayout(False)
+        Me.GroupBox1.PerformLayout()
+        Me.GroupBox2.ResumeLayout(False)
+        Me.GroupBox2.PerformLayout()
         Me.ResumeLayout(False)
 
-
     End Sub
+
+    Friend WithEvents pnlFIlter As Panel
+    Friend WithEvents GroupBox1 As GroupBox
+    Friend WithEvents rbMonth As RadioButton
+    Friend WithEvents rbWeek As RadioButton
+    Friend WithEvents rbDay As RadioButton
+    Friend WithEvents BtnAddSchedule As Button
+    Friend WithEvents DTPCalendar As DateTimePicker
+    Friend WithEvents BtnRef As Button
+    Friend WithEvents CheckBox2 As CheckBox
+    Friend WithEvents BtnHDown As Button
+    Friend WithEvents CheckBox3 As CheckBox
+    Friend WithEvents BtnHUp As Button
+    Friend WithEvents Label3 As Label
+    Friend WithEvents BtnVDown As Button
+    Friend WithEvents CheckBox4 As CheckBox
+    Friend WithEvents BtnVUp As Button
+    Friend WithEvents CheckBox1 As CheckBox
+    Friend WithEvents RBSpace As RadioButton
+    Friend WithEvents CheckBox5 As CheckBox
+    Friend WithEvents CBName As ComboBox
+    Friend WithEvents RBPer As RadioButton
+    Friend WithEvents CheckBox6 As CheckBox
+    Friend WithEvents RBBene As RadioButton
+    Friend WithEvents CBSurname As ComboBox
+    Friend WithEvents Label2 As Label
+    Friend WithEvents CheckBox7 As CheckBox
+    Friend WithEvents GroupBox2 As GroupBox
+    Friend WithEvents Label4 As Label
+    Friend WithEvents cbFinish As ComboBox
+    Friend WithEvents Label1 As Label
+    Friend WithEvents cbStart As ComboBox
 End Class
