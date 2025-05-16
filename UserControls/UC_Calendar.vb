@@ -160,16 +160,26 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სივრცეების ჩატვირთვა მონაცემთა წყაროდან
+    ''' სივრცეების ჩატვირთვა მონაცემთა წყაროდან განსაზღვრული წესრიგით
     ''' </summary>
     Private Sub LoadSpaces()
         Try
             ' გავასუფთავოთ სივრცეების სია
             spaces.Clear()
 
+            ' განსაზღვრული წესრიგის სია
+            Dim orderedSpaces As New List(Of String) From {
+            "მწვანე აბა", "ლურჯი აბა", "სენსორი", "ფიზიკური", "მეტყველება",
+            "მუსიკა", "თერაპევტი", "არტი", "სხვა", "საკონფერენციო",
+            "მშობლები", "ონლაინ", "სახლი", "გარე"
+        }
+
             ' შევამოწმოთ მონაცემთა სერვისი
             If dataService Is Nothing Then
                 Debug.WriteLine("LoadSpaces: მონაცემთა სერვისი არ არის ინიციალიზებული")
+
+                ' თუ მონაცემთა სერვისი არ არის, გამოვიყენოთ განსაზღვრული სია
+                spaces.AddRange(orderedSpaces)
                 Return
             End If
 
@@ -188,11 +198,8 @@ Public Class UC_Calendar
                 End If
             Next
 
-            ' დავამატოთ სივრცეები სიაში
-            spaces.AddRange(spaceSet.OrderBy(Function(s) s))
-
             ' თუ ვერ ვიპოვეთ სივრცეები სესიებიდან, ცხრილიდან წამოვიღოთ უშუალოდ
-            If spaces.Count = 0 AndAlso dataService IsNot Nothing Then
+            If spaceSet.Count = 0 AndAlso dataService IsNot Nothing Then
                 ' ცხრილიდან სივრცეების წამოღება
                 Dim spacesData = dataService.GetData("DB-Space!B2:B")
 
@@ -202,35 +209,34 @@ Public Class UC_Calendar
                             spaceSet.Add(row(0).ToString().Trim())
                         End If
                     Next
-
-                    ' დავამატოთ სივრცეები სიაში
-                    spaces.AddRange(spaceSet.OrderBy(Function(s) s))
                 End If
+            End If
+
+            ' დავამატოთ სივრცეები განსაზღვრული წესრიგით
+            For Each orderedSpace In orderedSpaces
+                If spaceSet.Contains(orderedSpace) Then
+                    spaces.Add(orderedSpace)
+                    spaceSet.Remove(orderedSpace) ' წავშალოთ სეტიდან, რომ აღარ დავამატოთ ხელახლა
+                End If
+            Next
+
+            ' დავამატოთ ყველა დარჩენილი სივრცე, რომელიც არ იყო განსაზღვრულ სიაში
+            spaces.AddRange(spaceSet.OrderBy(Function(s) s))
+
+            ' თუ საერთოდ ვერ ვიპოვეთ სივრცეები, გამოვიყენოთ საწყისი სია
+            If spaces.Count = 0 Then
+                spaces.AddRange(orderedSpaces)
             End If
 
             Debug.WriteLine($"LoadSpaces: ჩატვირთულია {spaces.Count} სივრცე")
         Catch ex As Exception
             Debug.WriteLine($"LoadSpaces: შეცდომა - {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ყველა სესიის ჩატვირთვა
-    ''' </summary>
-    Private Sub LoadSessions()
-        Try
-            ' შევამოწმოთ მონაცემთა სერვისი
-            If dataService Is Nothing Then
-                Debug.WriteLine("LoadSessions: მონაცემთა სერვისი არ არის ინიციალიზებული")
-                Return
-            End If
-
-            ' ჩავტვირთოთ სესიები
-            allSessions = dataService.GetAllSessions()
-            Debug.WriteLine($"LoadSessions: ჩატვირთულია {allSessions.Count} სესია")
-
-        Catch ex As Exception
-            Debug.WriteLine($"LoadSessions: შეცდომა - {ex.Message}")
+            ' შეცდომის შემთხვევაში გამოვიყენოთ საწყისი სია
+            spaces.AddRange(New List(Of String) From {
+            "მწვანე აბა", "ლურჯი აბა", "სენსორი", "ფიზიკური", "მეტყველება",
+            "მუსიკა", "თერაპევტი", "არტი", "სხვა", "საკონფერენციო",
+            "მშობლები", "ონლაინ", "სახლი", "გარე"
+        })
         End Try
     End Sub
 
@@ -266,52 +272,131 @@ Public Class UC_Calendar
 
             ' უჯრედის ზომები
             Const COLUMN_WIDTH As Integer = 150
-            Const ROW_HEIGHT As Integer = 60
-            Const TIME_COLUMN_WIDTH As Integer = 80
+            Const ROW_HEIGHT As Integer = 40 ' შემცირებული სიმაღლე
+            Const HEADER_HEIGHT As Integer = 30 ' სათაურების რიგის შემცირებული სიმაღლე
+            Const TIME_COLUMN_WIDTH As Integer = 60 ' შევიწროებული სიგანე
+            Const DATE_COLUMN_WIDTH As Integer = 30 ' თარიღის სვეტის სიგანე
 
             ' ხილული სივრცე გრიდისთვის
-            Dim contentWidth As Integer = TIME_COLUMN_WIDTH + (cellsPerRow * COLUMN_WIDTH)
-            Dim contentHeight As Integer = (rowCount + 1) * ROW_HEIGHT ' +1 სათაურის მწკრივისთვის
+            Dim contentWidth As Integer = DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH + (cellsPerRow * COLUMN_WIDTH)
+            Dim contentHeight As Integer = (rowCount * ROW_HEIGHT) + HEADER_HEIGHT
 
-            ' შევქმნათ კონტენტის პანელი
+            ' შევქმნათ ფიქსირებული სათაურების პანელი (არ ისქროლება)
+            Dim headerPanel As New Panel()
+            headerPanel.Dock = DockStyle.Top
+            headerPanel.Height = HEADER_HEIGHT
+            headerPanel.BackColor = Color.White
+            pnlCalendarGrid.Controls.Add(headerPanel)
+
+            ' შევქმნათ ფიქსირებული დროის პანელი (არ ისქროლება ჰორიზონტალურად)
+            Dim timePanel As New Panel()
+            timePanel.Dock = DockStyle.Left
+            timePanel.Width = DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH
+            timePanel.BackColor = Color.White
+            pnlCalendarGrid.Controls.Add(timePanel)
+
+            ' შევქმნათ კონტენტის პანელი სკროლით
             calendarContentPanel = New Panel()
-            calendarContentPanel.Size = New Size(contentWidth, contentHeight)
-            calendarContentPanel.Location = New Point(0, 0)
+            calendarContentPanel.Size = New Size(contentWidth - timePanel.Width, contentHeight - headerPanel.Height)
+            calendarContentPanel.Location = New Point(timePanel.Width, headerPanel.Height)
+            calendarContentPanel.AutoScroll = True
             calendarContentPanel.BackColor = Color.White
             pnlCalendarGrid.Controls.Add(calendarContentPanel)
 
-            ' შევქმნათ სივრცეების სათაურების მწკრივი
-            ' დროის ცარიელი უჯრედი
-            Dim emptyCell As New Label()
-            emptyCell.Size = New Size(TIME_COLUMN_WIDTH, ROW_HEIGHT)
-            emptyCell.Location = New Point(0, 0)
-            emptyCell.BackColor = Color.FromArgb(230, 230, 250)
-            emptyCell.BorderStyle = BorderStyle.FixedSingle
-            calendarContentPanel.Controls.Add(emptyCell)
+            ' მთავრული ფონტის მოძიება
+            Dim mtavruliFont As New Font("Sylfaen", 9, FontStyle.Bold)
+            Try
+                Using testFont As New Font("BPG_Nino_Mtavruli", 9)
+                    mtavruliFont = New Font("BPG_Nino_Mtavruli", 9, FontStyle.Bold)
+                End Using
+            Catch
+                Try
+                    Using testFont As New Font("ALK_Tall_Mtavruli", 9)
+                        mtavruliFont = New Font("ALK_Tall_Mtavruli", 9, FontStyle.Bold)
+                    End Using
+                Catch
+                    ' დარჩება Sylfaen
+                End Try
+            End Try
 
+            ' თარიღის ვერტიკალური სვეტი
+            Dim dateColumn As New Panel()
+            dateColumn.Size = New Size(DATE_COLUMN_WIDTH, timePanel.Height - HEADER_HEIGHT)
+            dateColumn.Location = New Point(0, HEADER_HEIGHT)
+            dateColumn.BackColor = Color.FromArgb(60, 80, 120) ' მუქი ლურჯი
+            timePanel.Controls.Add(dateColumn)
+
+            ' თარიღის ვერტიკალური წარწერა
+            Dim selectedDate As DateTime = DTPCalendar.Value
+            Dim dateText As String = $"{selectedDate.ToString("dddd", New Globalization.CultureInfo("ka-GE"))}, {selectedDate.Day} {selectedDate.ToString("MMMM", New Globalization.CultureInfo("ka-GE"))}, {selectedDate.Year}"
+
+            Dim dateLabel As New Label()
+            dateLabel.Text = dateText
+            dateLabel.AutoSize = False
+            dateLabel.Size = New Size(dateColumn.Height - 10, dateColumn.Width - 4)
+            dateLabel.Location = New Point(2, 5)
+            dateLabel.Font = New Font("Sylfaen", 9)
+            dateLabel.ForeColor = Color.White
+            dateLabel.TextAlign = ContentAlignment.MiddleCenter
+
+            ' ტექსტის შებრუნება ვერტიკალურად
+            dateLabel.Paint += Sub(s, e)
+                                   e.Graphics.TranslateTransform(5, dateLabel.Height)
+                                   e.Graphics.RotateTransform(-90)
+                                   Using brush As New SolidBrush(dateLabel.ForeColor)
+                                       e.Graphics.DrawString(dateLabel.Text, dateLabel.Font, brush, 0, 0)
+                                   End Using
+                               End Sub
+
+            dateColumn.Controls.Add(dateLabel)
+
+            ' ცარიელი უჯრედი ზედა მარცხენა კუთხეში
+            Dim emptyHeaderCell As New Panel()
+            emptyHeaderCell.Size = New Size(DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH, HEADER_HEIGHT)
+            emptyHeaderCell.Location = New Point(0, 0)
+            emptyHeaderCell.BackColor = Color.FromArgb(220, 230, 245) ' ღია ლურჯი
+            headerPanel.Controls.Add(emptyHeaderCell)
+
+            ' დავამატოთ სივრცეების სათაურები ზედა პანელზე
+            Dim headerLabels(cellsPerRow - 1) As Label
             For i As Integer = 0 To cellsPerRow - 1
                 ' სივრცის სათაური
-                Dim headerLabel As New Label()
-                headerLabel.Text = spaces(i)
-                headerLabel.TextAlign = ContentAlignment.MiddleCenter
-                headerLabel.Size = New Size(COLUMN_WIDTH, ROW_HEIGHT)
-                headerLabel.Location = New Point(TIME_COLUMN_WIDTH + (i * COLUMN_WIDTH), 0)
-                headerLabel.BackColor = Color.FromArgb(230, 230, 250)
-                headerLabel.BorderStyle = BorderStyle.FixedSingle
-                calendarContentPanel.Controls.Add(headerLabel)
+                headerLabels(i) = New Label()
+                headerLabels(i).Text = spaces(i).ToUpper() ' დიდი ასოებით
+                headerLabels(i).TextAlign = ContentAlignment.MiddleCenter
+                headerLabels(i).Size = New Size(COLUMN_WIDTH, HEADER_HEIGHT)
+                headerLabels(i).Location = New Point(i * COLUMN_WIDTH, 0)
+                headerLabels(i).BackColor = Color.FromArgb(60, 100, 170) ' მუქი ლურჯი
+                headerLabels(i).ForeColor = Color.White
+                headerLabels(i).Font = mtavruliFont
+                headerLabels(i).BorderStyle = BorderStyle.None
+
+                ' დავამატოთ სათაური თავისი კონტეინერზე
+                Dim headerContainer As New Panel()
+                headerContainer.Size = New Size(COLUMN_WIDTH, HEADER_HEIGHT)
+                headerContainer.Location = New Point(i * COLUMN_WIDTH, 0)
+                headerContainer.Controls.Add(headerLabels(i))
+                calendarContentPanel.Controls.Add(headerContainer)
             Next
 
-            ' შევქმნათ დროის ინტერვალების სვეტი
+            ' დავამატოთ საათების ლეიბლები დროის პანელზე
             For i As Integer = 0 To rowCount - 1
                 ' დროის ლეიბლი
                 Dim timeLabel As New Label()
                 timeLabel.Text = timeIntervals(i).ToString("HH:mm")
                 timeLabel.TextAlign = ContentAlignment.MiddleRight
-                timeLabel.Size = New Size(TIME_COLUMN_WIDTH, ROW_HEIGHT)
-                timeLabel.Location = New Point(0, ROW_HEIGHT + (i * ROW_HEIGHT))
-                timeLabel.BackColor = Color.FromArgb(240, 240, 240)
-                timeLabel.BorderStyle = BorderStyle.FixedSingle
-                calendarContentPanel.Controls.Add(timeLabel)
+                timeLabel.Size = New Size(TIME_COLUMN_WIDTH - 1, ROW_HEIGHT)
+                timeLabel.Location = New Point(DATE_COLUMN_WIDTH, HEADER_HEIGHT + (i * ROW_HEIGHT))
+
+                ' ალტერნატიული ფერები მწკრივებისთვის
+                If i Mod 2 = 0 Then
+                    timeLabel.BackColor = Color.FromArgb(240, 240, 240) ' ღია ნაცრისფერი
+                Else
+                    timeLabel.BackColor = Color.FromArgb(250, 250, 250) ' თითქმის თეთრი
+                End If
+
+                timeLabel.BorderStyle = BorderStyle.None
+                timePanel.Controls.Add(timeLabel)
             Next
 
             ' შევქმნათ უჯრედები გრიდისთვის
@@ -322,9 +407,22 @@ Public Class UC_Calendar
                     ' ახალი უჯრედი
                     Dim cell As New Panel()
                     cell.Size = New Size(COLUMN_WIDTH, ROW_HEIGHT)
-                    cell.Location = New Point(TIME_COLUMN_WIDTH + (col * COLUMN_WIDTH), ROW_HEIGHT + (row * ROW_HEIGHT))
-                    cell.BackColor = Color.White
-                    cell.BorderStyle = BorderStyle.FixedSingle
+                    cell.Location = New Point(col * COLUMN_WIDTH, row * ROW_HEIGHT)
+
+                    ' ალტერნატიული ფერები მწკრივებისთვის (მონაცვლეობა მუქი-ღია)
+                    If row Mod 2 = 0 Then
+                        cell.BackColor = Color.FromArgb(240, 240, 240) ' ღია ნაცრისფერი
+                    Else
+                        cell.BackColor = Color.FromArgb(250, 250, 250) ' თითქმის თეთრი
+                    End If
+
+                    ' მხოლოდ ვერტიკალური ჩარჩო მარჯვნივ
+                    cell.Paint += Sub(s, pe)
+                                      Using pen As New Pen(Color.FromArgb(200, 200, 200), 1)
+                                          ' მხოლოდ მარჯვენა ვერტიკალური ხაზი
+                                          pe.Graphics.DrawLine(pen, cell.Width - 1, 0, cell.Width - 1, cell.Height)
+                                      End Using
+                                  End Sub
 
                     ' შევინახოთ უჯრედი მასივში
                     gridCells(col, row) = cell
@@ -373,8 +471,8 @@ Public Class UC_Calendar
 
                     ' თუ დრო ჩვენი ინტერვალების ფარგლებშია
                     If timeIndex >= 0 AndAlso
-                   spaceIndex < gridCells.GetLength(0) AndAlso
-                   timeIndex < gridCells.GetLength(1) Then
+               spaceIndex < gridCells.GetLength(0) AndAlso
+               timeIndex < gridCells.GetLength(1) Then
 
                         ' სესიის ხანგრძლივობის გათვალისწინება (რამდენ უჯრედს დაიკავებს)
                         Dim durationInCells As Integer = CalculateSessionHeight(session)
@@ -387,9 +485,31 @@ Public Class UC_Calendar
 
                         ' შევქმნათ სესიის პანელი
                         Dim sessionPanel As New Panel()
-                        sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 2, sessionHeight)
+                        sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 3, sessionHeight - 2)
                         sessionPanel.Location = New Point(1, 1)
                         sessionPanel.BackColor = GetSessionColor(session)
+                        sessionPanel.BorderStyle = BorderStyle.None
+
+                        ' მომრგვალებული კუთხეები სესიის პანელისთვის
+                        sessionPanel.Paint += Sub(s, pe)
+                                                  Dim path As New Drawing2D.GraphicsPath()
+                                                  Dim radius As Integer = 5
+                                                  Dim rect As New Rectangle(0, 0, sessionPanel.Width, sessionPanel.Height)
+
+                                                  ' მომრგვალებული კუთხეები
+                                                  path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90) ' ზედა მარცხენა
+                                                  path.AddArc(rect.Right - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90) ' ზედა მარჯვენა
+                                                  path.AddArc(rect.Right - radius * 2, rect.Bottom - radius * 2, radius * 2, radius * 2, 0, 90) ' ქვედა მარჯვენა
+                                                  path.AddArc(rect.X, rect.Bottom - radius * 2, radius * 2, radius * 2, 90, 90) ' ქვედა მარცხენა
+                                                  path.CloseFigure()
+
+                                                  sessionPanel.Region = New Region(path)
+
+                                                  ' დახატოს ჩარჩო
+                                                  Using pen As New Pen(Color.FromArgb(150, 150, 150), 1)
+                                                      pe.Graphics.DrawPath(pen, path)
+                                                  End Using
+                                              End Sub
 
                         ' სესიის ინფორმაციის დამატება
                         AddSessionInfo(sessionPanel, session)
@@ -405,6 +525,83 @@ Public Class UC_Calendar
             Next
         Catch ex As Exception
             Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ინფორმაციის დამატება პანელზე
+    ''' </summary>
+    Private Sub AddSessionInfo(panel As Panel, session As SessionModel)
+        Try
+            ' დრო
+            Dim lblTime As New Label()
+            lblTime.Text = session.DateTime.ToString("HH:mm")
+            lblTime.AutoSize = True
+            lblTime.Location = New Point(5, 2)
+            lblTime.Font = New Font("Segoe UI", 8, FontStyle.Bold)
+            lblTime.ForeColor = Color.FromArgb(60, 60, 60)
+            panel.Controls.Add(lblTime)
+
+            ' ბენეფიციარი
+            Dim lblBeneficiary As New Label()
+            lblBeneficiary.Text = session.FullName
+            lblBeneficiary.Size = New Size(panel.Width - 10, 18)
+            lblBeneficiary.Location = New Point(5, 18)
+            lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
+            lblBeneficiary.ForeColor = Color.FromArgb(40, 40, 40)
+            panel.Controls.Add(lblBeneficiary)
+
+            ' თერაპევტი
+            If panel.Height > 36 Then ' მხოლოდ თუ საკმარისი სიმაღლეა
+                Dim lblTherapist As New Label()
+                lblTherapist.Text = session.TherapistName
+                lblTherapist.Size = New Size(panel.Width - 10, 16)
+                lblTherapist.Location = New Point(5, 36)
+                lblTherapist.Font = New Font("Sylfaen", 7)
+                lblTherapist.ForeColor = Color.FromArgb(80, 80, 80)
+                panel.Controls.Add(lblTherapist)
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"AddSessionInfo: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ფერის განსაზღვრა სტატუსის მიხედვით
+    ''' </summary>
+    Private Function GetSessionColor(session As SessionModel) As Color
+        ' სტატუსის მიხედვით ფერის შერჩევა
+        Dim status As String = session.Status.Trim().ToLower()
+
+        If status = "შესრულებული" Then
+            Return Color.FromArgb(220, 255, 220) ' მწვანე
+        ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
+            Return Color.FromArgb(230, 230, 230) ' ნაცრისფერი
+        ElseIf session.IsOverdue Then
+            Return Color.FromArgb(255, 220, 220) ' წითელი
+        Else
+            Return Color.FromArgb(255, 255, 220) ' ყვითელი
+        End If
+    End Function
+
+    ''' <summary>
+    ''' ყველა სესიის ჩატვირთვა
+    ''' </summary>
+    Private Sub LoadSessions()
+        Try
+            ' შევამოწმოთ მონაცემთა სერვისი
+            If dataService Is Nothing Then
+                Debug.WriteLine("LoadSessions: მონაცემთა სერვისი არ არის ინიციალიზებული")
+                Return
+            End If
+
+            ' ჩავტვირთოთ სესიები
+            allSessions = dataService.GetAllSessions()
+            Debug.WriteLine($"LoadSessions: ჩატვირთულია {allSessions.Count} სესია")
+
+        Catch ex As Exception
+            Debug.WriteLine($"LoadSessions: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -494,58 +691,6 @@ Public Class UC_Calendar
         ' ვთვლით, რამდენი ნახევარსაათიანი ინტერვალი დასჭირდება
         Return CInt(Math.Ceiling(durationMinutes / 30.0))
     End Function
-
-    ''' <summary>
-    ''' სესიის ფერის განსაზღვრა სტატუსის მიხედვით
-    ''' </summary>
-    Private Function GetSessionColor(session As SessionModel) As Color
-        ' სტატუსის მიხედვით ფერის შერჩევა
-        Dim status As String = session.Status.Trim().ToLower()
-
-        If status = "შესრულებული" Then
-            Return Color.FromArgb(220, 255, 220) ' მწვანე
-        ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
-            Return Color.FromArgb(230, 230, 230) ' ნაცრისფერი
-        ElseIf session.IsOverdue Then
-            Return Color.FromArgb(255, 220, 220) ' წითელი
-        Else
-            Return Color.FromArgb(255, 255, 220) ' ყვითელი
-        End If
-    End Function
-
-    ''' <summary>
-    ''' სესიის ინფორმაციის დამატება პანელზე
-    ''' </summary>
-    Private Sub AddSessionInfo(panel As Panel, session As SessionModel)
-        Try
-            ' დრო
-            Dim lblTime As New Label()
-            lblTime.Text = session.DateTime.ToString("HH:mm")
-            lblTime.AutoSize = True
-            lblTime.Location = New Point(5, 3)
-            lblTime.Font = New Font("Segoe UI", 9, FontStyle.Bold)
-            panel.Controls.Add(lblTime)
-
-            ' ბენეფიციარი
-            Dim lblBeneficiary As New Label()
-            lblBeneficiary.Text = session.FullName
-            lblBeneficiary.AutoSize = True
-            lblBeneficiary.Location = New Point(5, 20)
-            lblBeneficiary.Font = New Font("Sylfaen", 9, FontStyle.Bold)
-            panel.Controls.Add(lblBeneficiary)
-
-            ' თერაპევტი
-            Dim lblTherapist As New Label()
-            lblTherapist.Text = session.TherapistName
-            lblTherapist.AutoSize = True
-            lblTherapist.Location = New Point(5, 37)
-            lblTherapist.Font = New Font("Sylfaen", 8)
-            panel.Controls.Add(lblTherapist)
-
-        Catch ex As Exception
-            Debug.WriteLine($"AddSessionInfo: შეცდომა - {ex.Message}")
-        End Try
-    End Sub
 
     ''' <summary>
     ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
@@ -654,5 +799,63 @@ Public Class UC_Calendar
         Catch ex As Exception
             Debug.WriteLine($"UC_Calendar_Advanced_Load: შეცდომა - {ex.Message}")
         End Try
+    End Sub
+    ''' <summary>
+    ''' კონსტრუქტორი კალენდრის ViewModel-ით
+    ''' </summary>
+    ''' <param name="calendarVm">კალენდრის ViewModel</param>
+    Public Sub New(calendarVm As CalendarViewModel)
+        ' UI ელემენტების ინიციალიზაცია
+        InitializeComponent()
+
+        ' ViewModel-ის მინიჭება
+        If calendarVm IsNot Nothing Then
+            viewModel = calendarVm
+        Else
+            viewModel = New CalendarViewModel()
+        End If
+
+        ' კომბობოქსების შევსება დროებით
+        FillTimeComboBoxes()
+
+        ' ივენთების მიბმა კონტროლებთან
+        AddHandler DTPCalendar.ValueChanged, AddressOf DTPCalendar_ValueChanged
+        AddHandler rbDay.CheckedChanged, AddressOf ViewType_CheckedChanged
+        AddHandler rbWeek.CheckedChanged, AddressOf ViewType_CheckedChanged
+        AddHandler rbMonth.CheckedChanged, AddressOf ViewType_CheckedChanged
+        AddHandler RBSpace.CheckedChanged, AddressOf FilterType_CheckedChanged
+        AddHandler RBPer.CheckedChanged, AddressOf FilterType_CheckedChanged
+        AddHandler RBBene.CheckedChanged, AddressOf FilterType_CheckedChanged
+        AddHandler cbStart.SelectedIndexChanged, AddressOf TimeRange_SelectedIndexChanged
+        AddHandler cbFinish.SelectedIndexChanged, AddressOf TimeRange_SelectedIndexChanged
+
+        ' საწყისი მნიშვნელობების დაყენება
+        lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
+
+        ' რადიობუტონების საწყისი მნიშვნელობები
+        rbDay.Checked = True
+        RBSpace.Checked = True
+    End Sub
+
+    ''' <summary>
+    ''' დროის კომბობოქსების შევსება
+    ''' </summary>
+    Private Sub FillTimeComboBoxes()
+        ' გავასუფთავოთ კომბობოქსები
+        cbStart.Items.Clear()
+        cbFinish.Items.Clear()
+
+        ' დავამატოთ დროის ინტერვალები 30 წუთიანი ბიჯით 08:00-დან 21:00-მდე
+        For hour As Integer = 8 To 21
+            For minute As Integer = 0 To 30 Step 30
+                Dim timeString As String = $"{hour:00}:{minute:00}"
+                cbStart.Items.Add(timeString)
+                cbFinish.Items.Add(timeString)
+            Next
+        Next
+
+        ' საწყისი მნიშვნელობების დაყენება
+        cbStart.SelectedItem = "09:00"
+        cbFinish.SelectedItem = "20:00"
     End Sub
 End Class
