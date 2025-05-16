@@ -50,7 +50,7 @@ Public Class UC_Calendar
     Private vScale As Double = 1.0 ' ვერტიკალური მასშტაბი
 
     ' მასშტაბირების ნაბიჯები
-    Private Const SCALE_STEP As Double = 0.25 ' მასშტაბის ცვლილების ნაბიჯი
+    Private Const SCALE_STEP As Double = 0.2 ' მასშტაბის ცვლილების ნაბიჯი
     Private Const MIN_SCALE As Double = 0.5 ' მინიმალური მასშტაბი
     Private Const MAX_SCALE As Double = 2.5 ' მაქსიმალური მასშტაბი
 
@@ -138,6 +138,9 @@ Public Class UC_Calendar
                 LoadSessions()
             End If
 
+            ' განვაახლოთ მასშტაბის ლეიბლები
+            UpdateScaleLabels()
+
             ' განვაახლოთ დროის ინტერვალები
             InitializeTimeIntervals()
 
@@ -146,24 +149,19 @@ Public Class UC_Calendar
                 ' დღის ხედი
                 If RBSpace.Checked Then
                     ' სივრცეების მიხედვით
-                    'lblInfo.Text = "დღის ხედი, სივრცეებით"
                     ShowDayViewBySpace()
                 ElseIf RBPer.Checked Then
                     ' თერაპევტების მიხედვით
-                    'lblInfo.Text = "დღის ხედი, თერაპევტებით"
                     ShowDayViewByTherapist()
                 ElseIf RBBene.Checked Then
                     ' ბენეფიციარების მიხედვით
-                    'lblInfo.Text = "დღის ხედი, ბენეფიციარებით"
                     ShowDayViewByBeneficiary()
                 End If
             ElseIf rbWeek.Checked Then
                 ' კვირის ხედი
-                'lblInfo.Text = "კვირის ხედი - მუშავდება"
                 ShowWeekView()
             ElseIf rbMonth.Checked Then
                 ' თვის ხედი
-                'lblInfo.Text = "თვის ხედი - მუშავდება"
                 ShowMonthView()
             End If
         Catch ex As Exception
@@ -318,23 +316,11 @@ Public Class UC_Calendar
             pnlFIlter.BackColor = Color.FromArgb(200, Color.White)
 
             Debug.WriteLine("ShowDayViewBySpace: დაიწყო პანელის ჩვენება")
+            Debug.WriteLine($"ShowDayViewBySpace: მასშტაბები - hScale={hScale:F2}, vScale={vScale:F2}")
 
             ' შევამოწმოთ არის თუ არა სივრცეები ჩატვირთული
             If spaces.Count = 0 Then
                 LoadSpaces()
-            End If
-
-            ' შევამოწმოთ, რომ ნამდვილად გვაქვს სივრცეები
-            If spaces.Count < 8 Then
-                If Not spaces.Contains("მწვანე აბა") Then spaces.Add("მწვანე აბა")
-                If Not spaces.Contains("ლურჯი აბა") Then spaces.Add("ლურჯი აბა")
-                If Not spaces.Contains("სენსორი") Then spaces.Add("სენსორი")
-                If Not spaces.Contains("ფიზიკური") Then spaces.Add("ფიზიკური")
-                If Not spaces.Contains("მეტყველება") Then spaces.Add("მეტყველება")
-                ' დავამატოთ ახალი სივრცეები
-                If Not spaces.Contains("საკონფერენციო") Then spaces.Add("საკონფერენციო")
-                If Not spaces.Contains("მშობლები") Then spaces.Add("მშობლები")
-                If Not spaces.Contains("გარე") Then spaces.Add("გარე")
             End If
 
             ' დროითი ინტერვალები თუ არ არის, შევქმნათ
@@ -342,22 +328,27 @@ Public Class UC_Calendar
                 InitializeTimeIntervals()
             End If
 
-            ' პარამეტრები გრიდისთვის - მხოლოდ დროის უჯრედების სიმაღლე არის მასშტაბირებადი
+            ' პარამეტრები გრიდისთვის
             Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT ' უცვლელი - არ იმასშტაბირდება ვერტიკალურად
             Dim TIME_COLUMN_WIDTH As Integer = BASE_TIME_COLUMN_WIDTH ' უცვლელი - არ იმასშტაბირდება ჰორიზონტალურად
             Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale) ' მხოლოდ მწკრივები იმასშტაბირდება ვერტიკალურად
+            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale) ' სივრცის სვეტები იმასშტაბირდება ჰორიზონტალურად
 
-            Debug.WriteLine($"ShowDayViewBySpace: მასშტაბები - hScale={hScale:F2}, vScale={vScale:F2}")
-            Debug.WriteLine($"ShowDayViewBySpace: ზომები - HEADER_HEIGHT={HEADER_HEIGHT} (უცვლელი), " &
-                        $"TIME_COLUMN_WIDTH={TIME_COLUMN_WIDTH} (უცვლელი), ROW_HEIGHT={ROW_HEIGHT}")
+            ' დავამატოთ დეტალური დებაგ ინფორმაცია
+            Debug.WriteLine($"ShowDayViewBySpace: ზომები - HEADER_HEIGHT={HEADER_HEIGHT}, " &
+                     $"TIME_COLUMN_WIDTH={TIME_COLUMN_WIDTH}, " &
+                     $"ROW_HEIGHT={ROW_HEIGHT}, " &
+                     $"SPACE_COLUMN_WIDTH={SPACE_COLUMN_WIDTH}")
 
             ' გრიდის მთლიანი სიგანე და სიმაღლე - მთელ ხილულ ფართობზე
             Dim totalWidth As Integer = pnlCalendarGrid.ClientSize.Width - 5 ' 5 პიქსელი დაშორებისთვის
             Dim totalHeight As Integer = pnlCalendarGrid.ClientSize.Height - 5
 
+            Debug.WriteLine($"ShowDayViewBySpace: კონტეინერის ზომები - Width={totalWidth}, Height={totalHeight}")
+
             ' ======= 1. სივრცეების სათაურების რიგი გრიდის ზემოთ =======
             Dim headerRow As New Panel()
-            headerRow.Size = New Size(totalWidth, HEADER_HEIGHT) ' HEADER_HEIGHT არ იმასშტაბირდება
+            headerRow.Size = New Size(totalWidth, HEADER_HEIGHT)
             headerRow.Location = New Point(0, 0)
             headerRow.BackColor = Color.FromArgb(220, 220, 240)
             pnlCalendarGrid.Controls.Add(headerRow)
@@ -384,24 +375,26 @@ Public Class UC_Calendar
                 ' ფონტის შეცდომის შემთხვევაში ვიყენებთ Sylfaen
             End Try
 
-            ' სივრცეების სვეტების სიგანე - მასშტაბირებულია ჰორიზონტალურად
-            Dim availableWidth As Integer = totalWidth - TIME_COLUMN_WIDTH
-            Dim spaceColumnWidth As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            ' სივრცეების სვეტების სიგანე - მნიშვნელოვანია მასშტაბირებისთვის
+            Debug.WriteLine($"ShowDayViewBySpace: გამოთვლილი SPACE_COLUMN_WIDTH={SPACE_COLUMN_WIDTH}")
 
             ' გადავამოწმოთ რომ ყველა სვეტი ეტევა
-            Dim totalColumnsWidth As Integer = spaceColumnWidth * spaces.Count
-            If totalColumnsWidth > availableWidth Then
-                ' თუ არ ეტევა, დავაკორექტიროთ
-                spaceColumnWidth = availableWidth / spaces.Count
-            End If
+            Dim availableWidth As Integer = totalWidth - TIME_COLUMN_WIDTH
+            Dim totalColumnsWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
 
-            Debug.WriteLine($"ShowDayViewBySpace: სივრცეების სვეტის სიგანე={spaceColumnWidth} " &
-                        $"(მასშტაბირებულია {hScale:F2}-ით საბაზისო {BASE_SPACE_COLUMN_WIDTH}-დან)")
+            Debug.WriteLine($"ShowDayViewBySpace: availableWidth={availableWidth}, totalColumnsWidth={totalColumnsWidth}")
+
+            ' თუ საჭიროა, დავაკორექტიროთ სვეტის სიგანე
+            Dim adjustedSpaceColumnWidth As Integer = SPACE_COLUMN_WIDTH
+            If totalColumnsWidth > availableWidth And spaces.Count > 0 Then
+                adjustedSpaceColumnWidth = availableWidth / spaces.Count
+                Debug.WriteLine($"ShowDayViewBySpace: სვეტის სიგანე დაკორექტირდა {SPACE_COLUMN_WIDTH}-დან {adjustedSpaceColumnWidth}-მდე")
+            End If
 
             For i As Integer = 0 To spaces.Count - 1
                 Dim spaceHeader As New Label()
-                spaceHeader.Size = New Size(spaceColumnWidth, HEADER_HEIGHT)
-                spaceHeader.Location = New Point(TIME_COLUMN_WIDTH + (i * spaceColumnWidth), 0)
+                spaceHeader.Size = New Size(adjustedSpaceColumnWidth, HEADER_HEIGHT)
+                spaceHeader.Location = New Point(TIME_COLUMN_WIDTH + (i * adjustedSpaceColumnWidth), 0)
                 spaceHeader.BackColor = Color.FromArgb(60, 80, 150)
                 spaceHeader.ForeColor = Color.White
                 spaceHeader.TextAlign = ContentAlignment.MiddleCenter
@@ -446,7 +439,7 @@ Public Class UC_Calendar
 
             ' ======= 4. სივრცეების გრიდი =======
             Dim grid As New Panel()
-            grid.Size = New Size(spaceColumnWidth * spaces.Count, timeIntervals.Count * ROW_HEIGHT)
+            grid.Size = New Size(adjustedSpaceColumnWidth * spaces.Count, timeIntervals.Count * ROW_HEIGHT)
             grid.Location = New Point(TIME_COLUMN_WIDTH, 0)
             gridContainer.Controls.Add(grid)
 
@@ -457,8 +450,8 @@ Public Class UC_Calendar
             For col As Integer = 0 To spaces.Count - 1
                 For row As Integer = 0 To timeIntervals.Count - 1
                     Dim cell As New Panel()
-                    cell.Size = New Size(spaceColumnWidth, ROW_HEIGHT)
-                    cell.Location = New Point(col * spaceColumnWidth, row * ROW_HEIGHT)
+                    cell.Size = New Size(adjustedSpaceColumnWidth, ROW_HEIGHT)
+                    cell.Location = New Point(col * adjustedSpaceColumnWidth, row * ROW_HEIGHT)
 
                     ' ალტერნატიული ფერები
                     If row Mod 2 = 0 Then
@@ -492,6 +485,7 @@ Public Class UC_Calendar
             Debug.WriteLine("ShowDayViewBySpace: დასრულდა პანელის ჩვენება")
         Catch ex As Exception
             Debug.WriteLine($"ShowDayViewBySpace: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"ShowDayViewBySpace: StackTrace - {ex.StackTrace}")
             MessageBox.Show($"დღის ხედის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -579,15 +573,20 @@ Public Class UC_Calendar
         Try
             ' შევამოწმოთ უჯრედები და სესიები
             If gridCells Is Nothing OrElse sessions Is Nothing OrElse sessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnGrid: gridCells ან sessions არის Nothing/ცარიელი")
                 Return
             End If
 
             Debug.WriteLine($"PlaceSessionsOnGrid: დაიწყო {sessions.Count} სესიის განთავსება")
+            Debug.WriteLine($"PlaceSessionsOnGrid: gridCells ზომები: {gridCells.GetLength(0)}x{gridCells.GetLength(1)}")
 
             For Each session In sessions
                 ' ვიპოვოთ სივრცის ინდექსი
                 Dim spaceIndex As Integer = spaces.IndexOf(session.Space)
+                Debug.WriteLine($"PlaceSessionsOnGrid: სესია ID={session.Id}, სივრცე={session.Space}, spaceIndex={spaceIndex}")
+
                 If spaceIndex < 0 AndAlso spaces.Count > 0 Then
+                    Debug.WriteLine($"PlaceSessionsOnGrid: სივრცე '{session.Space}' ვერ მოიძებნა სივრცეების სიაში. ვიყენებთ პირველ სივრცეს.")
                     spaceIndex = 0
                 End If
 
@@ -597,8 +596,9 @@ Public Class UC_Calendar
                 ' ვცადოთ ზუსტი დროის შესაბამისობა
                 For i As Integer = 0 To timeIntervals.Count - 1
                     If timeIntervals(i).Hour = session.DateTime.Hour AndAlso
-               timeIntervals(i).Minute = session.DateTime.Minute Then
+                   timeIntervals(i).Minute = session.DateTime.Minute Then
                         timeIndex = i
+                        Debug.WriteLine($"PlaceSessionsOnGrid: ზუსტი დროის დამთხვევა - {session.DateTime:HH:mm}, timeIndex={i}")
                         Exit For
                     End If
                 Next
@@ -613,24 +613,31 @@ Public Class UC_Calendar
                             timeIndex = i
                         End If
                     Next
+                    Debug.WriteLine($"PlaceSessionsOnGrid: უახლოესი დრო - {session.DateTime:HH:mm}, timeIndex={timeIndex}, სხვაობა={minDiff}წთ")
                 End If
 
                 ' თუ ინდექსები ვალიდურია
                 If spaceIndex >= 0 AndAlso timeIndex >= 0 AndAlso
-           spaceIndex < gridCells.GetLength(0) AndAlso timeIndex < gridCells.GetLength(1) Then
+               spaceIndex < gridCells.GetLength(0) AndAlso timeIndex < gridCells.GetLength(1) Then
 
                     ' სესიის ხანგრძლივობა (ნახევარსაათიანი ინტერვალების რაოდენობა)
                     Dim durationInCells As Integer = Math.Max(1, Math.Ceiling(session.Duration / 30.0))
+                    Debug.WriteLine($"PlaceSessionsOnGrid: ხანგრძლივობა={session.Duration}წთ, durationInCells={durationInCells}")
 
                     ' ბოლო მწკრივის ინდექსი (შეზღუდული გრიდის ზომით)
                     Dim lastRowIndex As Integer = Math.Min(timeIndex + durationInCells - 1, gridCells.GetLength(1) - 1)
 
-                    ' სესიის სრული სიმაღლე - მასშტაბირებული
+                    ' სესიის სრული სიმაღლე
                     Dim sessionHeight As Integer = (lastRowIndex - timeIndex + 1) * gridCells(spaceIndex, timeIndex).Height
+                    Debug.WriteLine($"PlaceSessionsOnGrid: სესიის სიმაღლე={sessionHeight}px")
+
+                    ' უჯრედის ზომები
+                    Dim cellWidth As Integer = gridCells(spaceIndex, timeIndex).Width
+                    Debug.WriteLine($"PlaceSessionsOnGrid: უჯრედის სიგანე={cellWidth}px")
 
                     ' შევქმნათ სესიის პანელი
                     Dim sessionPanel As New Panel()
-                    sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 4, sessionHeight - 2)
+                    sessionPanel.Size = New Size(cellWidth - 4, sessionHeight - 2)
                     sessionPanel.Location = New Point(2, 1)
                     sessionPanel.BackColor = GetSessionColor(session)
 
@@ -647,13 +654,17 @@ Public Class UC_Calendar
                     sessionPanel.Tag = session.Id
                     AddHandler sessionPanel.Click, AddressOf SessionPanel_Click
 
-                    Debug.WriteLine($"სესია განთავსდა: {session.BeneficiaryName} {session.BeneficiarySurname}, {session.Space}, {session.DateTime:HH:mm}")
+                    Debug.WriteLine($"PlaceSessionsOnGrid: სესია ID={session.Id} განთავსდა უჯრედზე ({spaceIndex},{timeIndex})")
+                Else
+                    Debug.WriteLine($"PlaceSessionsOnGrid: გადაცილებულია უჯრედების საზღვრებს - spaceIndex={spaceIndex}, timeIndex={timeIndex}, " &
+                             $"gridCells ზომა={gridCells.GetLength(0)}x{gridCells.GetLength(1)}")
                 End If
             Next
 
             Debug.WriteLine("PlaceSessionsOnGrid: დასრულდა სესიების განთავსება")
         Catch ex As Exception
             Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"PlaceSessionsOnGrid: StackTrace - {ex.StackTrace}")
         End Try
     End Sub
 
@@ -1041,6 +1052,40 @@ Public Class UC_Calendar
         cbStart.SelectedItem = "09:00"
         cbFinish.SelectedItem = "20:00"
     End Sub
+    ''' <summary>
+    ''' მასშტაბის ლეიბლების განახლება
+    ''' </summary>
+    ''' <remarks>ამ მეთოდში ვქმნით ან განვაახლებთ ლეიბლებს, რომლებიც აჩვენებენ კალენდრის ჰორიზონტალურ და ვერტიკალურ მასშტაბებს</remarks>
+    Private Sub UpdateScaleLabels()
+        Try
+            ' შევქმნათ ან განვაახლოთ ლეიბლი ჰორიზონტალური მასშტაბისთვის
+            Dim lblHScale As Label = DirectCast(Controls.Find("lblHScale", True).FirstOrDefault(), Label)
+            If lblHScale Is Nothing Then
+                lblHScale = New Label()
+                lblHScale.Name = "lblHScale"
+                lblHScale.AutoSize = True
+                lblHScale.Location = New Point(BtnHUp.Left + BtnHUp.Width + 5, BtnHUp.Top + 3)
+                lblHScale.Font = New Font("Segoe UI", 8)
+                Me.Controls.Add(lblHScale)
+            End If
+            lblHScale.Text = $"×{hScale:F2}"
+
+            ' შევქმნათ ან განვაახლოთ ლეიბლი ვერტიკალური მასშტაბისთვის
+            Dim lblVScale As Label = DirectCast(Controls.Find("lblVScale", True).FirstOrDefault(), Label)
+            If lblVScale Is Nothing Then
+                lblVScale = New Label()
+                lblVScale.Name = "lblVScale"
+                lblVScale.AutoSize = True
+                lblVScale.Location = New Point(BtnVUp.Left + BtnVUp.Width + 5, BtnVUp.Top + 3)
+                lblVScale.Font = New Font("Segoe UI", 8)
+                Me.Controls.Add(lblVScale)
+            End If
+            lblVScale.Text = $"×{vScale:F2}"
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateScaleLabels: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
     ''' <summary>
     ''' ვერტიკალური მასშტაბის გაზრდა - მწკრივების სიმაღლის გაზრდა
     ''' </summary>
