@@ -53,8 +53,6 @@ Partial Class UC_Calendar
         Me.BtnVUp = New System.Windows.Forms.Button()
         Me.CheckBox5 = New System.Windows.Forms.CheckBox()
         Me.Label2 = New System.Windows.Forms.Label()
-        Me.lblInfo = New System.Windows.Forms.Label()
-        Me.lblDate = New System.Windows.Forms.Label()
         Me.pnlCalendarGrid = New System.Windows.Forms.Panel()
         Me.pnlFIlter.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
@@ -385,26 +383,6 @@ Partial Class UC_Calendar
         Me.Label2.TabIndex = 27
         Me.Label2.Text = "ჩვენება:"
         '
-        'lblInfo
-        '
-        Me.lblInfo.AutoSize = True
-        Me.lblInfo.Font = New System.Drawing.Font("Sylfaen", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblInfo.Location = New System.Drawing.Point(10, 90)
-        Me.lblInfo.Name = "lblInfo"
-        Me.lblInfo.Size = New System.Drawing.Size(160, 18)
-        Me.lblInfo.TabIndex = 1
-        Me.lblInfo.Text = "დღის ხედი, სივრცეებით"
-        '
-        'lblDate
-        '
-        Me.lblDate.AutoSize = True
-        Me.lblDate.Font = New System.Drawing.Font("Sylfaen", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblDate.Location = New System.Drawing.Point(320, 90)
-        Me.lblDate.Name = "lblDate"
-        Me.lblDate.Size = New System.Drawing.Size(57, 18)
-        Me.lblDate.TabIndex = 2
-        Me.lblDate.Text = "თარიღი"
-        '
         'pnlCalendarGrid
         '
         Me.pnlCalendarGrid.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -413,9 +391,9 @@ Partial Class UC_Calendar
         Me.pnlCalendarGrid.AutoScroll = True
         Me.pnlCalendarGrid.BackColor = System.Drawing.Color.White
         Me.pnlCalendarGrid.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
-        Me.pnlCalendarGrid.Location = New System.Drawing.Point(10, 120)
+        Me.pnlCalendarGrid.Location = New System.Drawing.Point(3, 81)
         Me.pnlCalendarGrid.Name = "pnlCalendarGrid"
-        Me.pnlCalendarGrid.Size = New System.Drawing.Size(1289, 457)
+        Me.pnlCalendarGrid.Size = New System.Drawing.Size(1296, 496)
         Me.pnlCalendarGrid.TabIndex = 3
         '
         'UC_Calendar
@@ -423,8 +401,6 @@ Partial Class UC_Calendar
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.Controls.Add(Me.pnlCalendarGrid)
-        Me.Controls.Add(Me.lblDate)
-        Me.Controls.Add(Me.lblInfo)
         Me.Controls.Add(Me.pnlFIlter)
         Me.Name = "UC_Calendar"
         Me.Size = New System.Drawing.Size(1302, 580)
@@ -435,7 +411,6 @@ Partial Class UC_Calendar
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
         Me.ResumeLayout(False)
-        Me.PerformLayout()
 
     End Sub
 
@@ -470,7 +445,5 @@ Partial Class UC_Calendar
     Friend WithEvents cbFinish As ComboBox
     Friend WithEvents Label1 As Label
     Friend WithEvents cbStart As ComboBox
-    Friend WithEvents lblInfo As Label
-    Friend WithEvents lblDate As Label
     Friend WithEvents pnlCalendarGrid As Panel
 End Class

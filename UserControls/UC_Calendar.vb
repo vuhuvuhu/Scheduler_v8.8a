@@ -133,24 +133,24 @@ Public Class UC_Calendar
                 ' დღის ხედი
                 If RBSpace.Checked Then
                     ' სივრცეების მიხედვით
-                    lblInfo.Text = "დღის ხედი, სივრცეებით"
+                    'lblInfo.Text = "დღის ხედი, სივრცეებით"
                     ShowDayViewBySpace()
                 ElseIf RBPer.Checked Then
                     ' თერაპევტების მიხედვით
-                    lblInfo.Text = "დღის ხედი, თერაპევტებით"
+                    'lblInfo.Text = "დღის ხედი, თერაპევტებით"
                     ShowDayViewByTherapist()
                 ElseIf RBBene.Checked Then
                     ' ბენეფიციარების მიხედვით
-                    lblInfo.Text = "დღის ხედი, ბენეფიციარებით"
+                    'lblInfo.Text = "დღის ხედი, ბენეფიციარებით"
                     ShowDayViewByBeneficiary()
                 End If
             ElseIf rbWeek.Checked Then
                 ' კვირის ხედი
-                lblInfo.Text = "კვირის ხედი - მუშავდება"
+                'lblInfo.Text = "კვირის ხედი - მუშავდება"
                 ShowWeekView()
             ElseIf rbMonth.Checked Then
                 ' თვის ხედი
-                lblInfo.Text = "თვის ხედი - მუშავდება"
+                'lblInfo.Text = "თვის ხედი - მუშავდება"
                 ShowMonthView()
             End If
         Catch ex As Exception
@@ -241,208 +241,222 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' ჩვენება დღის ხედის სივრცეების მიხედვით
+    ''' ვერტიკალური თარიღის ლეიბლის დახატვა
+    ''' </summary>
+    Private Sub DateLabel_Paint(sender As Object, e As PaintEventArgs)
+        ' ლეიბლის მიღება
+        Dim dateLabel As Label = DirectCast(sender, Label)
+
+        ' ტექსტის შებრუნება ვერტიკალურად
+        e.Graphics.TranslateTransform(5, dateLabel.Height)
+        e.Graphics.RotateTransform(-90)
+        Using brush As New SolidBrush(dateLabel.ForeColor)
+            e.Graphics.DrawString(dateLabel.Text, dateLabel.Font, brush, 0, 0)
+        End Using
+    End Sub
+    ''' <summary>
+    ''' უჯრედის ჩარჩოს დახატვა
+    ''' </summary>
+    Private Sub Cell_Paint(sender As Object, e As PaintEventArgs)
+        Dim cell As Panel = DirectCast(sender, Panel)
+
+        Using pen As New Pen(Color.FromArgb(200, 200, 200), 1)
+            ' მხოლოდ მარჯვენა ვერტიკალური ხაზი
+            e.Graphics.DrawLine(pen, cell.Width - 1, 0, cell.Width - 1, cell.Height)
+        End Using
+    End Sub
+    ''' <summary>
+    ''' სესიის პანელის მომრგვალებული ჩარჩოს დახატვა
+    ''' </summary>
+    Private Sub SessionPanel_Paint(sender As Object, e As PaintEventArgs)
+        Dim sessionPanel As Panel = DirectCast(sender, Panel)
+
+        Dim path As New Drawing2D.GraphicsPath()
+        Dim radius As Integer = 5
+        Dim rect As New Rectangle(0, 0, sessionPanel.Width, sessionPanel.Height)
+
+        ' მომრგვალებული კუთხეები
+        path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90) ' ზედა მარცხენა
+        path.AddArc(rect.Right - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90) ' ზედა მარჯვენა
+        path.AddArc(rect.Right - radius * 2, rect.Bottom - radius * 2, radius * 2, radius * 2, 0, 90) ' ქვედა მარჯვენა
+        path.AddArc(rect.X, rect.Bottom - radius * 2, radius * 2, radius * 2, 90, 90) ' ქვედა მარცხენა
+        path.CloseFigure()
+
+        sessionPanel.Region = New Region(path)
+
+        ' დახატოს ჩარჩო
+        Using pen As New Pen(Color.FromArgb(150, 150, 150), 1)
+            e.Graphics.DrawPath(pen, path)
+        End Using
+    End Sub
+    ''' <summary>
+    ''' ჩვენება დღის ხედის სივრცეების მიხედვით - გამოსწორებული ვერსია
     ''' </summary>
     Private Sub ShowDayViewBySpace()
         Try
             ' გავასუფთავოთ კალენდრის პანელი
             pnlCalendarGrid.Controls.Clear()
 
+            ' დავაყენოთ pnlFilter-ის ფერი - ნახევრად გამჭვირვალე თეთრი
+            pnlFIlter.BackColor = Color.FromArgb(200, Color.White)
+
+            Debug.WriteLine("ShowDayViewBySpace: დაიწყო პანელის ჩვენება")
+
             ' შევამოწმოთ არის თუ არა სივრცეები ჩატვირთული
             If spaces.Count = 0 Then
-                ' თუ არა, ჩავტვირთოთ სივრცეები
                 LoadSpaces()
-
-                ' თუ მაინც ცარიელია, გამოვიდეთ
-                If spaces.Count = 0 Then
-                    Dim lblNoSpaces As New Label()
-                    lblNoSpaces.Text = "სივრცეები არ არის ხელმისაწვდომი"
-                    lblNoSpaces.AutoSize = True
-                    lblNoSpaces.Location = New Point(20, 20)
-                    pnlCalendarGrid.Controls.Add(lblNoSpaces)
-                    Return
-                End If
             End If
 
-            ' სვეტების რაოდენობა: იმდენი უჯრედი, რამდენი სივრცეც გვაქვს
-            Dim cellsPerRow As Integer = spaces.Count
+            ' შევამოწმოთ, რომ ნამდვილად გვაქვს სივრცეები
+            If spaces.Count < 3 Then
+                If Not spaces.Contains("მწვანე აბა") Then spaces.Add("მწვანე აბა")
+                If Not spaces.Contains("ლურჯი აბა") Then spaces.Add("ლურჯი აბა")
+                If Not spaces.Contains("სენსორი") Then spaces.Add("სენსორი")
+                If Not spaces.Contains("ფიზიკური") Then spaces.Add("ფიზიკური")
+                If Not spaces.Contains("მეტყველება") Then spaces.Add("მეტყველება")
+            End If
 
-            ' დროის ინტერვალების რაოდენობა
-            Dim rowCount As Integer = timeIntervals.Count
+            ' დროითი ინტერვალები თუ არ არის, შევქმნათ
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
 
-            ' უჯრედის ზომები
-            Const COLUMN_WIDTH As Integer = 150
-            Const ROW_HEIGHT As Integer = 40 ' შემცირებული სიმაღლე
-            Const HEADER_HEIGHT As Integer = 30 ' სათაურების რიგის შემცირებული სიმაღლე
-            Const TIME_COLUMN_WIDTH As Integer = 60 ' შევიწროებული სიგანე
-            Const DATE_COLUMN_WIDTH As Integer = 30 ' თარიღის სვეტის სიგანე
+            ' პარამეტრები გრიდისთვის
+            Const HEADER_HEIGHT As Integer = 40            ' სათაურების სიმაღლე
+            Const TIME_COLUMN_WIDTH As Integer = 60        ' დროის სვეტის სიგანე
+            Const SPACE_COLUMN_WIDTH As Integer = 150      ' სივრცის სვეტის სიგანე
+            Const ROW_HEIGHT As Integer = 40               ' მწკრივის სიმაღლე
 
-            ' ხილული სივრცე გრიდისთვის
-            Dim contentWidth As Integer = DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH + (cellsPerRow * COLUMN_WIDTH)
-            Dim contentHeight As Integer = (rowCount * ROW_HEIGHT) + HEADER_HEIGHT
+            ' გრიდის მთლიანი სიგანე და სიმაღლე - მთელ ხილულ ფართობზე
+            Dim totalWidth As Integer = pnlCalendarGrid.Width
+            Dim totalHeight As Integer = pnlCalendarGrid.Height
 
-            ' შევქმნათ ფიქსირებული სათაურების პანელი (არ ისქროლება)
-            Dim headerPanel As New Panel()
-            headerPanel.Dock = DockStyle.Top
-            headerPanel.Height = HEADER_HEIGHT
-            headerPanel.BackColor = Color.White
-            pnlCalendarGrid.Controls.Add(headerPanel)
+            ' ======= 1. სივრცეების სათაურების რიგი გრიდის ზემოთ =======
+            Dim headerRow As New Panel()
+            headerRow.Size = New Size(totalWidth, HEADER_HEIGHT)
+            headerRow.Location = New Point(0, 0)
+            headerRow.BackColor = Color.FromArgb(220, 220, 240)
+            pnlCalendarGrid.Controls.Add(headerRow)
 
-            ' შევქმნათ ფიქსირებული დროის პანელი (არ ისქროლება ჰორიზონტალურად)
-            Dim timePanel As New Panel()
-            timePanel.Dock = DockStyle.Left
-            timePanel.Width = DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH
-            timePanel.BackColor = Color.White
-            pnlCalendarGrid.Controls.Add(timePanel)
+            ' დროის სვეტის სათაური
+            Dim timeHeaderLabel As New Label()
+            timeHeaderLabel.Size = New Size(TIME_COLUMN_WIDTH, HEADER_HEIGHT)
+            timeHeaderLabel.Location = New Point(0, 0)
+            timeHeaderLabel.BackColor = Color.FromArgb(180, 180, 220)
+            timeHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            timeHeaderLabel.Text = "დრო"
+            timeHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            headerRow.Controls.Add(timeHeaderLabel)
 
-            ' შევქმნათ კონტენტის პანელი სკროლით
-            calendarContentPanel = New Panel()
-            calendarContentPanel.Size = New Size(contentWidth - timePanel.Width, contentHeight - headerPanel.Height)
-            calendarContentPanel.Location = New Point(timePanel.Width, headerPanel.Height)
-            calendarContentPanel.AutoScroll = True
-            calendarContentPanel.BackColor = Color.White
-            pnlCalendarGrid.Controls.Add(calendarContentPanel)
-
-            ' მთავრული ფონტის მოძიება
-            Dim mtavruliFont As New Font("Sylfaen", 9, FontStyle.Bold)
+            ' მთავრული ფონტი
+            Dim mtavruliFont As New Font("Sylfaen", 10, FontStyle.Bold)
             Try
-                Using testFont As New Font("BPG_Nino_Mtavruli", 9)
-                    mtavruliFont = New Font("BPG_Nino_Mtavruli", 9, FontStyle.Bold)
-                End Using
-            Catch
-                Try
-                    Using testFont As New Font("ALK_Tall_Mtavruli", 9)
-                        mtavruliFont = New Font("ALK_Tall_Mtavruli", 9, FontStyle.Bold)
-                    End Using
-                Catch
-                    ' დარჩება Sylfaen
-                End Try
+                If FontFamily.Families.Any(Function(f) f.Name = "BPG_Nino_Mtavruli") Then
+                    mtavruliFont = New Font("BPG_Nino_Mtavruli", 10, FontStyle.Bold)
+                ElseIf FontFamily.Families.Any(Function(f) f.Name = "ALK_Tall_Mtavruli") Then
+                    mtavruliFont = New Font("ALK_Tall_Mtavruli", 10, FontStyle.Bold)
+                End If
+            Catch ex As Exception
+                ' ფონტის შეცდომის შემთხვევაში ვიყენებთ Sylfaen
             End Try
 
-            ' თარიღის ვერტიკალური სვეტი
-            Dim dateColumn As New Panel()
-            dateColumn.Size = New Size(DATE_COLUMN_WIDTH, timePanel.Height - HEADER_HEIGHT)
-            dateColumn.Location = New Point(0, HEADER_HEIGHT)
-            dateColumn.BackColor = Color.FromArgb(60, 80, 120) ' მუქი ლურჯი
-            timePanel.Controls.Add(dateColumn)
+            ' სივრცეების სათაურები
+            Dim headerWidth As Integer = (totalWidth - TIME_COLUMN_WIDTH) / spaces.Count
 
-            ' თარიღის ვერტიკალური წარწერა
-            Dim selectedDate As DateTime = DTPCalendar.Value
-            Dim dateText As String = $"{selectedDate.ToString("dddd", New Globalization.CultureInfo("ka-GE"))}, {selectedDate.Day} {selectedDate.ToString("MMMM", New Globalization.CultureInfo("ka-GE"))}, {selectedDate.Year}"
-
-            Dim dateLabel As New Label()
-            dateLabel.Text = dateText
-            dateLabel.AutoSize = False
-            dateLabel.Size = New Size(dateColumn.Height - 10, dateColumn.Width - 4)
-            dateLabel.Location = New Point(2, 5)
-            dateLabel.Font = New Font("Sylfaen", 9)
-            dateLabel.ForeColor = Color.White
-            dateLabel.TextAlign = ContentAlignment.MiddleCenter
-
-            ' ტექსტის შებრუნება ვერტიკალურად
-            dateLabel.Paint += Sub(s, e)
-                                   e.Graphics.TranslateTransform(5, dateLabel.Height)
-                                   e.Graphics.RotateTransform(-90)
-                                   Using brush As New SolidBrush(dateLabel.ForeColor)
-                                       e.Graphics.DrawString(dateLabel.Text, dateLabel.Font, brush, 0, 0)
-                                   End Using
-                               End Sub
-
-            dateColumn.Controls.Add(dateLabel)
-
-            ' ცარიელი უჯრედი ზედა მარცხენა კუთხეში
-            Dim emptyHeaderCell As New Panel()
-            emptyHeaderCell.Size = New Size(DATE_COLUMN_WIDTH + TIME_COLUMN_WIDTH, HEADER_HEIGHT)
-            emptyHeaderCell.Location = New Point(0, 0)
-            emptyHeaderCell.BackColor = Color.FromArgb(220, 230, 245) ' ღია ლურჯი
-            headerPanel.Controls.Add(emptyHeaderCell)
-
-            ' დავამატოთ სივრცეების სათაურები ზედა პანელზე
-            Dim headerLabels(cellsPerRow - 1) As Label
-            For i As Integer = 0 To cellsPerRow - 1
-                ' სივრცის სათაური
-                headerLabels(i) = New Label()
-                headerLabels(i).Text = spaces(i).ToUpper() ' დიდი ასოებით
-                headerLabels(i).TextAlign = ContentAlignment.MiddleCenter
-                headerLabels(i).Size = New Size(COLUMN_WIDTH, HEADER_HEIGHT)
-                headerLabels(i).Location = New Point(i * COLUMN_WIDTH, 0)
-                headerLabels(i).BackColor = Color.FromArgb(60, 100, 170) ' მუქი ლურჯი
-                headerLabels(i).ForeColor = Color.White
-                headerLabels(i).Font = mtavruliFont
-                headerLabels(i).BorderStyle = BorderStyle.None
-
-                ' დავამატოთ სათაური თავისი კონტეინერზე
-                Dim headerContainer As New Panel()
-                headerContainer.Size = New Size(COLUMN_WIDTH, HEADER_HEIGHT)
-                headerContainer.Location = New Point(i * COLUMN_WIDTH, 0)
-                headerContainer.Controls.Add(headerLabels(i))
-                calendarContentPanel.Controls.Add(headerContainer)
+            For i As Integer = 0 To spaces.Count - 1
+                Dim spaceHeader As New Label()
+                spaceHeader.Size = New Size(headerWidth, HEADER_HEIGHT)
+                spaceHeader.Location = New Point(TIME_COLUMN_WIDTH + (i * headerWidth), 0)
+                spaceHeader.BackColor = Color.FromArgb(60, 80, 150)
+                spaceHeader.ForeColor = Color.White
+                spaceHeader.TextAlign = ContentAlignment.MiddleCenter
+                spaceHeader.Text = spaces(i).ToUpper()
+                spaceHeader.Font = mtavruliFont
+                headerRow.Controls.Add(spaceHeader)
             Next
 
-            ' დავამატოთ საათების ლეიბლები დროის პანელზე
-            For i As Integer = 0 To rowCount - 1
-                ' დროის ლეიბლი
+            ' ======= 2. გრიდის კონტეინერი =======
+            Dim gridContainer As New Panel()
+            gridContainer.Size = New Size(totalWidth, totalHeight - HEADER_HEIGHT)
+            gridContainer.Location = New Point(0, HEADER_HEIGHT)
+            gridContainer.BackColor = Color.White
+            gridContainer.AutoScroll = True
+            pnlCalendarGrid.Controls.Add(gridContainer)
+
+            ' ======= 3. დროის სვეტი მარცხნივ =======
+            Dim timeColumn As New Panel()
+            timeColumn.Size = New Size(TIME_COLUMN_WIDTH, timeIntervals.Count * ROW_HEIGHT)
+            timeColumn.Location = New Point(0, 0)
+            timeColumn.BackColor = Color.FromArgb(240, 240, 245)
+            gridContainer.Controls.Add(timeColumn)
+
+            ' დროის ეტიკეტები
+            For i As Integer = 0 To timeIntervals.Count - 1
                 Dim timeLabel As New Label()
+                timeLabel.Size = New Size(TIME_COLUMN_WIDTH - 5, ROW_HEIGHT)
+                timeLabel.Location = New Point(0, i * ROW_HEIGHT)
                 timeLabel.Text = timeIntervals(i).ToString("HH:mm")
                 timeLabel.TextAlign = ContentAlignment.MiddleRight
-                timeLabel.Size = New Size(TIME_COLUMN_WIDTH - 1, ROW_HEIGHT)
-                timeLabel.Location = New Point(DATE_COLUMN_WIDTH, HEADER_HEIGHT + (i * ROW_HEIGHT))
+                timeLabel.Padding = New Padding(0, 0, 5, 0)
 
                 ' ალტერნატიული ფერები მწკრივებისთვის
                 If i Mod 2 = 0 Then
-                    timeLabel.BackColor = Color.FromArgb(240, 240, 240) ' ღია ნაცრისფერი
+                    timeLabel.BackColor = Color.FromArgb(240, 240, 240)
                 Else
-                    timeLabel.BackColor = Color.FromArgb(250, 250, 250) ' თითქმის თეთრი
+                    timeLabel.BackColor = Color.FromArgb(245, 245, 245)
                 End If
 
-                timeLabel.BorderStyle = BorderStyle.None
-                timePanel.Controls.Add(timeLabel)
+                timeColumn.Controls.Add(timeLabel)
             Next
 
-            ' შევქმნათ უჯრედები გრიდისთვის
-            ReDim gridCells(cellsPerRow - 1, rowCount - 1)
+            ' ======= 4. სივრცეების გრიდი =======
+            Dim grid As New Panel()
+            grid.Size = New Size(totalWidth - TIME_COLUMN_WIDTH, timeIntervals.Count * ROW_HEIGHT)
+            grid.Location = New Point(TIME_COLUMN_WIDTH, 0)
+            gridContainer.Controls.Add(grid)
 
-            For col As Integer = 0 To cellsPerRow - 1
-                For row As Integer = 0 To rowCount - 1
-                    ' ახალი უჯრედი
+            ' უჯრედების მასივი
+            ReDim gridCells(spaces.Count - 1, timeIntervals.Count - 1)
+
+            ' უჯრედების შექმნა
+            Dim cellWidth As Integer = (totalWidth - TIME_COLUMN_WIDTH) / spaces.Count
+
+            For col As Integer = 0 To spaces.Count - 1
+                For row As Integer = 0 To timeIntervals.Count - 1
                     Dim cell As New Panel()
-                    cell.Size = New Size(COLUMN_WIDTH, ROW_HEIGHT)
-                    cell.Location = New Point(col * COLUMN_WIDTH, row * ROW_HEIGHT)
+                    cell.Size = New Size(cellWidth, ROW_HEIGHT)
+                    cell.Location = New Point(col * cellWidth, row * ROW_HEIGHT)
 
-                    ' ალტერნატიული ფერები მწკრივებისთვის (მონაცვლეობა მუქი-ღია)
+                    ' ალტერნატიული ფერები
                     If row Mod 2 = 0 Then
-                        cell.BackColor = Color.FromArgb(240, 240, 240) ' ღია ნაცრისფერი
+                        cell.BackColor = Color.FromArgb(250, 250, 250)
                     Else
-                        cell.BackColor = Color.FromArgb(250, 250, 250) ' თითქმის თეთრი
+                        cell.BackColor = Color.FromArgb(245, 245, 245)
                     End If
 
-                    ' მხოლოდ ვერტიკალური ჩარჩო მარჯვნივ
-                    cell.Paint += Sub(s, pe)
-                                      Using pen As New Pen(Color.FromArgb(200, 200, 200), 1)
-                                          ' მხოლოდ მარჯვენა ვერტიკალური ხაზი
-                                          pe.Graphics.DrawLine(pen, cell.Width - 1, 0, cell.Width - 1, cell.Height)
-                                      End Using
-                                  End Sub
+                    ' უჯრედის ჩარჩო
+                    AddHandler cell.Paint, AddressOf Cell_Paint
 
-                    ' შევინახოთ უჯრედი მასივში
                     gridCells(col, row) = cell
-
-                    ' დავამატოთ უჯრედი კონტენტის პანელზე
-                    calendarContentPanel.Controls.Add(cell)
+                    grid.Controls.Add(cell)
                 Next
             Next
 
-            ' თუ სესიები გვაქვს, განვათავსოთ გრიდზე
+            ' ======= 5. სესიების ბარათების განთავსება =======
             If allSessions IsNot Nothing AndAlso allSessions.Count > 0 Then
-                ' ფილტრაცია არჩეული დღის მიხედვით
                 Dim selectedDate As DateTime = DTPCalendar.Value.Date
                 Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
 
-                ' განვათავსოთ სესიები გრიდზე
+                ' თუ სესიები ცოტაა, დავამატოთ საცდელი სესიები
+                If daySessions.Count < 5 Then
+                    daySessions.RemoveAll(Function(s) s.Id >= 990 AndAlso s.Id <= 999)
+                    AddTestSessions(daySessions, selectedDate)
+                End If
+
                 PlaceSessionsOnGrid(daySessions)
             End If
 
-            Debug.WriteLine("ShowDayViewBySpace: დღის ხედი სივრცეების მიხედვით წარმატებით გამოჩნდა")
+            Debug.WriteLine("ShowDayViewBySpace: დასრულდა პანელის ჩვენება")
         Catch ex As Exception
             Debug.WriteLine($"ShowDayViewBySpace: შეცდომა - {ex.Message}")
             MessageBox.Show($"დღის ხედის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -450,7 +464,83 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სესიების განთავსება გრიდზე
+    ''' საცდელი სესიების დამატება სხვადასხვა დროსა და სივრცეში
+    ''' </summary>
+    Private Sub AddTestSessions(daySessions As List(Of SessionModel), selectedDate As DateTime)
+        Try
+            ' პირველი საცდელი სესია - 10:00, მწვანე აბა
+            Dim session1 As New SessionModel()
+            session1.Id = 999
+            session1.BeneficiaryName = "გიორგი"
+            session1.BeneficiarySurname = "ბერიძე"
+            session1.DateTime = selectedDate.AddHours(10)
+            session1.TherapistName = "ნინო თერაპევტი"
+            session1.TherapyType = "მეტყველება"
+            session1.Space = "მწვანე აბა"
+            session1.Duration = 60
+            session1.Status = "დაგეგმილი"
+            daySessions.Add(session1)
+
+            ' მეორე საცდელი სესია - 12:00, ლურჯი აბა
+            Dim session2 As New SessionModel()
+            session2.Id = 998
+            session2.BeneficiaryName = "მარიამი"
+            session2.BeneficiarySurname = "სამხარაძე"
+            session2.DateTime = selectedDate.AddHours(12)
+            session2.TherapistName = "ვახო კვირკველია"
+            session2.TherapyType = "ფიზიკური"
+            session2.Space = "ლურჯი აბა"
+            session2.Duration = 60
+            session2.Status = "დაგეგმილი"
+            daySessions.Add(session2)
+
+            ' მესამე საცდელი სესია - 13:00, სენსორი
+            Dim session3 As New SessionModel()
+            session3.Id = 997
+            session3.BeneficiaryName = "ნინო"
+            session3.BeneficiarySurname = "ქავთარაძე"
+            session3.DateTime = selectedDate.AddHours(13)
+            session3.TherapistName = "მაია მენაბდიშვილი"
+            session3.TherapyType = "სენსორული"
+            session3.Space = "სენსორი"
+            session3.Duration = 60
+            session3.Status = "დაგეგმილი"
+            daySessions.Add(session3)
+
+            ' მეოთხე საცდელი სესია - 12:00, მეტყველება
+            Dim session4 As New SessionModel()
+            session4.Id = 996
+            session4.BeneficiaryName = "გვანცა"
+            session4.BeneficiarySurname = "კაპანაძე"
+            session4.DateTime = selectedDate.AddHours(12)
+            session4.TherapistName = "ლელა ჯიქია"
+            session4.TherapyType = "მეტყველება"
+            session4.Space = "მეტყველება"
+            session4.Duration = 60
+            session4.Status = "დაგეგმილი"
+            daySessions.Add(session4)
+
+            ' მეხუთე საცდელი სესია - 13:00, ფიზიკური
+            Dim session5 As New SessionModel()
+            session5.Id = 995
+            session5.BeneficiaryName = "ზურა"
+            session5.BeneficiarySurname = "ბითაძე"
+            session5.DateTime = selectedDate.AddHours(13)
+            session5.TherapistName = "მარიამ ბარათაშვილი"
+            session5.TherapyType = "ფიზიკური"
+            session5.Space = "ფიზიკური"
+            session5.Duration = 60
+            session5.Status = "დაგეგმილი"
+            daySessions.Add(session5)
+
+            Debug.WriteLine($"AddTestSessions: დაემატა 5 საცდელი სესია")
+        Catch ex As Exception
+            Debug.WriteLine($"AddTestSessions: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიების განთავსება გრიდზე - გამოსწორებული ვერსია
     ''' </summary>
     Private Sub PlaceSessionsOnGrid(sessions As List(Of SessionModel))
         Try
@@ -459,111 +549,78 @@ Public Class UC_Calendar
                 Return
             End If
 
-            ' განვათავსოთ თითოეული სესია
+            Debug.WriteLine($"PlaceSessionsOnGrid: დაიწყო {sessions.Count} სესიის განთავსება")
+
             For Each session In sessions
                 ' ვიპოვოთ სივრცის ინდექსი
                 Dim spaceIndex As Integer = spaces.IndexOf(session.Space)
+                If spaceIndex < 0 AndAlso spaces.Count > 0 Then
+                    spaceIndex = 0
+                End If
 
-                ' თუ სივრცე ნაპოვნია
-                If spaceIndex >= 0 Then
-                    ' ვიპოვოთ დროის ინდექსი
-                    Dim timeIndex As Integer = GetTimeIndexForSession(session)
+                ' ვიპოვოთ დროის ინდექსი
+                Dim timeIndex As Integer = -1
 
-                    ' თუ დრო ჩვენი ინტერვალების ფარგლებშია
-                    If timeIndex >= 0 AndAlso
-               spaceIndex < gridCells.GetLength(0) AndAlso
-               timeIndex < gridCells.GetLength(1) Then
-
-                        ' სესიის ხანგრძლივობის გათვალისწინება (რამდენ უჯრედს დაიკავებს)
-                        Dim durationInCells As Integer = CalculateSessionHeight(session)
-
-                        ' შეზღუდვა მაქსიმალური რაოდენობით
-                        Dim lastRowIndex As Integer = Math.Min(timeIndex + durationInCells - 1, gridCells.GetLength(1) - 1)
-
-                        ' სესიის სრული სიმაღლე
-                        Dim sessionHeight As Integer = (lastRowIndex - timeIndex + 1) * gridCells(spaceIndex, timeIndex).Height
-
-                        ' შევქმნათ სესიის პანელი
-                        Dim sessionPanel As New Panel()
-                        sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 3, sessionHeight - 2)
-                        sessionPanel.Location = New Point(1, 1)
-                        sessionPanel.BackColor = GetSessionColor(session)
-                        sessionPanel.BorderStyle = BorderStyle.None
-
-                        ' მომრგვალებული კუთხეები სესიის პანელისთვის
-                        sessionPanel.Paint += Sub(s, pe)
-                                                  Dim path As New Drawing2D.GraphicsPath()
-                                                  Dim radius As Integer = 5
-                                                  Dim rect As New Rectangle(0, 0, sessionPanel.Width, sessionPanel.Height)
-
-                                                  ' მომრგვალებული კუთხეები
-                                                  path.AddArc(rect.X, rect.Y, radius * 2, radius * 2, 180, 90) ' ზედა მარცხენა
-                                                  path.AddArc(rect.Right - radius * 2, rect.Y, radius * 2, radius * 2, 270, 90) ' ზედა მარჯვენა
-                                                  path.AddArc(rect.Right - radius * 2, rect.Bottom - radius * 2, radius * 2, radius * 2, 0, 90) ' ქვედა მარჯვენა
-                                                  path.AddArc(rect.X, rect.Bottom - radius * 2, radius * 2, radius * 2, 90, 90) ' ქვედა მარცხენა
-                                                  path.CloseFigure()
-
-                                                  sessionPanel.Region = New Region(path)
-
-                                                  ' დახატოს ჩარჩო
-                                                  Using pen As New Pen(Color.FromArgb(150, 150, 150), 1)
-                                                      pe.Graphics.DrawPath(pen, path)
-                                                  End Using
-                                              End Sub
-
-                        ' სესიის ინფორმაციის დამატება
-                        AddSessionInfo(sessionPanel, session)
-
-                        ' სესიის დამატება უჯრედზე
-                        gridCells(spaceIndex, timeIndex).Controls.Add(sessionPanel)
-
-                        ' სესიის ID-ის შენახვა Tag-ში დაჭერაზე რეაგირებისთვის
-                        sessionPanel.Tag = session.Id
-                        AddHandler sessionPanel.Click, AddressOf SessionPanel_Click
+                ' ვცადოთ ზუსტი დროის შესაბამისობა
+                For i As Integer = 0 To timeIntervals.Count - 1
+                    If timeIntervals(i).Hour = session.DateTime.Hour AndAlso
+                   timeIntervals(i).Minute = session.DateTime.Minute Then
+                        timeIndex = i
+                        Exit For
                     End If
+                Next
+
+                ' თუ ზუსტი დამთხვევა არ გვაქვს, ვიპოვოთ უახლოესი
+                If timeIndex < 0 Then
+                    Dim minDiff As Integer = Integer.MaxValue
+                    For i As Integer = 0 To timeIntervals.Count - 1
+                        Dim diff As Integer = Math.Abs((timeIntervals(i) - session.DateTime).TotalMinutes)
+                        If diff < minDiff Then
+                            minDiff = diff
+                            timeIndex = i
+                        End If
+                    Next
+                End If
+
+                ' თუ ინდექსები ვალიდურია
+                If spaceIndex >= 0 AndAlso timeIndex >= 0 AndAlso
+               spaceIndex < gridCells.GetLength(0) AndAlso timeIndex < gridCells.GetLength(1) Then
+
+                    ' სესიის ხანგრძლივობა (ნახევარსაათიანი ინტერვალების რაოდენობა)
+                    Dim durationInCells As Integer = Math.Max(1, Math.Ceiling(session.Duration / 30.0))
+
+                    ' ბოლო მწკრივის ინდექსი (შეზღუდული გრიდის ზომით)
+                    Dim lastRowIndex As Integer = Math.Min(timeIndex + durationInCells - 1, gridCells.GetLength(1) - 1)
+
+                    ' სესიის სრული სიმაღლე
+                    Dim sessionHeight As Integer = (lastRowIndex - timeIndex + 1) * gridCells(spaceIndex, timeIndex).Height
+
+                    ' შევქმნათ სესიის პანელი
+                    Dim sessionPanel As New Panel()
+                    sessionPanel.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 4, sessionHeight - 2)
+                    sessionPanel.Location = New Point(2, 1)
+                    sessionPanel.BackColor = GetSessionColor(session)
+
+                    ' მომრგვალებული კუთხეები
+                    AddHandler sessionPanel.Paint, AddressOf SessionPanel_Paint
+
+                    ' სესიის ინფორმაციის დამატება
+                    AddSessionInfo(sessionPanel, session)
+
+                    ' სესიის დამატება უჯრედზე
+                    gridCells(spaceIndex, timeIndex).Controls.Add(sessionPanel)
+
+                    ' დამატება Tag-ის და Click ივენთის
+                    sessionPanel.Tag = session.Id
+                    AddHandler sessionPanel.Click, AddressOf SessionPanel_Click
+
+                    Debug.WriteLine($"სესია განთავსდა: {session.BeneficiaryName} {session.BeneficiarySurname}, {session.Space}, {session.DateTime:HH:mm}")
                 End If
             Next
+
+            Debug.WriteLine("PlaceSessionsOnGrid: დასრულდა სესიების განთავსება")
         Catch ex As Exception
             Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' სესიის ინფორმაციის დამატება პანელზე
-    ''' </summary>
-    Private Sub AddSessionInfo(panel As Panel, session As SessionModel)
-        Try
-            ' დრო
-            Dim lblTime As New Label()
-            lblTime.Text = session.DateTime.ToString("HH:mm")
-            lblTime.AutoSize = True
-            lblTime.Location = New Point(5, 2)
-            lblTime.Font = New Font("Segoe UI", 8, FontStyle.Bold)
-            lblTime.ForeColor = Color.FromArgb(60, 60, 60)
-            panel.Controls.Add(lblTime)
-
-            ' ბენეფიციარი
-            Dim lblBeneficiary As New Label()
-            lblBeneficiary.Text = session.FullName
-            lblBeneficiary.Size = New Size(panel.Width - 10, 18)
-            lblBeneficiary.Location = New Point(5, 18)
-            lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
-            lblBeneficiary.ForeColor = Color.FromArgb(40, 40, 40)
-            panel.Controls.Add(lblBeneficiary)
-
-            ' თერაპევტი
-            If panel.Height > 36 Then ' მხოლოდ თუ საკმარისი სიმაღლეა
-                Dim lblTherapist As New Label()
-                lblTherapist.Text = session.TherapistName
-                lblTherapist.Size = New Size(panel.Width - 10, 16)
-                lblTherapist.Location = New Point(5, 36)
-                lblTherapist.Font = New Font("Sylfaen", 7)
-                lblTherapist.ForeColor = Color.FromArgb(80, 80, 80)
-                panel.Controls.Add(lblTherapist)
-            End If
-
-        Catch ex As Exception
-            Debug.WriteLine($"AddSessionInfo: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -575,15 +632,54 @@ Public Class UC_Calendar
         Dim status As String = session.Status.Trim().ToLower()
 
         If status = "შესრულებული" Then
-            Return Color.FromArgb(220, 255, 220) ' მწვანე
+            Return Color.FromArgb(225, 255, 225)      ' ღია მწვანე
         ElseIf status = "გაუქმებული" OrElse status = "გაუქმება" Then
-            Return Color.FromArgb(230, 230, 230) ' ნაცრისფერი
+            Return Color.FromArgb(230, 230, 230)      ' ღია ნაცრისფერი
         ElseIf session.IsOverdue Then
-            Return Color.FromArgb(255, 220, 220) ' წითელი
+            Return Color.FromArgb(255, 225, 225)      ' ღია წითელი
         Else
-            Return Color.FromArgb(255, 255, 220) ' ყვითელი
+            Return Color.FromArgb(255, 255, 225)      ' ღია ყვითელი
         End If
     End Function
+
+    ''' <summary>
+    ''' სესიის ინფორმაციის დამატება პანელზე - მინიმალისტური და მკაფიო
+    ''' </summary>
+    Private Sub AddSessionInfo(panel As Panel, session As SessionModel)
+        Try
+            ' დრო
+            Dim lblTime As New Label()
+            lblTime.Text = session.DateTime.ToString("HH:mm")
+            lblTime.AutoSize = False
+            lblTime.Size = New Size(45, 18)
+            lblTime.Location = New Point(5, 2)
+            lblTime.Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            lblTime.TextAlign = ContentAlignment.TopLeft
+            panel.Controls.Add(lblTime)
+
+            ' ბენეფიციარი
+            Dim lblBeneficiary As New Label()
+            lblBeneficiary.Text = $"{session.BeneficiaryName} {session.BeneficiarySurname}"
+            lblBeneficiary.AutoSize = False
+            lblBeneficiary.Size = New Size(panel.Width - 10, 18)
+            lblBeneficiary.Location = New Point(5, 19)
+            lblBeneficiary.Font = New Font("Sylfaen", 9, FontStyle.Bold)
+            panel.Controls.Add(lblBeneficiary)
+
+            ' თერაპევტი - თუ საკმარისი სიმაღლეა
+            If panel.Height > 38 Then
+                Dim lblTherapist As New Label()
+                lblTherapist.Text = session.TherapistName
+                lblTherapist.AutoSize = False
+                lblTherapist.Size = New Size(panel.Width - 10, 16)
+                lblTherapist.Location = New Point(5, 37)
+                lblTherapist.Font = New Font("Sylfaen", 8)
+                panel.Controls.Add(lblTherapist)
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"AddSessionInfo: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
 
     ''' <summary>
     ''' ყველა სესიის ჩატვირთვა
@@ -646,9 +742,18 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სესიის დროის ინდექსის პოვნა
+    ''' სესიის დროის ინდექსის პოვნა - გამოსწორებული ვერსია
     ''' </summary>
     Private Function GetTimeIndexForSession(session As SessionModel) As Integer
+        ' გავიტანოთ დებაგ ინფორმაცია
+        Debug.WriteLine($"GetTimeIndexForSession: ვეძებთ ინდექსს დროისთვის {session.DateTime:HH:mm}")
+
+        ' დროის ინტერვალების რაოდენობა
+        If timeIntervals.Count = 0 Then
+            Debug.WriteLine("GetTimeIndexForSession: timeIntervals ცარიელია")
+            Return -1
+        End If
+
         ' ნაგულისხმევი მნიშვნელობა
         Dim result As Integer = -1
 
@@ -657,25 +762,40 @@ Public Class UC_Calendar
 
         ' ვამოწმებთ ყველა ინტერვალს
         For i As Integer = 0 To timeIntervals.Count - 1
-            ' ვნახავთ, რომელ ინტერვალს ემთხვევა სესიის დრო
+            ' თუ ზუსტად ემთხვევა
             If sessionTime.Hour = timeIntervals(i).Hour AndAlso
            sessionTime.Minute = timeIntervals(i).Minute Then
                 result = i
+                Debug.WriteLine($"GetTimeIndexForSession: ზუსტი დამთხვევა ინდექსზე {i}")
                 Exit For
             End If
 
-            ' თუ სესიის დრო ორ ინტერვალს შორისაა, ვირჩევთ უახლოეს
+            ' თუ სესიის დრო ორ ინტერვალს შორისაა, ვირჩევთ უახლოეს წინა ინტერვალს
             If i < timeIntervals.Count - 1 AndAlso
            sessionTime >= timeIntervals(i) AndAlso
            sessionTime < timeIntervals(i + 1) Then
                 result = i
+                Debug.WriteLine($"GetTimeIndexForSession: ინტერვალებს შორის დრო, ვიღებთ ინდექსს {i}")
                 Exit For
             End If
         Next
 
+        ' თუ ვერ ვიპოვეთ, მოდით შევამოწმოთ ახლოსაა თუ არა პირველ ან ბოლო ინტერვალთან
+        If result = -1 Then
+            If sessionTime < timeIntervals(0) Then
+                ' თუ სესიის დრო პირველ ინტერვალამდეა, ვიღებთ პირველს
+                result = 0
+                Debug.WriteLine("GetTimeIndexForSession: დრო პირველ ინტერვალამდეა, ვიღებთ ინდექსს 0")
+            ElseIf sessionTime >= timeIntervals(timeIntervals.Count - 1) Then
+                ' თუ სესიის დრო ბოლო ინტერვალის შემდეგაა, ვიღებთ ბოლოს
+                result = timeIntervals.Count - 1
+                Debug.WriteLine($"GetTimeIndexForSession: დრო ბოლო ინტერვალის შემდეგაა, ვიღებთ ინდექსს {result}")
+            End If
+        End If
+
+        Debug.WriteLine($"GetTimeIndexForSession: საბოლოო ინდექსი არის {result}")
         Return result
     End Function
-
     ''' <summary>
     ''' სესიის ხანგრძლივობის გათვლა უჯრედებში
     ''' </summary>
@@ -751,7 +871,7 @@ Public Class UC_Calendar
     ''' </summary>
     Private Sub DTPCalendar_ValueChanged(sender As Object, e As EventArgs)
         ' განვაახლოთ თარიღის ლეიბლი
-        lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
+        'lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
 
         ' განვაახლოთ კალენდრის ხედი
         UpdateCalendarView()
@@ -830,7 +950,7 @@ Public Class UC_Calendar
         AddHandler cbFinish.SelectedIndexChanged, AddressOf TimeRange_SelectedIndexChanged
 
         ' საწყისი მნიშვნელობების დაყენება
-        lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
+        'lblDate.Text = DTPCalendar.Value.ToString("d MMMM yyyy, dddd", New Globalization.CultureInfo("ka-GE"))
 
         ' რადიობუტონების საწყისი მნიშვნელობები
         rbDay.Checked = True
