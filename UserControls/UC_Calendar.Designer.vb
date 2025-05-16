@@ -22,6 +22,7 @@ Partial Class UC_Calendar
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(UC_Calendar))
         Me.pnlFIlter = New System.Windows.Forms.Panel()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.RBSpace = New System.Windows.Forms.RadioButton()
@@ -301,28 +302,30 @@ Partial Class UC_Calendar
         'BtnAddSchedule
         '
         Me.BtnAddSchedule.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnAddSchedule.BackgroundImage = CType(resources.GetObject("BtnAddSchedule.BackgroundImage"), System.Drawing.Image)
+        Me.BtnAddSchedule.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnAddSchedule.Location = New System.Drawing.Point(1193, 13)
         Me.BtnAddSchedule.Name = "BtnAddSchedule"
         Me.BtnAddSchedule.Size = New System.Drawing.Size(50, 50)
         Me.BtnAddSchedule.TabIndex = 45
-        Me.BtnAddSchedule.Text = "ჩანაწერის დამატება"
         Me.BtnAddSchedule.UseVisualStyleBackColor = True
         '
         'BtnRef
         '
         Me.BtnRef.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnRef.BackgroundImage = CType(resources.GetObject("BtnRef.BackgroundImage"), System.Drawing.Image)
+        Me.BtnRef.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnRef.Location = New System.Drawing.Point(1249, 13)
         Me.BtnRef.Name = "BtnRef"
         Me.BtnRef.Size = New System.Drawing.Size(50, 50)
         Me.BtnRef.TabIndex = 46
-        Me.BtnRef.Text = "განახლება"
         Me.BtnRef.UseVisualStyleBackColor = True
         '
         'BtnHDown
         '
-        Me.BtnHDown.Location = New System.Drawing.Point(866, 26)
+        Me.BtnHDown.Location = New System.Drawing.Point(864, 26)
         Me.BtnHDown.Name = "BtnHDown"
-        Me.BtnHDown.Size = New System.Drawing.Size(20, 20)
+        Me.BtnHDown.Size = New System.Drawing.Size(30, 30)
         Me.BtnHDown.TabIndex = 44
         Me.BtnHDown.Text = "-"
         Me.BtnHDown.UseVisualStyleBackColor = True
@@ -339,29 +342,31 @@ Partial Class UC_Calendar
         '
         'BtnHUp
         '
-        Me.BtnHUp.Location = New System.Drawing.Point(918, 26)
+        Me.BtnHUp.BackgroundImage = CType(resources.GetObject("BtnHUp.BackgroundImage"), System.Drawing.Image)
+        Me.BtnHUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnHUp.Location = New System.Drawing.Point(936, 26)
         Me.BtnHUp.Name = "BtnHUp"
-        Me.BtnHUp.Size = New System.Drawing.Size(20, 20)
+        Me.BtnHUp.Size = New System.Drawing.Size(30, 30)
         Me.BtnHUp.TabIndex = 43
-        Me.BtnHUp.Text = "+"
         Me.BtnHUp.UseVisualStyleBackColor = True
         '
         'BtnVDown
         '
-        Me.BtnVDown.Location = New System.Drawing.Point(892, 38)
+        Me.BtnVDown.Location = New System.Drawing.Point(900, 41)
         Me.BtnVDown.Name = "BtnVDown"
-        Me.BtnVDown.Size = New System.Drawing.Size(20, 20)
+        Me.BtnVDown.Size = New System.Drawing.Size(30, 30)
         Me.BtnVDown.TabIndex = 42
         Me.BtnVDown.Text = "-"
         Me.BtnVDown.UseVisualStyleBackColor = True
         '
         'BtnVUp
         '
-        Me.BtnVUp.Location = New System.Drawing.Point(892, 13)
+        Me.BtnVUp.BackgroundImage = CType(resources.GetObject("BtnVUp.BackgroundImage"), System.Drawing.Image)
+        Me.BtnVUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnVUp.Location = New System.Drawing.Point(900, 8)
         Me.BtnVUp.Name = "BtnVUp"
-        Me.BtnVUp.Size = New System.Drawing.Size(20, 20)
+        Me.BtnVUp.Size = New System.Drawing.Size(30, 30)
         Me.BtnVUp.TabIndex = 41
-        Me.BtnVUp.Text = "+"
         Me.BtnVUp.UseVisualStyleBackColor = True
         '
         'CheckBox5
