@@ -1,4 +1,5 @@
 ﻿Imports System.ComponentModel
+Imports System.Text
 Imports System.Windows.Forms
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
@@ -42,6 +43,8 @@ Public Class UC_Calendar
     Private Const BASE_ROW_HEIGHT As Integer = 40 ' მწკრივის საბაზისო სიმაღლე - იცვლება vScale-ით
     Private Const BASE_SPACE_COLUMN_WIDTH As Integer = 150 ' სივრცის სვეტის საბაზისო სიგანე - იცვლება hScale-ით
 
+    ' კლასის დონეზე კონსტანტები
+    Private Const BASE_DATE_COLUMN_WIDTH As Integer = 40 ' თარიღის ზოლის საბაზისო სიგანე - არ იცვლება
     ''' <summary>
     ''' კონსტრუქტორი კალენდრის ViewModel-ით
     ''' </summary>
@@ -355,7 +358,7 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' კალენდრის დღის ხედის პანელების ინიციალიზაცია - გაუმჯობესებული მასშტაბირებისთვის
+    ''' კალენდრის დღის ხედის პანელების ინიციალიზაცია თარიღის ზოლის დამატებით
     ''' </summary>
     Private Sub InitializeDayViewPanels()
         Try
@@ -363,9 +366,6 @@ Public Class UC_Calendar
 
             ' გავასუფთავოთ კალენდრის პანელი
             pnlCalendarGrid.Controls.Clear()
-
-            ' დავაყენოთ კალენდრის პანელის სკროლი
-            pnlCalendarGrid.AutoScroll = False
 
             ' წავკითხოთ მშობელი პანელის ზომები
             Dim totalWidth As Integer = pnlCalendarGrid.ClientSize.Width - 5 ' 5 პიქსელი დაშორებისთვის
@@ -376,39 +376,61 @@ Public Class UC_Calendar
             ' კონსტანტები, რომლებიც არ იცვლება მასშტაბირებისას
             Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT
             Dim TIME_COLUMN_WIDTH As Integer = BASE_TIME_COLUMN_WIDTH
+            Dim DATE_COLUMN_WIDTH As Integer = BASE_DATE_COLUMN_WIDTH
 
-            ' სივრცის სვეტის სიგანე (იმასშტაბირდება)
-            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            ' ======= 1. შევქმნათ თარიღის ზოლის პანელი (ყველაზე მარცხნივ) =======
+            Dim dateColumnPanel As New Panel()
+            dateColumnPanel.Name = "dateColumnPanel"
+            dateColumnPanel.Size = New Size(DATE_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
+            dateColumnPanel.Location = New Point(0, HEADER_HEIGHT)
+            dateColumnPanel.BackColor = Color.FromArgb(60, 80, 150) ' მუქი ლურჯი ფონი
+            dateColumnPanel.BorderStyle = BorderStyle.FixedSingle
+            dateColumnPanel.AutoScroll = False
+            pnlCalendarGrid.Controls.Add(dateColumnPanel)
 
-            ' სივრცეების სათაურების პანელის სრული სიგანე
-            Dim totalHeaderWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
-
-            ' ======= 1. შევქმნათ საათების პანელი (მარცხნივ) =======
+            ' ======= 2. შევქმნათ საათების პანელი (თარიღის ზოლის მარჯვნივ) =======
             Dim timeColumnPanel As New Panel()
             timeColumnPanel.Name = "timeColumnPanel"
             timeColumnPanel.Size = New Size(TIME_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
-            timeColumnPanel.Location = New Point(0, HEADER_HEIGHT)
+            timeColumnPanel.Location = New Point(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
             timeColumnPanel.BackColor = Color.FromArgb(240, 240, 245)
             timeColumnPanel.BorderStyle = BorderStyle.FixedSingle
-            timeColumnPanel.AutoScroll = False ' მნიშვნელოვანია - გავთიშოთ სკროლი
+            timeColumnPanel.AutoScroll = False
             pnlCalendarGrid.Controls.Add(timeColumnPanel)
 
-            ' ======= 2. შევქმნათ სივრცეების სათაურების პანელი (ზემოთ) =======
+            ' ======= 3. შევქმნათ სივრცეების სათაურების პანელი (ზემოთ) =======
             Dim spacesHeaderPanel As New Panel()
             spacesHeaderPanel.Name = "spacesHeaderPanel"
-            ' მნიშვნელოვანი: სივრცეების სათაურების პანელის სიგანე ემთხვევა სრულ სიგანეს
-            spacesHeaderPanel.Size = New Size(totalHeaderWidth, HEADER_HEIGHT)
-            spacesHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH, 0)
+            spacesHeaderPanel.Size = New Size(totalWidth - TIME_COLUMN_WIDTH - DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            spacesHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
             spacesHeaderPanel.BackColor = Color.FromArgb(220, 220, 240)
             spacesHeaderPanel.BorderStyle = BorderStyle.FixedSingle
-            spacesHeaderPanel.AutoScroll = False ' მნიშვნელოვანია - გავთიშოთ სკროლი
             pnlCalendarGrid.Controls.Add(spacesHeaderPanel)
 
-            ' ======= 3. შევქმნათ დროის სათაურის პანელი (მარცხენა ზედა კუთხეში) =======
+            ' ======= 4. შევქმნათ თარიღის სათაურის პანელი (მარცხენა ზედა კუთხეში) =======
+            Dim dateHeaderPanel As New Panel()
+            dateHeaderPanel.Name = "dateHeaderPanel"
+            dateHeaderPanel.Size = New Size(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            dateHeaderPanel.Location = New Point(0, 0)
+            dateHeaderPanel.BackColor = Color.FromArgb(40, 60, 120) ' მუქი ლურჯი ფონი
+            dateHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(dateHeaderPanel)
+
+            ' თარიღის სათაურის ლეიბლი
+            Dim dateHeaderLabel As New Label()
+            dateHeaderLabel.Size = New Size(DATE_COLUMN_WIDTH - 2, HEADER_HEIGHT - 2)
+            dateHeaderLabel.Location = New Point(1, 1)
+            dateHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            dateHeaderLabel.Text = "თარიღი"
+            dateHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            dateHeaderLabel.ForeColor = Color.White
+            dateHeaderPanel.Controls.Add(dateHeaderLabel)
+
+            ' ======= 5. შევქმნათ დროის სათაურის პანელი (თარიღის სათაურის მარჯვნივ) =======
             Dim timeHeaderPanel As New Panel()
             timeHeaderPanel.Name = "timeHeaderPanel"
             timeHeaderPanel.Size = New Size(TIME_COLUMN_WIDTH, HEADER_HEIGHT)
-            timeHeaderPanel.Location = New Point(0, 0)
+            timeHeaderPanel.Location = New Point(DATE_COLUMN_WIDTH, 0)
             timeHeaderPanel.BackColor = Color.FromArgb(180, 180, 220)
             timeHeaderPanel.BorderStyle = BorderStyle.FixedSingle
             pnlCalendarGrid.Controls.Add(timeHeaderPanel)
@@ -422,14 +444,14 @@ Public Class UC_Calendar
             timeHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
             timeHeaderPanel.Controls.Add(timeHeaderLabel)
 
-            ' ======= 4. შევქმნათ მთავარი გრიდის პანელი =======
+            ' ======= 6. შევქმნათ მთავარი გრიდის პანელი =======
             Dim mainGridPanel As New Panel()
             mainGridPanel.Name = "mainGridPanel"
-            mainGridPanel.Size = New Size(totalWidth - TIME_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
-            mainGridPanel.Location = New Point(TIME_COLUMN_WIDTH, HEADER_HEIGHT)
+            mainGridPanel.Size = New Size(totalWidth - TIME_COLUMN_WIDTH - DATE_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
+            mainGridPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, HEADER_HEIGHT)
             mainGridPanel.BackColor = Color.White
             mainGridPanel.BorderStyle = BorderStyle.FixedSingle
-            mainGridPanel.AutoScroll = True ' მხოლოდ მთავარ პანელს აქვს სკროლი ჩართული
+            mainGridPanel.AutoScroll = True
             pnlCalendarGrid.Controls.Add(mainGridPanel)
 
             Debug.WriteLine("InitializeDayViewPanels: პანელების ინიციალიზაცია დასრულდა")
@@ -438,6 +460,70 @@ Public Class UC_Calendar
             Debug.WriteLine($"InitializeDayViewPanels: შეცდომა - {ex.Message}")
             Debug.WriteLine($"InitializeDayViewPanels: StackTrace - {ex.StackTrace}")
             MessageBox.Show($"პანელების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თარიღის ზოლის პანელის შევსება არჩეული თარიღის ინფორმაციით
+    ''' </summary>
+    Private Sub FillDateColumnPanel()
+        Try
+            Debug.WriteLine("FillDateColumnPanel: დაიწყო თარიღის ზოლის შევსება")
+
+            ' ვიპოვოთ თარიღის ზოლის პანელი
+            Dim dateColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("dateColumnPanel", False).FirstOrDefault(), Panel)
+
+            If dateColumnPanel Is Nothing Then
+                Debug.WriteLine("FillDateColumnPanel: თარიღის ზოლის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' გავასუფთავოთ
+            dateColumnPanel.Controls.Clear()
+
+            ' არჩეული თარიღი კალენდრიდან
+            Dim selectedDate As Date = DTPCalendar.Value.Date
+
+            ' ქართული კულტურა თარიღის ფორმატირებისთვის
+            Dim georgianCulture As New Globalization.CultureInfo("ka-GE")
+
+            ' კვირის დღე, რიცხვი, თვე და წელი
+            Dim weekDay As String = selectedDate.ToString("dddd", georgianCulture) ' კვირის დღე
+            Dim dayOfMonth As String = selectedDate.ToString("dd", georgianCulture) ' რიცხვი
+            Dim month As String = selectedDate.ToString("MMMM", georgianCulture) ' თვე
+            Dim year As String = selectedDate.ToString("yyyy", georgianCulture) ' წელი
+
+            ' ვერტიკალური თარიღის ლეიბლის შექმნა - მთლიანი ზოლის სიმაღლისთვის
+            Dim dateLabel As New Label()
+            dateLabel.Size = New Size(dateColumnPanel.Width - 4, dateColumnPanel.Height - 4)
+            dateLabel.Location = New Point(2, 2)
+            dateLabel.BackColor = Color.FromArgb(60, 80, 150) ' მუქი ლურჯი ფონი
+            dateLabel.ForeColor = Color.White
+            dateLabel.TextAlign = ContentAlignment.MiddleCenter
+
+            ' ვერტიკალური ტექსტის თვისებების დაყენება
+            Dim verticalFont As New Font("Sylfaen", 14, FontStyle.Bold)
+            dateLabel.Font = verticalFont
+
+            ' ვერტიკალური ტექსტის ფორმირება
+            Dim dateText As New StringBuilder()
+            dateText.AppendLine(weekDay)
+            dateText.AppendLine("")
+            dateText.AppendLine(dayOfMonth)
+            dateText.AppendLine("")
+            dateText.AppendLine(month)
+            dateText.AppendLine("")
+            dateText.AppendLine(year)
+
+            dateLabel.Text = dateText.ToString()
+
+            ' დავამატოთ ლეიბლი პანელზე
+            dateColumnPanel.Controls.Add(dateLabel)
+
+            Debug.WriteLine("FillDateColumnPanel: თარიღის ზოლი შევსებულია")
+
+        Catch ex As Exception
+            Debug.WriteLine($"FillDateColumnPanel: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -644,7 +730,7 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' დღის ხედის ჩვენება სივრცეების მიხედვით - ახალი ვერსია სამი პანელით
+    ''' დღის ხედის ჩვენება სივრცეების მიხედვით - განახლებული თარიღის ზოლით
     ''' </summary>
     Private Sub ShowDayViewBySpace()
         Try
@@ -656,17 +742,23 @@ Public Class UC_Calendar
             ' ======= 1. პანელების ინიციალიზაცია =======
             InitializeDayViewPanels()
 
-            ' ======= 2. დროის პანელის შევსება =======
+            ' ======= 2. თარიღის ზოლის შევსება =======
+            FillDateColumnPanel()
+
+            ' ======= 3. დროის პანელის შევსება =======
             FillTimeColumnPanel()
 
-            ' ======= 3. სივრცეების სათაურების პანელის შევსება =======
+            ' ======= 4. სივრცეების სათაურების პანელის შევსება =======
             FillSpacesHeaderPanel()
 
-            ' ======= 4. მთავარი გრიდის პანელის შევსება =======
+            ' ======= 5. მთავარი გრიდის პანელის შევსება =======
             FillMainGridPanel()
 
-            ' ======= 5. სინქრონიზაცია სქროლისთვის =======
+            ' ======= 6. სინქრონიზაცია სქროლისთვის =======
             SetupScrollSynchronization()
+
+            ' ======= 7. სესიების განთავსება გრიდში =======
+            PlaceSessionsOnGrid()
 
             Debug.WriteLine("ShowDayViewBySpace: დღის ხედის ჩვენება დასრულდა")
 
@@ -678,7 +770,7 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სკროლის სინქრონიზაცია - გაუმჯობესებული ვერსია ორმაგი სკროლის პრობლემის გადასაჭრელად
+    ''' სქროლის სინქრონიზაცია - გასწორებული ვერსია
     ''' </summary>
     Private Sub SetupScrollSynchronization()
         Try
@@ -706,16 +798,16 @@ Public Class UC_Calendar
                 Return
             End If
 
-            ' გავთიშოთ დროის პანელის სკროლი
-            timeColumnPanel.AutoScroll = False
+            ' ჯერ მოვხსნათ არსებული ივენთის ჰენდლერები, თუ ისინი არსებობენ
+            RemoveHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
 
-            ' გავთიშოთ სივრცეების სათაურების პანელის სკროლი
-            spacesHeaderPanel.AutoScroll = False
-
-            ' მივაბათ Scroll ივენთი
+            ' მივაბათ Scroll ივენთი ხელახლა
             AddHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
 
-            Debug.WriteLine("SetupScrollSynchronization: სკროლის სინქრონიზაცია დაყენებულია")
+            ' ასევე, დავამატოთ ივენთი გორგოლჭის სქროლისთვის
+            AddHandler mainGridPanel.MouseWheel, AddressOf MainGridPanel_MouseWheel
+
+            Debug.WriteLine("SetupScrollSynchronization: სქროლის სინქრონიზაცია დაყენებულია")
 
         Catch ex As Exception
             Debug.WriteLine($"SetupScrollSynchronization: შეცდომა - {ex.Message}")
@@ -723,7 +815,7 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' მთავარი გრიდის პანელის სკროლის ივენთი - გაუმჯობესებული ვერსია
+    ''' მთავარი გრიდის პანელის სქროლის ივენთი - განახლებული ვერსია თარიღის ზოლით
     ''' </summary>
     Private Sub MainGridPanel_Scroll(sender As Object, e As ScrollEventArgs)
         Try
@@ -734,6 +826,15 @@ Public Class UC_Calendar
             Dim timeColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("timeColumnPanel", False).FirstOrDefault(), Panel)
 
             If timeColumnPanel Is Nothing Then
+                Debug.WriteLine("MainGridPanel_Scroll: დროის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' ვიპოვოთ თარიღის ზოლის პანელი
+            Dim dateColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("dateColumnPanel", False).FirstOrDefault(), Panel)
+
+            If dateColumnPanel Is Nothing Then
+                Debug.WriteLine("MainGridPanel_Scroll: თარიღის ზოლის პანელი ვერ მოიძებნა")
                 Return
             End If
 
@@ -741,26 +842,56 @@ Public Class UC_Calendar
             Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
 
             If spacesHeaderPanel Is Nothing Then
+                Debug.WriteLine("MainGridPanel_Scroll: სივრცეების სათაურების პანელი ვერ მოიძებნა")
                 Return
             End If
 
-            ' ვერტიკალური სქროლი - სინქრონიზაცია დროის პანელთან
+            ' ვერტიკალური სქროლი - სინქრონიზაცია დროის პანელთან და თარიღის ზოლთან
             If e.ScrollOrientation = ScrollOrientation.VerticalScroll Then
-                ' დავაყენოთ დროის პანელის ვერტიკალური პოზიცია
-                timeColumnPanel.Location = New Point(timeColumnPanel.Location.X, BASE_HEADER_HEIGHT - e.NewValue)
+                ' დავაყენოთ დროის პანელის და თარიღის ზოლის ვერტიკალური პოზიცია
+                timeColumnPanel.Top = BASE_HEADER_HEIGHT - mainGridPanel.VerticalScroll.Value
+                dateColumnPanel.Top = BASE_HEADER_HEIGHT - mainGridPanel.VerticalScroll.Value
+
+                Debug.WriteLine($"MainGridPanel_Scroll: ვერტიკალური სქროლი - ახალი Top = {timeColumnPanel.Top}")
             End If
 
             ' ჰორიზონტალური სქროლი - სინქრონიზაცია სივრცეების სათაურების პანელთან
             If e.ScrollOrientation = ScrollOrientation.HorizontalScroll Then
                 ' დავაყენოთ სივრცეების სათაურების პანელის ჰორიზონტალური პოზიცია
-                ' პანელის პოზიცია იქნება BASE_TIME_COLUMN_WIDTH - სკროლის პოზიცია
-                spacesHeaderPanel.Location = New Point(BASE_TIME_COLUMN_WIDTH - e.NewValue, spacesHeaderPanel.Location.Y)
+                spacesHeaderPanel.Left = BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH - mainGridPanel.HorizontalScroll.Value
 
-                Debug.WriteLine($"MainGridPanel_Scroll: ჰორიზონტალური სკროლი - {e.NewValue}, სათაურების პანელის X={spacesHeaderPanel.Location.X}")
+                Debug.WriteLine($"MainGridPanel_Scroll: ჰორიზონტალური სქროლი - ახალი Left = {spacesHeaderPanel.Left}")
             End If
 
         Catch ex As Exception
             Debug.WriteLine($"MainGridPanel_Scroll: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' მაუსის გორგოლჭის ივენთი - დამატებითი სინქრონიზაციისთვის თარიღის ზოლით
+    ''' </summary>
+    Private Sub MainGridPanel_MouseWheel(sender As Object, e As MouseEventArgs)
+        Try
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(sender, Panel)
+
+            ' ვიპოვოთ დროის პანელი
+            Dim timeColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("timeColumnPanel", False).FirstOrDefault(), Panel)
+
+            ' ვიპოვოთ თარიღის ზოლის პანელი
+            Dim dateColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("dateColumnPanel", False).FirstOrDefault(), Panel)
+
+            If timeColumnPanel Is Nothing OrElse dateColumnPanel Is Nothing Then
+                Return
+            End If
+
+            ' ვერტიკალური სქროლის სინქრონიზაცია
+            timeColumnPanel.Top = BASE_HEADER_HEIGHT - mainGridPanel.VerticalScroll.Value
+            dateColumnPanel.Top = BASE_HEADER_HEIGHT - mainGridPanel.VerticalScroll.Value
+
+        Catch ex As Exception
+            Debug.WriteLine($"MainGridPanel_MouseWheel: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -1345,6 +1476,231 @@ Public Class UC_Calendar
 
         Catch ex As Exception
             Debug.WriteLine($"UpdatePanelSizesAndPositions: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
+    ''' მთავარი გრიდის პანელის ზომის დაყენება - განახლებული თარიღის ზოლით
+    ''' </summary>
+    Private Sub SetMainGridPanelSize()
+        Try
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("SetMainGridPanelSize: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' სივრცეების რაოდენობის შემოწმება
+            If spaces.Count = 0 Then
+                LoadSpaces()
+            End If
+
+            ' დროის ინტერვალების შემოწმება
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
+
+            ' პარამეტრები
+            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+
+            ' გრიდის სრული სიგანე და სიმაღლე
+            Dim gridWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
+            Dim gridHeight As Integer = ROW_HEIGHT * timeIntervals.Count
+
+            ' დავაყენოთ მთავარი გრიდის პანელის AutoScrollMinSize
+            mainGridPanel.AutoScrollMinSize = New Size(gridWidth, gridHeight)
+
+            Debug.WriteLine($"SetMainGridPanelSize: გრიდის ზომა დაყენებულია - Width={gridWidth}, Height={gridHeight}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"SetMainGridPanelSize: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+    ''' <summary>
+    ''' სესიების განთავსება გრიდში
+    ''' </summary>
+    Private Sub PlaceSessionsOnGrid()
+        Try
+            Debug.WriteLine("PlaceSessionsOnGrid: დაიწყო სესიების განთავსება გრიდში")
+
+            ' შევამოწმოთ გვაქვს თუ არა სესიები
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnGrid: სესიები არ არის")
+                Return
+            End If
+
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("PlaceSessionsOnGrid: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' არჩეული თარიღი - DTPCalendar.Value
+            Dim selectedDate As DateTime = DTPCalendar.Value.Date
+
+            ' ფილტრი - მხოლოდ არჩეული დღის სესიები
+            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+
+            Debug.WriteLine($"PlaceSessionsOnGrid: მოიძებნა {daySessions.Count} სესია არჩეული თარიღისთვის")
+
+            ' თითოეული სესიისთვის
+            For Each session In daySessions
+                ' გამოვთვალოთ სესიის განთავსების ადგილი გრიდში
+                Dim spaceIndex As Integer = spaces.IndexOf(session.Space)
+                If spaceIndex < 0 Then
+                    ' თუ ეს სივრცე არ არის ჩვენს სიაში, გავაგრძელოთ შემდეგ სესიასთან
+                    Continue For
+                End If
+
+                ' ვიპოვოთ სესიის დროის ინტერვალი
+                Dim sessionTime As DateTime = New DateTime(selectedDate.Year, selectedDate.Month, selectedDate.Day,
+                                                        session.DateTime.Hour, session.DateTime.Minute, 0)
+
+                ' ვიპოვოთ უახლოესი ინტერვალი timeIntervals-ში
+                Dim timeIndex As Integer = -1
+                Dim minDiff As TimeSpan = TimeSpan.MaxValue
+
+                For i As Integer = 0 To timeIntervals.Count - 1
+                    Dim diff As TimeSpan = If(sessionTime > timeIntervals(i),
+                                           sessionTime - timeIntervals(i),
+                                           timeIntervals(i) - sessionTime)
+
+                    If diff < minDiff Then
+                        minDiff = diff
+                        timeIndex = i
+                    End If
+                Next
+
+                If timeIndex < 0 Then
+                    ' ვერ ვიპოვეთ შესაბამისი დროის ინტერვალი
+                    Continue For
+                End If
+
+                ' ექვსი მწვანე ფერის ვარიანტი სხვადასხვა სტატუსისთვის
+                Dim cardColors As Color() = {
+                    Color.FromArgb(200, 255, 200),  ' ღია მწვანე - დაგეგმილი
+                    Color.FromArgb(150, 255, 150),  ' მწვანე - შესრულების პროცესში
+                    Color.FromArgb(220, 255, 220),  ' ძალიან ღია მწვანე
+                    Color.FromArgb(180, 255, 180),  ' საშუალო მწვანე
+                    Color.FromArgb(160, 255, 160),  ' მუქი მწვანე
+                    Color.FromArgb(140, 255, 140)   ' ძალიან მუქი მწვანე
+                }
+
+                ' სესიის სტატუსის მიხედვით ფერის შერჩევა
+                Dim cardColor As Color
+                Select Case session.Status.Trim().ToLower()
+                    Case "დაგეგმილი"
+                        cardColor = cardColors(0)
+                    Case "შესრულების პროცესში"
+                        cardColor = cardColors(1)
+                    Case "შესრულებული"
+                        cardColor = cardColors(2)
+                    Case "გაუქმებული"
+                        cardColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
+                    Case Else
+                        cardColor = cardColors(0) ' ნაგულისხმები
+                End Select
+
+                ' თუ უჯრედები ინიციალიზებულია და საზღვრებში ვართ
+                If gridCells IsNot Nothing AndAlso
+                   spaceIndex >= 0 AndAlso spaceIndex < spaces.Count AndAlso
+                   timeIndex >= 0 AndAlso timeIndex < timeIntervals.Count Then
+
+                    ' შევქმნათ სესიის ბარათი
+                    Dim sessionCard As New Panel()
+                    sessionCard.Size = New Size(gridCells(spaceIndex, timeIndex).Width - 4, gridCells(spaceIndex, timeIndex).Height - 4)
+                    sessionCard.Location = New Point(2, 2)
+                    sessionCard.BackColor = cardColor
+                    sessionCard.BorderStyle = BorderStyle.None
+                    sessionCard.Tag = session.Id ' შევინახოთ სესიის ID ბარათის Tag-ში
+
+                    ' ბენეფიციარის სახელის ლეიბლი
+                    Dim lblBeneficiary As New Label()
+                    lblBeneficiary.Text = $"{session.BeneficiaryName} {session.BeneficiarySurname}"
+                    lblBeneficiary.AutoSize = False
+                    lblBeneficiary.Size = New Size(sessionCard.Width - 4, 20)
+                    lblBeneficiary.Location = New Point(2, 2)
+                    lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
+                    lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter
+                    sessionCard.Controls.Add(lblBeneficiary)
+
+                    ' თერაპევტის სახელის ლეიბლი
+                    Dim lblTherapist As New Label()
+                    lblTherapist.Text = session.TherapistName
+                    lblTherapist.AutoSize = False
+                    lblTherapist.Size = New Size(sessionCard.Width - 4, 16)
+                    lblTherapist.Location = New Point(2, 22)
+                    lblTherapist.Font = New Font("Sylfaen", 7, FontStyle.Regular)
+                    sessionCard.Controls.Add(lblTherapist)
+
+                    ' ზუსტი დროის ლეიბლი
+                    Dim lblTime As New Label()
+                    lblTime.Text = session.DateTime.ToString("HH:mm")
+                    lblTime.AutoSize = True
+                    lblTime.Location = New Point(sessionCard.Width - 40, sessionCard.Height - 18)
+                    lblTime.Font = New Font("Segoe UI", 7, FontStyle.Regular)
+                    sessionCard.Controls.Add(lblTime)
+
+                    ' მოვუმრგვალოთ კუთხეები სესიის ბარათს
+                    Dim path As New Drawing2D.GraphicsPath()
+                    Dim cornerRadius As Integer = 5
+                    path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                    path.AddArc(sessionCard.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                    path.AddArc(sessionCard.Width - cornerRadius * 2, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
+                    path.AddArc(0, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
+                    path.CloseFigure()
+                    sessionCard.Region = New Region(path)
+
+                    ' Click ივენთის მიბმა სესიის ბარათზე
+                    AddHandler sessionCard.Click, AddressOf SessionCard_Click
+
+                    ' დავამატოთ სესიის ბარათი უჯრედზე
+                    gridCells(spaceIndex, timeIndex).Controls.Add(sessionCard)
+                End If
+            Next
+
+            Debug.WriteLine("PlaceSessionsOnGrid: სესიების განთავსება დასრულდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ბარათზე დაჭერის ივენთი
+    ''' </summary>
+    Private Sub SessionCard_Click(sender As Object, e As EventArgs)
+        Try
+            ' მივიღოთ დაჭერილი ბარათი
+            Dim sessionCard As Panel = DirectCast(sender, Panel)
+
+            ' მივიღოთ სესიის ID
+            Dim sessionId As Integer = CInt(sessionCard.Tag)
+
+            ' ვიპოვოთ სესია ID-ით
+            Dim session = allSessions.FirstOrDefault(Function(s) s.Id = sessionId)
+
+            If session IsNot Nothing Then
+                ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
+                Dim sb As New StringBuilder()
+                sb.AppendLine($"სესიის ინფორმაცია (ID: {session.Id})")
+                sb.AppendLine("----------------------------")
+                sb.AppendLine($"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}")
+                sb.AppendLine($"თარიღი: {session.FormattedDateTime}")
+                sb.AppendLine($"ხანგრძლივობა: {session.Duration} წუთი")
+                sb.AppendLine($"თერაპევტი: {session.TherapistName}")
+                sb.AppendLine($"თერაპია: {session.TherapyType}")
+                sb.AppendLine($"სივრცე: {session.Space}")
+                sb.AppendLine($"სტატუსი: {session.Status}")
+
+                MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"SessionCard_Click: შეცდომა - {ex.Message}")
         End Try
     End Sub
 End Class
