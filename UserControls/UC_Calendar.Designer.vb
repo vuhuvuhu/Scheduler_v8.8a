@@ -323,11 +323,12 @@ Partial Class UC_Calendar
         '
         'BtnHDown
         '
+        Me.BtnHDown.BackgroundImage = CType(resources.GetObject("BtnHDown.BackgroundImage"), System.Drawing.Image)
+        Me.BtnHDown.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnHDown.Location = New System.Drawing.Point(864, 26)
         Me.BtnHDown.Name = "BtnHDown"
         Me.BtnHDown.Size = New System.Drawing.Size(30, 30)
         Me.BtnHDown.TabIndex = 44
-        Me.BtnHDown.Text = "-"
         Me.BtnHDown.UseVisualStyleBackColor = True
         '
         'CheckBox3
@@ -352,11 +353,12 @@ Partial Class UC_Calendar
         '
         'BtnVDown
         '
+        Me.BtnVDown.BackgroundImage = CType(resources.GetObject("BtnVDown.BackgroundImage"), System.Drawing.Image)
+        Me.BtnVDown.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnVDown.Location = New System.Drawing.Point(900, 41)
         Me.BtnVDown.Name = "BtnVDown"
         Me.BtnVDown.Size = New System.Drawing.Size(30, 30)
         Me.BtnVDown.TabIndex = 42
-        Me.BtnVDown.Text = "-"
         Me.BtnVDown.UseVisualStyleBackColor = True
         '
         'BtnVUp

@@ -241,6 +241,9 @@
     <Content Include="Resources\AppImages\BtnLeftfast.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\AppImages\BtnMinus.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\AppImages\btnRefresh.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
