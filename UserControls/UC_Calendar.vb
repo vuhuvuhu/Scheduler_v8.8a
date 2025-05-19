@@ -47,6 +47,9 @@ Public Class UC_Calendar
     ' კლასის დონეზე კონსტანტები
     Private Const BASE_DATE_COLUMN_WIDTH As Integer = 40 ' თარიღის ზოლის საბაზისო სიგანე - არ იცვლება მასშტაბით
 
+    ' კლასის დონეზე ვამატებთ თერაპევტების სიას
+    Private therapists As List(Of String) = New List(Of String)()
+
     ''' <summary>
     ''' კონსტრუქტორი კალენდრის ViewModel-ით
     ''' </summary>
@@ -491,6 +494,164 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
+    ''' თერაპევტების ჩატვირთვა მონაცემთა წყაროდან არჩეული თარიღისთვის
+    ''' მხოლოდ ის თერაპევტები, რომლებიც მოცემულ თარიღში იქნებიან დაკავებულები
+    ''' </summary>
+    Private Sub LoadTherapistsForDate()
+        Try
+            Debug.WriteLine("LoadTherapistsForDate: დაიწყო თერაპევტების ჩატვირთვა")
+
+            ' გავასუფთავოთ თერაპევტების სია
+            therapists.Clear()
+
+            ' არჩეული თარიღი
+            Dim selectedDate As DateTime = DTPCalendar.Value.Date
+            Debug.WriteLine($"LoadTherapistsForDate: არჩეული თარიღი: {selectedDate:dd.MM.yyyy}")
+
+            ' שևამოწმოთ მონაცემთა სერვისი
+            If dataService Is Nothing Then
+                Debug.WriteLine("LoadTherapistsForDate: მონაცემთა სერვისი არ არის ინიციალიზებული")
+                ' საცდელი თერაპევტების ჩამატება ტესტისთვის
+                therapists.AddRange({"ჩანაწერი არ არის"})
+                Return
+            End If
+
+            ' თუ სესიები არ არის ჩატვირთული, ჩავტვირთოთ
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                LoadSessions()
+            End If
+
+            ' ფილტრაცია: მხოლოდ არჩეული დღის სესიები
+            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Debug.WriteLine($"LoadTherapistsForDate: ნაპოვნია {daySessions.Count} სესია {selectedDate:dd.MM.yyyy} თარიღისთვის")
+
+            ' შევკრიბოთ უნიკალური თერაპევტები არჩეული დღისთვის
+            Dim therapistSet As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+            For Each session In daySessions
+                If Not String.IsNullOrWhiteSpace(session.TherapistName) Then
+                    ' ვამატებთ მხოლოდ არაცარიელ თერაპევტებს
+                    Dim therapistName As String = session.TherapistName.Trim()
+                    therapistSet.Add(therapistName)
+                    Debug.WriteLine($"LoadTherapistsForDate: დაემატა თერაპევტი: '{therapistName}'")
+                End If
+            Next
+
+            ' ვარეთავთ თერაპევტებს სახელოვნად
+            therapists.AddRange(therapistSet.OrderBy(Function(t) t))
+
+            ' თუ არ მოიძებნა თერაპევტები, დავამატოთ საცდელი
+            If therapists.Count = 0 Then
+                Debug.WriteLine("LoadTherapistsForDate: თერაპევტები არ მოიძებნა, ვამატებთ საცდელ მონაცემებს")
+                therapists.AddRange({"ჩანაწერი არ არის"})
+            End If
+
+            Debug.WriteLine($"LoadTherapistsForDate: ჩატვირთულია {therapists.Count} თერაპევტი")
+            For i As Integer = 0 To therapists.Count - 1
+                Debug.WriteLine($"  [{i}] {therapists(i)}")
+            Next
+
+        Catch ex As Exception
+            Debug.WriteLine($"LoadTherapistsForDate: შეცდომა - {ex.Message}")
+
+            ' შეცდომის შემთხვევაში გვაუყენოთ საცდელი თერაპევტები
+            therapists.Clear()
+            therapists.AddRange({"ჩანაწერი არ არის"})
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სქროლის სინქრონიზაციის განახლება - გასწორებული ვერსია თერაპევტების მხარდაჭერით
+    ''' (ეს ჩანაცვლდება ან დაემატება არსებულ SetupScrollSynchronization მეთოდს)
+    ''' </summary>
+    Private Sub SetupScrollSynchronizationForBothGrids()
+        Try
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("SetupScrollSynchronizationForBothGrids: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' ჯერ მოვხსნათ არსებული ივენთის ჰენდლერები, თუ ისინი არსებობენ
+            RemoveHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
+            RemoveHandler mainGridPanel.MouseWheel, AddressOf MainGridPanel_MouseWheel
+
+            ' მივაბათ Scroll ივენთი ხელახლა (ახლა მუშაობს როგორც სივრცეებისთვის, ასევე თერაპევტებისთვის)
+            AddHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
+
+            ' ასევე, დავამატოთ ივენთი გორგოლჭის სქროლისთვის
+            AddHandler mainGridPanel.MouseWheel, AddressOf MainGridPanel_MouseWheel
+
+            Debug.WriteLine("SetupScrollSynchronizationForBothGrids: სქროლის სინქრონიზაცია დაყენებულია სივრცეების და თერაპევტების გრიდებისთვის")
+
+        Catch ex As Exception
+            Debug.WriteLine($"SetupScrollSynchronizationForBothGrids: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' კალენდრის პანელების ზომების განახლება მასშტაბის შეცვლისას - მხარდაჭერა თერაპევტებისთვის
+    ''' </summary>
+    Private Sub UpdatePanelSizesForCurrentGrid()
+        Try
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            ' შევამოწმოთ, რომელი სათაურების პანელია გამოყენებული
+            Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("UpdatePanelSizesForCurrentGrid: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' სივრცეების ხედისას
+            If spacesHeaderPanel IsNot Nothing AndAlso spacesHeaderPanel.Visible Then
+                ' გამოვთვალოთ სივრცეების სათაურების პანელის სრული სიგანე
+                Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+                Dim totalSpacesWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
+
+                ' განვაახლოთ სივრცეების სათაურების პანელის სიგანე
+                spacesHeaderPanel.Width = totalSpacesWidth
+
+                ' სკროლის პოზიცია
+                Dim scrollPosition As Point = mainGridPanel.AutoScrollPosition
+                Dim actualHScrollPos As Integer = Math.Abs(scrollPosition.X)
+
+                ' ვაყენებთ spacesHeaderPanel-ის პოზიციას ჰორიზონტალური სკროლის გათვალისწინებით
+                spacesHeaderPanel.Location = New Point(BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH - actualHScrollPos, 0)
+
+                Debug.WriteLine($"UpdatePanelSizesForCurrentGrid: განახლდა სივრცეების პანელის ზომები, Width={totalSpacesWidth}")
+            End If
+
+            ' თერაპევტების ხედისას
+            If therapistsHeaderPanel IsNot Nothing AndAlso therapistsHeaderPanel.Visible Then
+                ' გამოვთვალოთ თერაპევტების სათაურების პანელის სრული სიგანე
+                Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+                Dim totalTherapistsWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+
+                ' განვაახლოთ თერაპევტების სათაურების პანელის სიგანე
+                therapistsHeaderPanel.Width = totalTherapistsWidth
+
+                ' სკროლის პოზიცია
+                Dim scrollPosition As Point = mainGridPanel.AutoScrollPosition
+                Dim actualHScrollPos As Integer = Math.Abs(scrollPosition.X)
+
+                ' ვაყენებთ therapistsHeaderPanel-ის პოზიციას ჰორიზონტალური სკროლის გათვალისწინებით
+                therapistsHeaderPanel.Location = New Point(BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH - actualHScrollPos, 0)
+
+                Debug.WriteLine($"UpdatePanelSizesForCurrentGrid: განახლდა თერაპევტების პანელის ზომები, Width={totalTherapistsWidth}")
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UpdatePanelSizesForCurrentGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' თარიღის ზოლის პანელის შევსება არჩეული თარიღის ინფორმაციით
     ''' 🔧 გასწორება: RotatedLabel-ს ზომა და ფონტი ჩასწორდა მასშტაბირების შენარჩუნებისთვის
     ''' </summary>
@@ -832,7 +993,8 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სქროლის სინქრონიზაცია - გასწორებული ვერსია
+    ''' სქროლის სინქრონიზაცია - ᲛᲗᲚᲘᲐᲜᲐᲓ გასწორებული ვერსია
+    ''' ეს მეთოდი ჩანაცვლდება არსებული SetupScrollSynchronization მეთოდი
     ''' </summary>
     Private Sub SetupScrollSynchronization()
         Try
@@ -855,10 +1017,8 @@ Public Class UC_Calendar
             ' ვიპოვოთ სივრცეების სათაურების პანელი
             Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
 
-            If spacesHeaderPanel Is Nothing Then
-                Debug.WriteLine("SetupScrollSynchronization: სივრცეების სათაურების პანელი ვერ მოიძებნა")
-                Return
-            End If
+            ' ვიპოვოთ თერაპევტების სათაურების პანელი
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
 
             ' ჯერ მოვხსნათ არსებული ივენთის ჰენდლერები, თუ ისინი არსებობენ
             RemoveHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
@@ -870,6 +1030,8 @@ Public Class UC_Calendar
             AddHandler mainGridPanel.MouseWheel, AddressOf MainGridPanel_MouseWheel
 
             Debug.WriteLine("SetupScrollSynchronization: სქროლის სინქრონიზაცია დაყენებულია")
+            Debug.WriteLine($"  spacesHeaderPanel: {If(spacesHeaderPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+            Debug.WriteLine($"  therapistsHeaderPanel: {If(therapistsHeaderPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
 
         Catch ex As Exception
             Debug.WriteLine($"SetupScrollSynchronization: შეცდომა - {ex.Message}")
@@ -878,7 +1040,8 @@ Public Class UC_Calendar
 
     ''' <summary>
     ''' მთავარი გრიდის პანელის სქროლის ივენთი 
-    ''' 🔧 გასწორებული ვერსია: თარიღისა და დროის სვეტების სწორი სინქრონიზაცია
+    ''' 🔧 ᲛᲗᲚᲘᲐᲜᲐᲓ გასწორებული ვერსია - მუშაობს ყველა გრიდისთვის
+    ''' ეს მეთოდი ჩანაცვლდება არსებული MainGridPanel_Scroll მეთოდი
     ''' </summary>
     Private Sub MainGridPanel_Scroll(sender As Object, e As ScrollEventArgs)
         Try
@@ -887,9 +1050,12 @@ Public Class UC_Calendar
             ' ვიპოვოთ ყველა საჭირო პანელი
             Dim timeColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("timeColumnPanel", False).FirstOrDefault(), Panel)
             Dim dateColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("dateColumnPanel", False).FirstOrDefault(), Panel)
-            Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
 
-            ' ვერტიკალური სქროლი - 🔧 კრიტიკული შესწორება
+            ' 🔧 ახალი: შევამოწმოთ ყველა სათაურების პანელი
+            Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
+
+            ' ვერტიკალური სქროლი
             If e.ScrollOrientation = ScrollOrientation.VerticalScroll Then
                 Dim scrollOffset As Integer = -mainGridPanel.VerticalScroll.Value
 
@@ -906,20 +1072,25 @@ Public Class UC_Calendar
                 Debug.WriteLine($"MainGridPanel_Scroll: ვერტიკალური სქროლი - Value = {mainGridPanel.VerticalScroll.Value}, Offset = {scrollOffset}")
             End If
 
-            ' ჰორიზონტალური სქროლი - 🔧 განსაკუთრებით კრიტიკული შესწორება!
+            ' ჰორიზონტალური სქროლი
             If e.ScrollOrientation = ScrollOrientation.HorizontalScroll Then
                 Dim scrollOffset As Integer = -mainGridPanel.HorizontalScroll.Value
 
-                ' 🔧 მნიშვნელოვანი: სივრცეების სათაურები მოძრაობენ ჰორიზონტალური სქროლის მიხედვით
-                If spacesHeaderPanel IsNot Nothing Then
-                    ' ასე გამოვთვლით სწორ X პოზიციას
-                    Dim fixedLeftPosition As Integer = BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH
+                ' 🔧 მნიშვნელოვანი: ვინახავთ ფიქსირებულ მარცხენა პოზიციას
+                Dim fixedLeftPosition As Integer = BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH
+
+                ' 🔧 სივრცეების სათაურები (თუ არსებობს და ხილვადია)
+                If spacesHeaderPanel IsNot Nothing AndAlso spacesHeaderPanel.Visible Then
                     spacesHeaderPanel.Left = fixedLeftPosition + scrollOffset
                     Debug.WriteLine($"MainGridPanel_Scroll: სივრცეების სათაურები გადაადგილდა Left={spacesHeaderPanel.Left}")
                 End If
 
-                ' 🔧 პრობლემა იყო აქ - თარიღისა და დროის სვეტები არ უნდა იმოძრაონ ჰორიზონტალურად!
-                ' ეს ყოველთვის ფიქსირებული პოზიციებზე რჩებიან
+                ' 🔧 ᲐᲮᲐᲚᲘ: თერაპევტების სათაურები (თუ არსებობს და ხილვადია)
+                If therapistsHeaderPanel IsNot Nothing AndAlso therapistsHeaderPanel.Visible Then
+                    therapistsHeaderPanel.Left = fixedLeftPosition + scrollOffset
+                    Debug.WriteLine($"MainGridPanel_Scroll: თერაპევტების სათაურები გადაადგილდა Left={therapistsHeaderPanel.Left}")
+                End If
+
                 Debug.WriteLine($"MainGridPanel_Scroll: ჰორიზონტალური სქროლი - Value = {mainGridPanel.HorizontalScroll.Value}, Offset = {scrollOffset}")
             End If
 
@@ -1018,7 +1189,8 @@ Public Class UC_Calendar
     End Class
 
     ''' <summary>
-    ''' მაუსის გორგოლჭის ივენთი - 🔧 გასწორებული სქროლის სინქრონიზაციისთვის
+    ''' მაუსის გორგოლჭის ივენთი - 🔧 ᲛᲗᲚᲘᲐᲜᲐᲓ გასწორებული ვერსია
+    ''' ეს მეთოდი ჩანაცვლდება არსებული MainGridPanel_MouseWheel მეთოდი
     ''' </summary>
     Private Sub MainGridPanel_MouseWheel(sender As Object, e As MouseEventArgs)
         Try
@@ -1027,7 +1199,10 @@ Public Class UC_Calendar
             ' ვიპოვოთ საჭირო პანელები
             Dim timeColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("timeColumnPanel", False).FirstOrDefault(), Panel)
             Dim dateColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("dateColumnPanel", False).FirstOrDefault(), Panel)
+
+            ' 🔧 ახალი: შევამოწმოთ ყველა სათაურების პანელი
             Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
 
             ' 🔧 ვერტიკალური სქროლის სინქრონიზაცია (მუშაობს კარგად)
             Dim verticalScrollOffset As Integer = -mainGridPanel.VerticalScroll.Value
@@ -1040,16 +1215,64 @@ Public Class UC_Calendar
                 dateColumnPanel.Top = BASE_HEADER_HEIGHT + verticalScrollOffset
             End If
 
-            ' 🔧 ჰორიზონტალური სქროლის სინქრონიზაცია (ახალი ლოგიკა)
+            ' 🔧 ჰორიზონტალური სქროლის სინქრონიზაცია
             Dim horizontalScrollOffset As Integer = -mainGridPanel.HorizontalScroll.Value
+            Dim fixedLeftPosition As Integer = BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH
 
-            If spacesHeaderPanel IsNot Nothing Then
-                Dim fixedLeftPosition As Integer = BASE_TIME_COLUMN_WIDTH + BASE_DATE_COLUMN_WIDTH
+            ' 🔧 სივრცეების სათაურები (თუ არსებობს და ხილვადია)
+            If spacesHeaderPanel IsNot Nothing AndAlso spacesHeaderPanel.Visible Then
                 spacesHeaderPanel.Left = fixedLeftPosition + horizontalScrollOffset
+            End If
+
+            ' 🔧 ᲐᲮᲐᲚᲘ: თერაპევტების სათაურები (თუ არსებობს და ხილვადია)
+            If therapistsHeaderPanel IsNot Nothing AndAlso therapistsHeaderPanel.Visible Then
+                therapistsHeaderPanel.Left = fixedLeftPosition + horizontalScrollOffset
             End If
 
         Catch ex As Exception
             Debug.WriteLine($"MainGridPanel_MouseWheel: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 დიაგნოსტიკური მეთოდი - შეამოწმეთ სქროლის მუშაობა
+    ''' გამოიძახეთ ეს მეთოდი, როდესაც პრობლემაა სქროლთან
+    ''' </summary>
+    Public Sub DiagnoseScrollIssue()
+        Try
+            Debug.WriteLine("=== DiagnoseScrollIssue: დაიწყო ===")
+
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            Debug.WriteLine($"mainGridPanel: {If(mainGridPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+
+            If mainGridPanel IsNot Nothing Then
+                Debug.WriteLine($"  ზომა: {mainGridPanel.Size}")
+                Debug.WriteLine($"  სქროლის მნიშვნელობები: H={mainGridPanel.HorizontalScroll.Value}, V={mainGridPanel.VerticalScroll.Value}")
+                Debug.WriteLine($"  AutoScrollMinSize: {mainGridPanel.AutoScrollMinSize}")
+            End If
+
+            ' ვიპოვოთ სათაურების პანელები
+            Dim spacesHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("spacesHeaderPanel", False).FirstOrDefault(), Panel)
+            Debug.WriteLine($"spacesHeaderPanel: {If(spacesHeaderPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+            If spacesHeaderPanel IsNot Nothing Then
+                Debug.WriteLine($"  ზომა: {spacesHeaderPanel.Size}, ადგილმდებარეობა: {spacesHeaderPanel.Location}, ხილვადი: {spacesHeaderPanel.Visible}")
+            End If
+
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
+            Debug.WriteLine($"therapistsHeaderPanel: {If(therapistsHeaderPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+            If therapistsHeaderPanel IsNot Nothing Then
+                Debug.WriteLine($"  ზომა: {therapistsHeaderPanel.Size}, ადგილმდებარეობა: {therapistsHeaderPanel.Location}, ხილვადი: {therapistsHeaderPanel.Visible}")
+            End If
+
+            ' ვიპოვოთ დროის პანელი
+            Dim timeColumnPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("timeColumnPanel", False).FirstOrDefault(), Panel)
+            Debug.WriteLine($"timeColumnPanel: {If(timeColumnPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+
+            Debug.WriteLine("=== DiagnoseScrollIssue: დასრულდა ===")
+
+        Catch ex As Exception
+            Debug.WriteLine($"DiagnoseScrollIssue: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -1070,18 +1293,862 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
+    ''' დღის ხედის ჩვენება თერაპევტების მიხედვით
+    ''' იგივე ლოგიკა, რაც სივრცეებისთვის, მაგრამ therapists სიით
     ''' </summary>
     Private Sub ShowDayViewByTherapist()
-        ' თერაპევტების ხედით ჩვენება
-        Dim lblNotImplemented As New Label()
-        lblNotImplemented.Text = "თერაპევტების ხედი ჯერ არ არის იმპლემენტირებული"
-        lblNotImplemented.AutoSize = True
-        lblNotImplemented.Location = New Point(20, 20)
-        lblNotImplemented.Font = New Font("Sylfaen", 12, FontStyle.Bold)
-        pnlCalendarGrid.Controls.Clear()
-        pnlCalendarGrid.Controls.Add(lblNotImplemented)
+        Try
+            Debug.WriteLine("ShowDayViewByTherapist: დაიწყო დღის ხედის ჩვენება თერაპევტების მიხედვით")
+
+            ' ======= 1. თერაპევტების ჩატვირთვა მოცემული თარიღისთვის =======
+            LoadTherapistsForDate()
+
+            ' დავაყენოთ pnlFilter-ის ფერი
+            pnlFIlter.BackColor = Color.FromArgb(200, Color.White)
+
+            ' ======= 2. პანელების ინიციალიზაცია =======
+            InitializeDayViewPanelsForTherapists()
+
+            ' ======= 3. თარიღის ზოლის შევსება =======
+            FillDateColumnPanel()
+
+            ' ======= 4. დროის პანელის შევსება =======
+            FillTimeColumnPanel()
+
+            ' ======= 5. თერაპევტების სათაურების პანელის შევსება =======
+            FillTherapistsHeaderPanel()
+
+            ' ======= 6. მთავარი გრიდის პანელის შევსება თერაპევტების მიხედვით =======
+            FillMainGridPanelForTherapists()
+
+            ' ======= 7. სკროლის სინქრონიზაცია =======
+            SetupScrollSynchronizationForBothGrids() ' ახალი მეთოდი, რომელიც მხარს უჭერს თერაპევტების გრიდსაც
+
+            ' ======= 8. ძველი ბარათების გასუფთავება =======
+            ClearSessionCardsFromGrid()
+
+            ' ======= 9. სესიების განთავსება გრიდში თერაპევტების მიხედვით =======
+            PlaceSessionsOnTherapistGrid()
+
+            Debug.WriteLine("ShowDayViewByTherapist: დღის ხედის ჩვენება დასრულდა თერაპევტების მიხედვით")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowDayViewByTherapist: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"ShowDayViewByTherapist: StackTrace - {ex.StackTrace}")
+            MessageBox.Show($"თერაპევტების ხედის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
+
+    ''' <summary>
+    ''' დღის ხედის პანელების ინიციალიზაცია თერაპევტებისთვის
+    ''' იგივე ლოგიკა, რაც სივრცეებისთვის, მაგრამ therapists-ის რაოდენობით
+    ''' </summary>
+    Private Sub InitializeDayViewPanelsForTherapists()
+        Try
+            Debug.WriteLine("InitializeDayViewPanelsForTherapists: დაიწყო პანელების ინიციალიზაცია תერაპევტებისთვის")
+
+            ' გავასუფთავოთ კალენდრის პანელი
+            pnlCalendarGrid.Controls.Clear()
+
+            ' pnlCalendarGrid-ს არ ჰქონდეს AutoScroll!
+            pnlCalendarGrid.AutoScroll = False
+
+            ' როუ დროის ინტერვალები არ არის ინიციალიზებული, დავამატოთ
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
+
+            ' თუ თერაპევტები არ არის ჩატვირთული, ჩავტვირთოთ
+            If therapists.Count = 0 Then
+                LoadTherapistsForDate()
+            End If
+
+            ' წავკითხოთ მშობელი პანელის ზომები
+            Dim totalWidth As Integer = pnlCalendarGrid.ClientSize.Width
+            Dim totalHeight As Integer = pnlCalendarGrid.ClientSize.Height
+
+            Debug.WriteLine($"InitializeDayViewPanelsForTherapists: კონტეინერის ზომები - Width={totalWidth}, Height={totalHeight}")
+
+            ' კონსტანტები, რომლებიც არ იცვლება მასშტაბირებისას
+            Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT
+            Dim TIME_COLUMN_WIDTH As Integer = BASE_TIME_COLUMN_WIDTH
+            Dim DATE_COLUMN_WIDTH As Integer = BASE_DATE_COLUMN_WIDTH
+
+            ' გამოვთვალოთ დროისა და თარიღის პანელების ზომები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim totalRowsHeight As Integer = ROW_HEIGHT * timeIntervals.Count
+
+            Debug.WriteLine($"InitializeDayViewPanelsForTherapists: ROW_HEIGHT={ROW_HEIGHT}, totalRowsHeight={totalRowsHeight}, vScale={vScale}")
+
+            ' ======= 1. შევქმნათ თარიღის ზოლის პანელი =======
+            Dim dateColumnPanel As New Panel()
+            dateColumnPanel.Name = "dateColumnPanel"
+            dateColumnPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            dateColumnPanel.AutoScroll = False
+            dateColumnPanel.Size = New Size(DATE_COLUMN_WIDTH, totalRowsHeight)
+            dateColumnPanel.Location = New Point(0, HEADER_HEIGHT)
+            dateColumnPanel.BackColor = Color.FromArgb(60, 80, 150)
+            dateColumnPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(dateColumnPanel)
+
+            ' ======= 2. שევქმნათ საათების პანელი =======
+            Dim timeColumnPanel As New Panel()
+            timeColumnPanel.Name = "timeColumnPanel"
+            timeColumnPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            timeColumnPanel.AutoScroll = False
+            timeColumnPanel.Size = New Size(TIME_COLUMN_WIDTH, totalRowsHeight)
+            timeColumnPanel.Location = New Point(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            timeColumnPanel.BackColor = Color.FromArgb(240, 240, 245)
+            timeColumnPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(timeColumnPanel)
+
+            ' ======= 3. შევქმნათ თარიღის სათაურის პანელი =======
+            Dim dateHeaderPanel As New Panel()
+            dateHeaderPanel.Name = "dateHeaderPanel"
+            dateHeaderPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            dateHeaderPanel.Size = New Size(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            dateHeaderPanel.Location = New Point(0, 0)
+            dateHeaderPanel.BackColor = Color.FromArgb(40, 60, 120)
+            dateHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(dateHeaderPanel)
+
+            ' თარიღის სათაურის ლეიבლი
+            Dim dateHeaderLabel As New Label()
+            dateHeaderLabel.Size = New Size(DATE_COLUMN_WIDTH - 2, HEADER_HEIGHT - 2)
+            dateHeaderLabel.Location = New Point(1, 1)
+            dateHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            dateHeaderLabel.Text = "თარიღი"
+            dateHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            dateHeaderLabel.ForeColor = Color.White
+            dateHeaderPanel.Controls.Add(dateHeaderLabel)
+
+            ' ======= 4. შევქმნათ დროის სათაურის პანელი =======
+            Dim timeHeaderPanel As New Panel()
+            timeHeaderPanel.Name = "timeHeaderPanel"
+            timeHeaderPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            timeHeaderPanel.Size = New Size(TIME_COLUMN_WIDTH, HEADER_HEIGHT)
+            timeHeaderPanel.Location = New Point(DATE_COLUMN_WIDTH, 0)
+            timeHeaderPanel.BackColor = Color.FromArgb(180, 180, 220)
+            timeHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(timeHeaderPanel)
+
+            ' דროის სათაურის ლეიბლი
+            Dim timeHeaderLabel As New Label()
+            timeHeaderLabel.Size = New Size(TIME_COLUMN_WIDTH - 2, HEADER_HEIGHT - 2)
+            timeHeaderLabel.Location = New Point(1, 1)
+            timeHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            timeHeaderLabel.Text = "დრო"
+            timeHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            timeHeaderPanel.Controls.Add(timeHeaderLabel)
+
+            ' ======= 5. შევქმნათ תერაპევტების სათაურების პანელი =======
+            Dim therapistsHeaderPanel As New Panel()
+            therapistsHeaderPanel.Name = "therapistsHeaderPanel"
+            therapistsHeaderPanel.AutoScroll = False
+            ' ზომა დამოკიდებული იქნება მასშტაბზე!
+            Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim totalTherapistsWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+            therapistsHeaderPanel.Size = New Size(totalTherapistsWidth, HEADER_HEIGHT)
+            therapistsHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
+            therapistsHeaderPanel.BackColor = Color.FromArgb(120, 180, 120) ' ოდნავ მწვანე ფერი თერაპევტებისთვის
+            therapistsHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(therapistsHeaderPanel)
+
+            ' ======= 6. შევქმнათ მთავარი גრიდის პანელი =======
+            Dim mainGridPanel As New Panel()
+            mainGridPanel.Name = "mainGridPanel"
+            mainGridPanel.Size = New Size(totalWidth - TIME_COLUMN_WIDTH - DATE_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
+            mainGridPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            mainGridPanel.BackColor = Color.White
+            mainGridPanel.BorderStyle = BorderStyle.FixedSingle
+            mainGridPanel.AutoScroll = True
+            pnlCalendarGrid.Controls.Add(mainGridPanel)
+
+            Debug.WriteLine("InitializeDayViewPanelsForTherapists: პანელების ინიციალიზაცია دასრულდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"InitializeDayViewPanelsForTherapists: שেცდომა - {ex.Message}")
+            Debug.WriteLine($"InitializeDayViewPanelsForTherapists: StackTrace - {ex.StackTrace}")
+            MessageBox.Show($"תერაპევტების პანელების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' תერაპევтების სათაურების პანელის שევსება თერაპევტების სახელებით
+    ''' </summary>
+    Private Sub FillTherapistsHeaderPanel()
+        Try
+            Debug.WriteLine("FillTherapistsHeaderPanel: דაიწყო תერაპевტების სათაურების შევსება")
+
+            ' ვიპოვოთ תერاპევტების סათაურების პანელი
+            Dim therapistsHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("therapistsHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If therapistsHeaderPanel Is Nothing Then
+                Debug.WriteLine("FillTherapistsHeaderPanel: תერაპევtების სათაურების პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' გავასუფთავოთ
+            therapistsHeaderPanel.Controls.Clear()
+
+            ' თუ תერაპევტები არ არის ჩატვირთული
+            If therapists.Count = 0 Then
+                LoadTherapistsForDate()
+            End If
+
+            Debug.WriteLine($"FillTherapistsHeaderPanel: ჩატვირთული תერაპევტების რაოდენობა: {therapists.Count}")
+
+            ' თერაპევტის სვეტის სიგანე (იმასშტაბირდება)
+            Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' גამოვთვალოთ סათაურების პანელის სრული სიგანე
+            Dim totalHeaderWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+
+            ' שევცვალოთ პანელის სიგანე მასშტაბის მიხედვით
+            therapistsHeaderPanel.Width = totalHeaderWidth
+
+            Debug.WriteLine($"FillTherapistsHeaderPanel: פנל-ის სიგანე: {therapistsHeaderPanel.Width}, THERAPIST_COLUMN_WIDTH: {THERAPIST_COLUMN_WIDTH}")
+
+            ' ღია მწვანე ფონტი თერაპევتებისთვის
+            Dim therapistFont As New Font("Sylfaen", 9, FontStyle.Bold)
+
+            ' თერაპевტების סათაურების შექმნა
+            For i As Integer = 0 To therapists.Count - 1
+                Dim therapistHeader As New Label()
+                therapistHeader.Size = New Size(THERAPIST_COLUMN_WIDTH - 1, therapistsHeaderPanel.Height - 2)
+                therapistHeader.Location = New Point(i * THERAPIST_COLUMN_WIDTH, 1)
+                therapistHeader.BackColor = Color.FromArgb(80, 120, 80) ' მუქი מწვანე
+                therapistHeader.ForeColor = Color.White
+                therapistHeader.TextAlign = ContentAlignment.MiddleCenter
+                therapistHeader.Text = therapists(i)
+                therapistHeader.Font = therapistFont
+                therapistHeader.BorderStyle = BorderStyle.FixedSingle
+
+                ' שעינها থাক თავდாყრო X პოზიცია Tag-ში სქროლის სინქრონიზაციისთვის
+                therapistHeader.Tag = i * THERAPIST_COLUMN_WIDTH
+
+                therapistsHeaderPanel.Controls.Add(therapistHeader)
+
+                Debug.WriteLine($"FillTherapistsHeaderPanel: دамატა תერაפევტის სათაური [{i}]: {therapists(i)}, Tag={therapistHeader.Tag}")
+            Next
+
+            Debug.WriteLine($"FillTherapistsHeaderPanel: დაემატა {therapists.Count} თერাפევტის سათაური, მასштაბი: {hScale}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"FillTherapistsHeaderPanel: שეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' მთავარი გრიდის პანელის შევსება תერაპევტებისთვის
+    ''' </summary>
+    Private Sub FillMainGridPanelForTherapists()
+        Try
+            Debug.WriteLine("FillMainGridPanelForTherapists: დაიწყოს מთავარი גრიდის شევსება תერაפევტებისთვის")
+
+            ' ვიპოვოთ מთავარი گরიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("FillMainGridPanelForTherapists: მთავარი گرიდის پانელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' გავासუფთავოთ მთავარი პანელი
+            mainGridPanel.Controls.Clear()
+
+            ' שामოწმოთ תერაპევტები და דრო
+            If therapists.Count = 0 Then
+                LoadTherapistsForDate()
+            End If
+
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
+
+            ' پארამეტრები - მასშטაბირების გამოყენებით
+            Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+
+            ' グриদის סრული სიგანе
+            Dim gridWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+
+            ' グריდის সრული সামაღლე
+            Dim gridHeight As Integer = ROW_HEIGHT * timeIntervals.Count
+
+            ' მნიშვნელოვანი: დავაყენოთ mainGridPanel-ის AutoScrollMinSize
+            mainGridPanel.AutoScrollMinSize = New Size(gridWidth, gridHeight)
+
+            Debug.WriteLine($"FillMainGridPanelForTherapists: גრిდის ზომები - Width={gridWidth}, Height={gridHeight}, hScale={hScale}, vScale={vScale}")
+
+            ' أуجრედების মাসিব (ახლა თერაपევტებისთვის)
+            ReDim gridCells(therapists.Count - 1, timeIntervals.Count - 1)
+
+            ' უজრედების शექმნა - პირდაపირ mainGridPanel-ზე
+            For col As Integer = 0 To therapists.Count - 1
+                For row As Integer = 0 To timeIntervals.Count - 1
+                    Dim cell As New Panel()
+                    cell.Size = New Size(THERAPIST_COLUMN_WIDTH, ROW_HEIGHT)
+                    cell.Location = New Point(col * THERAPIST_COLUMN_WIDTH, row * ROW_HEIGHT)
+
+                    ' אალטერნატიული ფერები
+                    If row Mod 2 = 0 Then
+                        cell.BackColor = Color.FromArgb(250, 255, 250) ' ოდნავ მწვანე ნაცარი
+                    Else
+                        cell.BackColor = Color.FromArgb(245, 250, 245) ' უფრო მწვანე ნაცარი
+                    End If
+
+                    ' უจრედის ছارჩო
+                    AddHandler cell.Paint, AddressOf Cell_Paint
+
+                    ' ვინახავთ უจრედის ობიექტس მასივში
+                    gridCells(col, row) = cell
+
+                    ' მნიშვნელოვანი: ვამატებთ უজრედს ფირდაপირ mainGridPanel-ზე
+                    mainGridPanel.Controls.Add(cell)
+                Next
+            Next
+
+            Debug.WriteLine($"FillMainGridPanelForTherapists: შეიქმნა {therapists.Count * timeIntervals.Count} უჯრედი תერაპევტებისთვის")
+
+        Catch ex As Exception
+            Debug.WriteLine($"FillMainGridPanelForTherapists: שეცდომა - {ex.Message}")
+            Debug.WriteLine($"FillMainGridPanelForTherapists: StackTrace - {ex.StackTrace}")
+        End Try
+    End Sub
+
+    Private Sub PlaceSessionsOnTherapistGrid()
+        Try
+            Debug.WriteLine("=== PlaceSessionsOnTherapistGrid: დაიწყო ===")
+
+            ' בדীقות שემოწმებები
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnTherapistGrid: სესיები არ არის")
+                Return
+            End If
+
+            If gridCells Is Nothing Then
+                Debug.WriteLine("PlaceSessionsOnTherapistGrid: グრიდის უჯრედები არ არის")
+                Return
+            End If
+
+            If timeIntervals.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnTherapistGrid: דროის ინტერვალები არ არის")
+                Return
+            End If
+
+            If therapists.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnTherapistGrid: তেরাপევტები არ არის")
+                Return
+            End If
+
+            ' مნיშვნელოვანი: ვიპოვოთ მთავარი গরিდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("❌ მთავარი গরიดის پานელი ვერ მოიძებნა!")
+                Return
+            End If
+
+            ' মাসშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' אრჩეული თারიღი
+            Dim selectedDate As DateTime = DTPCalendar.Value.Date
+            Debug.WriteLine($"არჩეული თარიღი: {selectedDate:dd.MM.yyyy}")
+
+            ' ფილტრი - მხოლოდ אחรოული дღის සเสียები
+            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Debug.WriteLine($"ნაპოვნია {daySessions.Count} სესია ამ თарიღისთვის")
+
+            ' სწيებიេბ ગানთავსება
+            For Each session In daySessions
+                Try
+                    Debug.WriteLine($"--- ვამუશაবობთ סესიას ID={session.Id}, თერაפევტი='{session.TherapistName}', დრო={session.DateTime:HH:mm} ---")
+
+                    ' 1. তেরাপევტის אינდექსის განসაზღვრა
+                    Dim therapistIndex As Integer = -1
+                    For i As Integer = 0 To therapists.Count - 1
+                        If String.Equals(therapists(i).Trim(), session.TherapistName.Trim(), StringComparison.OrdinalIgnoreCase) Then
+                            therapistIndex = i
+                            Exit For
+                        End If
+                    Next
+
+                    If therapistIndex < 0 Then
+                        Debug.WriteLine($"❌ تেরاপেβτი '{session.TherapistName}' ვერ მოიძებנა თერাפევტების სიაში!")
+                        Continue For
+                    End If
+
+                    ' 2. דროის ინটერვალის განსაზღვრა (იგივე ლოგիკა, רაც სივრცეებისთვის)
+                    Dim sessionTime As TimeSpan = session.DateTime.TimeOfDay
+                    Dim timeIndex As Integer = -1
+
+                    Dim minDifference As TimeSpan = TimeSpan.MaxValue
+                    For i As Integer = 0 To timeIntervals.Count - 1
+                        Dim intervalTime As TimeSpan = timeIntervals(i).TimeOfDay
+                        Dim difference As TimeSpan = If(sessionTime >= intervalTime,
+                                              sessionTime - intervalTime,
+                                              intervalTime - sessionTime)
+
+                        If difference < minDifference Then
+                            minDifference = difference
+                            timeIndex = i
+                        End If
+                    Next
+
+                    ' ალტერნატიული მეთოდი
+                    If timeIndex < 0 OrElse minDifference.TotalMinutes > 15 Then
+                        Dim startTime As TimeSpan = timeIntervals(0).TimeOfDay
+                        Dim elapsedMinutes As Double = (sessionTime - startTime).TotalMinutes
+                        timeIndex = CInt(Math.Round(elapsedMinutes / 30))
+                        If timeIndex < 0 Then timeIndex = 0
+                        If timeIndex >= timeIntervals.Count Then timeIndex = timeIntervals.Count - 1
+                    End If
+
+                    ' 3. საზღვრების შემოწმება
+                    If therapistIndex < 0 OrElse timeIndex < 0 OrElse
+              therapistIndex >= therapists.Count OrElse timeIndex >= timeIntervals.Count Then
+                        Debug.WriteLine($"❌ არასწორი ინდექსები: therapist={therapistIndex}, time={timeIndex}")
+                        Continue For
+                    End If
+
+                    ' 4. ბარათის პოზიციის გამოთვლა
+                    Dim cardX As Integer = therapistIndex * THERAPIST_COLUMN_WIDTH + 4
+                    Dim cardY As Integer = timeIndex * ROW_HEIGHT + 2
+
+                    ' 5. პროპორციული ბარათის სიმაღლის გამოთვლა
+                    Dim sessionDurationMinutes As Integer = session.Duration
+                    Dim baseCardHeight As Double = ROW_HEIGHT * (sessionDurationMinutes / 30.0)
+                    Dim minCardHeight As Integer = ROW_HEIGHT
+                    Dim cardHeight As Integer = CInt(Math.Max(baseCardHeight, minCardHeight))
+                    Dim maxCardHeight As Integer = ROW_HEIGHT * 4
+                    If cardHeight > maxCardHeight Then cardHeight = maxCardHeight
+
+                    ' 6. ფერების განსაზღვრა SessionStatusColors კლასიდან
+                    Dim cardColor As Color = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
+                    Dim borderColor As Color = SessionStatusColors.GetStatusBorderColor(session.Status, session.DateTime)
+                    Dim headerColor As Color = Color.FromArgb(
+               Math.Max(0, cardColor.R - 50),
+               Math.Max(0, cardColor.G - 50),
+               Math.Max(0, cardColor.B - 50)
+           )
+
+                    Debug.WriteLine($"🎨 ფერის განსაზღვრა: სტატუსი='{session.Status}' -> ფონი={cardColor}, ჩარჩო={borderColor}, header={headerColor}")
+
+                    ' 7. ბარათის შექმნა
+                    Dim sessionCard As New Panel()
+                    sessionCard.Size = New Size(THERAPIST_COLUMN_WIDTH - 8, cardHeight)
+                    sessionCard.Location = New Point(cardX, cardY)
+                    sessionCard.BackColor = cardColor
+                    sessionCard.BorderStyle = BorderStyle.None
+                    sessionCard.Tag = session.Id
+                    sessionCard.Cursor = Cursors.Hand
+
+                    ' 8. ზედა მუქი ზოლი (header)
+                    Dim HEADER_HEIGHT As Integer = 24
+                    Dim headerPanel As New Panel()
+                    headerPanel.Size = New Size(sessionCard.Width, HEADER_HEIGHT)
+                    headerPanel.Location = New Point(0, 0)
+                    headerPanel.BackColor = headerColor
+                    sessionCard.Controls.Add(headerPanel)
+
+                    ' 9. ბენეფიციარის სახელი header-ში მთავრული ფონტით (ჯერ გვარი, მერე სახელი)
+                    Dim mtavruliFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი
+                    Try
+                        Using testFont As New Font("KA_LITERATURULI_MT", 8)
+                            mtavruliFont = "KA_LITERATURULI_MT"
+                        End Using
+                    Catch
+                        ' ალტერნატიული ფონტები
+                        Dim altFonts As String() = {"BPG_Nino_Mtavruli", "ALK_Tall_Mtavruli", "Sylfaen"}
+                        For Each fontName In altFonts
+                            Try
+                                Using testFont As New Font(fontName, 8)
+                                    mtavruliFont = fontName
+                                    Exit For
+                                End Using
+                            Catch
+                                Continue For
+                            End Try
+                        Next
+                    End Try
+
+                    Dim lblBeneficiary As New Label()
+                    ' ცვლილება: ჯერ გვარი, მერე სახელი
+                    Dim beneficiaryText As String = $"{session.BeneficiarySurname.ToUpper()} {session.BeneficiaryName.ToUpper()}"
+                    lblBeneficiary.Text = beneficiaryText
+                    lblBeneficiary.Location = New Point(8, 2)
+                    lblBeneficiary.Size = New Size(headerPanel.Width - 16, 20)
+                    lblBeneficiary.Font = New Font(mtavruliFont, 8, FontStyle.Bold)
+                    lblBeneficiary.ForeColor = Color.White
+                    lblBeneficiary.TextAlign = ContentAlignment.MiddleLeft
+                    headerPanel.Controls.Add(lblBeneficiary)
+
+                    ' 10. კასტომ ჩარჩოს დამატება
+                    AddHandler sessionCard.Paint, Sub(sender, e)
+                                                      ' ძირითადი ფონი
+                                                      Using brush As New SolidBrush(cardColor)
+                                                          e.Graphics.FillRectangle(brush, sessionCard.ClientRectangle)
+                                                      End Using
+
+                                                      ' ჩარჩო
+                                                      Using pen As New Pen(borderColor, 2)
+                                                          e.Graphics.DrawRectangle(pen, 1, 1, sessionCard.Width - 2, sessionCard.Height - 2)
+                                                      End Using
+                                                  End Sub
+
+                    ' 11. ლეიბლების დინამიური განთავსება (ოდნავ გაზრდილი პადინგი)
+                    Dim currentY As Integer = HEADER_HEIGHT + 5
+                    Dim labelSpacing As Integer = 12
+
+                    ' სტატუსი (კომპაქტური, მაგრამ ხილვადი)
+                    If cardHeight > HEADER_HEIGHT + 15 Then
+                        Dim lblStatus As New Label()
+                        lblStatus.Text = session.Status
+                        lblStatus.Size = New Size(sessionCard.Width - 10, 10)
+                        lblStatus.Location = New Point(5, currentY)
+                        lblStatus.Font = New Font("Sylfaen", 6, FontStyle.Bold)
+                        lblStatus.ForeColor = Color.DarkSlateGray
+                        lblStatus.BackColor = Color.Transparent
+                        lblStatus.TextAlign = ContentAlignment.TopCenter
+                        sessionCard.Controls.Add(lblStatus)
+                        currentY += labelSpacing
+                    End If
+
+                    ' სივრცე (თუ ბარათი საკმარისად დიდია)
+                    If cardHeight > HEADER_HEIGHT + 30 AndAlso Not String.IsNullOrEmpty(session.Space) Then
+                        Dim lblSpace As New Label()
+                        lblSpace.Text = $"სივრცე: {session.Space}"
+                        lblSpace.Size = New Size(sessionCard.Width - 10, 11)
+                        lblSpace.Location = New Point(5, currentY)
+                        lblSpace.Font = New Font("Sylfaen", 7, FontStyle.Regular)
+                        lblSpace.ForeColor = Color.FromArgb(40, 40, 40)
+                        lblSpace.BackColor = Color.Transparent
+                        lblSpace.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblSpace)
+                        currentY += labelSpacing
+                    End If
+
+                    ' თერაპიის ტიპი (თუ ბარათი ძალიან დიდია)
+                    If cardHeight > HEADER_HEIGHT + 50 AndAlso Not String.IsNullOrEmpty(session.TherapyType) Then
+                        Dim lblTherapyType As New Label()
+                        lblTherapyType.Text = session.TherapyType
+                        lblTherapyType.Size = New Size(sessionCard.Width - 10, 10)
+                        lblTherapyType.Location = New Point(5, currentY)
+                        lblTherapyType.Font = New Font("Sylfaen", 6, FontStyle.Italic)
+                        lblTherapyType.ForeColor = Color.FromArgb(60, 60, 60)
+                        lblTherapyType.BackColor = Color.Transparent
+                        lblTherapyType.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblTherapyType)
+                        currentY += labelSpacing
+                    End If
+
+                    ' 12. რედაქტირების ღილაკი ბარათის ქვედა მარჯვენა კუთხეში
+                    Dim btnEdit As New Button()
+                    btnEdit.Text = "✎" ' ფანქრის სიმბოლო
+                    btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
+                    btnEdit.ForeColor = Color.White
+                    btnEdit.BackColor = Color.FromArgb(80, 80, 80) ' მუქი ფონი
+                    btnEdit.Size = New Size(24, 24) ' მრგვალი ღილაკისთვის
+                    btnEdit.Location = New Point(sessionCard.Width - 30, sessionCard.Height - 30)
+                    btnEdit.FlatStyle = FlatStyle.Flat
+                    btnEdit.FlatAppearance.BorderSize = 0
+                    btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
+                    btnEdit.Cursor = Cursors.Hand
+
+                    ' მოვუმრგვალოთ ღილაკი
+                    Dim btnPath As New Drawing2D.GraphicsPath()
+                    btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
+                    btnEdit.Region = New Region(btnPath)
+
+                    ' ღილაკის მიბმა ფუნქციაზე
+                    AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+
+                    ' ღილაკის დამატება ბარათზე
+                    sessionCard.Controls.Add(btnEdit)
+                    btnEdit.BringToFront()
+
+                    ' 13. მომრგვალებული კუთხეები
+                    Try
+                        Dim path As New Drawing2D.GraphicsPath()
+                        Dim cornerRadius As Integer = 6
+                        If sessionCard.Width > cornerRadius * 2 AndAlso sessionCard.Height > cornerRadius * 2 Then
+                            path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
+                            path.AddArc(0, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
+                            path.CloseFigure()
+                            sessionCard.Region = New Region(path)
+                        End If
+                    Catch
+                        ' Region შექმნის პრობლემისას გაგრძელება
+                    End Try
+
+                    ' 14. ივენთების მიბმა (დრაგ ენდ დროპი თერაპევტების გრიდისთვისაც)
+                    AddHandler sessionCard.MouseDown, AddressOf TherapistSessionCard_MouseDown
+                    AddHandler sessionCard.MouseMove, AddressOf TherapistSessionCard_MouseMove
+                    AddHandler sessionCard.MouseUp, AddressOf TherapistSessionCard_MouseUp
+                    AddHandler sessionCard.Click, AddressOf SessionCard_Click
+                    AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
+
+                    ' 15. ბარათის mainGridPanel-ზე დამატება
+                    mainGridPanel.Controls.Add(sessionCard)
+                    sessionCard.BringToFront()
+
+                    Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, თერაპევტი='{session.TherapistName}', " &
+                         $"ზომა={sessionCard.Width}x{sessionCard.Height}px, ფერი={cardColor}")
+
+                Catch sessionEx As Exception
+                    Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
+                    Continue For
+                End Try
+            Next
+
+            Debug.WriteLine("=== PlaceSessionsOnTherapistGrid: დასრულება ===")
+
+        Catch ex As Exception
+            Debug.WriteLine($"❌ PlaceSessionsOnTherapistGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+#Region "თერაპევტების გრიდისთვის დრაგ ენდ დროპი"
+
+    ''' <summary>
+    ''' თერაპევტების გრიდზე სესიის ბარათის MouseDown ივენთი
+    ''' </summary>
+    Private Sub TherapistSessionCard_MouseDown(sender As Object, e As MouseEventArgs)
+        Try
+            Debug.WriteLine($"TherapistSessionCard_MouseDown: დაჭერა {e.Button}")
+
+            If e.Button = MouseButtons.Left Then
+                draggedCard = DirectCast(sender, Panel)
+                isDragging = True
+                dragStartPoint = e.Location
+                originalCardPosition = draggedCard.Location
+
+                ' შევინახოთ ორიგინალური სესიის მონაცემები
+                Dim sessionId As Integer = CInt(draggedCard.Tag)
+                originalSessionData = allSessions.FirstOrDefault(Function(s) s.Id = sessionId)
+
+                ' ბარათი გადავიტანოთ ყველაზე წინ
+                draggedCard.BringToFront()
+                draggedCard.Cursor = Cursors.SizeAll
+
+                ' მნიშვნელოვანი: Capture-ის დაყენება
+                draggedCard.Capture = True
+
+                Debug.WriteLine($"TherapistSessionCard_MouseDown: დაიწყო გადატანა სესია ID={sessionId}, მუშაობს თერაპევტების გრიდზე")
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"TherapistSessionCard_MouseDown: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაپევტების გრიდზე სესიის ბარათის MouseMove ივენთი
+    ''' </summary>
+    Private Sub TherapistSessionCard_MouseMove(sender As Object, e As MouseEventArgs)
+        Try
+            If isDragging AndAlso draggedCard IsNot Nothing Then
+                ' გამოვთვალოთ ახალი პოზიცია მაუსის კოორდინატების მიხედვით
+                Dim currentLocation As Point = draggedCard.Location
+                currentLocation.X += e.X - dragStartPoint.X
+                currentLocation.Y += e.Y - dragStartPoint.Y
+
+                ' მასშტაბირებული პარამეტრები გადატანისთვის
+                Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+                Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+                ' ვამოწმებთ საზღვრებს - mainGridPanel-ის ფარგლებში
+                Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+                If mainGridPanel IsNot Nothing Then
+                    Dim maxX As Integer = (THERAPIST_COLUMN_WIDTH * therapists.Count) - draggedCard.Width
+                    Dim maxY As Integer = (ROW_HEIGHT * timeIntervals.Count) - draggedCard.Height
+
+                    ' შეზღუდავთ მოძრაობას გრიდის ფარგლებში
+                    If currentLocation.X < 0 Then currentLocation.X = 0
+                    If currentLocation.Y < 0 Then currentLocation.Y = 0
+                    If currentLocation.X > maxX Then currentLocation.X = maxX
+                    If currentLocation.Y > maxY Then currentLocation.Y = maxY
+
+                    ' დავაყენოთ ახალი პოზიცია
+                    draggedCard.Location = currentLocation
+
+                    Debug.WriteLine($"TherapistSessionCard_MouseMove: ახალი პოზიცია - X={currentLocation.X}, Y={currentLocation.Y}")
+                End If
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"TherapistSessionCard_MouseMove: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაპევტების გრიდზე სესიის ბარათის MouseUp ივენთი
+    ''' </summary>
+    Private Sub TherapistSessionCard_MouseUp(sender As Object, e As MouseEventArgs)
+        Try
+            Debug.WriteLine($"TherapistSessionCard_MouseUp: მაუსის ღილაკი მოიხსნა, isDragging={isDragging}")
+
+            If isDragging AndAlso draggedCard IsNot Nothing Then
+                isDragging = False
+                draggedCard.Cursor = Cursors.Hand
+                draggedCard.Capture = False
+
+                ' გამოვთვალოთ ახალი გრიდის პოზიცია (თერაპევტების მიხედვით)
+                Dim newGridPosition = CalculateTherapistGridPosition(draggedCard.Location)
+                Dim originalGridPosition = CalculateTherapistGridPosition(originalCardPosition)
+
+                Debug.WriteLine($"TherapistSessionCard_MouseUp: ორიგინალური პოზიცია - Therapist={originalGridPosition.therapistIndex}, Time={originalGridPosition.timeIndex}")
+                Debug.WriteLine($"TherapistSessionCard_MouseUp: ახალი პოზიცია - Therapist={newGridPosition.therapistIndex}, Time={newGridPosition.timeIndex}")
+
+                ' ვამოწმებთ შეიცვალა თუ არა პოზიცია
+                If newGridPosition.therapistIndex <> originalGridPosition.therapistIndex OrElse
+           newGridPosition.timeIndex <> originalGridPosition.timeIndex Then
+
+                    ' მესიჯბოქსი დადასტურებისთვის
+                    Dim newTherapist As String = therapists(newGridPosition.therapistIndex)
+                    Dim newTime As String = timeIntervals(newGridPosition.timeIndex).ToString("HH:mm")
+
+                    Dim result As DialogResult = MessageBox.Show(
+                $"გსურთ შევცვალოთ სეანსის პარამეტრები?{Environment.NewLine}" &
+                $"ახალი თერაپევტი: {newTherapist}{Environment.NewLine}" &
+                $"ახალი დრო: {newTime}",
+                "სეანსის განახლება",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1
+            )
+
+                    If result = DialogResult.Yes Then
+                        ' დავადასტუროთ ცვლილება თერაპევტისთვის
+                        ConfirmTherapistSessionMove(newGridPosition)
+                    Else
+                        ' დავაბრუნოთ ძველ ადგილას
+                        RevertSessionMove()
+                    End If
+                Else
+                    ' პოზიცია არ შეცვლილა
+                    Debug.WriteLine("TherapistSessionCard_MouseUp: პოზიცია არ შეცვლილა")
+                End If
+
+                ' გავასუფთავოთ ცვლადები
+                draggedCard = Nothing
+                originalSessionData = Nothing
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"TherapistSessionCard_MouseUp: შეცდომა - {ex.Message}")
+            ' შეცდომის შემთხვევაში დავაბრუნოთ ძველ ადგილას
+            RevertSessionMove()
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' თერაპევტების გრიდის პოზიციის გამოთვლა pixel კოორდინატებიდან
+    ''' </summary>
+    Private Function CalculateTherapistGridPosition(pixelLocation As Point) As (therapistIndex As Integer, timeIndex As Integer)
+        Try
+            ' მასშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' გამოვთვალოთ ინდექსები (მარჯინების გათვალისწინებით)
+            Dim therapistIndex As Integer = pixelLocation.X \ THERAPIST_COLUMN_WIDTH
+            Dim timeIndex As Integer = pixelLocation.Y \ ROW_HEIGHT
+
+            ' შევამოწმოთ საზღვრები
+            If therapistIndex < 0 Then therapistIndex = 0
+            If therapistIndex >= therapists.Count Then therapistIndex = therapists.Count - 1
+            If timeIndex < 0 Then timeIndex = 0
+            If timeIndex >= timeIntervals.Count Then timeIndex = timeIntervals.Count - 1
+
+            Debug.WriteLine($"CalculateTherapistGridPosition: Pixel({pixelLocation.X}, {pixelLocation.Y}) -> Grid({therapistIndex}, {timeIndex})")
+            Return (therapistIndex, timeIndex)
+
+        Catch ex As Exception
+            Debug.WriteLine($"CalculateTherapistGridPosition: შეცდომა - {ex.Message}")
+            Return (0, 0)
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' თერაპევტების გრიდზე სესიის მოძრაობის დადასტურება და მონაცემების განახლება
+    ''' </summary>
+    Private Sub ConfirmTherapistSessionMove(newGridPosition As (therapistIndex As Integer, timeIndex As Integer))
+        Try
+            Debug.WriteLine($"ConfirmTherapistSessionMove: ახალი პოზიცია - Therapist={newGridPosition.therapistIndex}, Time={newGridPosition.timeIndex}")
+
+            If originalSessionData Is Nothing OrElse dataService Is Nothing Then
+                Debug.WriteLine("ConfirmTherapistSessionMove: originalSessionData ან dataService არის null")
+                RevertSessionMove()
+                Return
+            End If
+
+            ' ახალი თერაპევტი და დრო
+            Dim newTherapist As String = therapists(newGridPosition.therapistIndex)
+            Dim newDateTime As DateTime = timeIntervals(newGridPosition.timeIndex)
+
+            ' შევქმნათ ახალი DateTime, რომელიც ინარჩუნებს ორიგინალურ თარიღს მაგრამ ცვლის დროს
+            Dim originalDate As DateTime = originalSessionData.DateTime.Date
+            Dim newFullDateTime As DateTime = originalDate.Add(newDateTime.TimeOfDay)
+
+            ' განვაახლოთ სესიის ობიექტი
+            originalSessionData.TherapistName = newTherapist
+            originalSessionData.DateTime = newFullDateTime
+
+            ' შევცდოთ მონაცემთა ბაზაში განახლება
+            Try
+                ' მივიღოთ ყველა სესიის მონაცემები
+                Dim allSessionsData = dataService.GetData("DB-Schedule!A2:O")
+
+                ' ვიპოვოთ ჩვენი სესიის მწკრივი
+                For i As Integer = 0 To allSessionsData.Count - 1
+                    Dim row = allSessionsData(i)
+                    If row.Count > 0 AndAlso Integer.TryParse(row(0).ToString(), Nothing) Then
+                        Dim rowId As Integer = Integer.Parse(row(0).ToString())
+                        If rowId = originalSessionData.Id Then
+                            ' განვაახლოთ თერაპევტი (I სვეტი - ინდექსი 8)
+                            Dim updatedRow As New List(Of Object)(row)
+                            If updatedRow.Count > 8 Then updatedRow(8) = newTherapist
+
+                            ' განვაახლოთ თარიღი (F სვეტი - ინდექსი 5)
+                            If updatedRow.Count > 5 Then updatedRow(5) = newFullDateTime.ToString("dd.MM.yyyy HH:mm")
+
+                            ' განვაახლოთ მონაცემები Google Sheets-ში
+                            Dim updateRange As String = $"DB-Schedule!A{i + 2}:O{i + 2}"
+                            dataService.UpdateData(updateRange, updatedRow)
+
+                            Debug.WriteLine($"ConfirmTherapistSessionMove: წარმატებით განახლდა სესია ID={originalSessionData.Id}")
+                            Exit For
+                        End If
+                    End If
+                Next
+
+                ' განვაახლოთ ლოკალური მონაცემები
+                LoadSessions()
+
+                ' განვაახლოთ კალენდრის ხედი
+                UpdateCalendarView()
+
+                ' შეტყობინება წარმატებული განახლების შესახებ
+                MessageBox.Show($"სესია წარმატებით გადატანილია თერაპევტზე {newTherapist} {newDateTime:HH:mm} დროზე",
+                      "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            Catch updateEx As Exception
+                Debug.WriteLine($"ConfirmTherapistSessionMove: მონაცემების განახლების შეცდომა - {updateEx.Message}")
+                MessageBox.Show($"სესიის განახლების შეცდომა: {updateEx.Message}",
+                      "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ' შეცდომის შემთხვევაში დავაბრუნოთ ძველ ადგილას
+                RevertSessionMove()
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"ConfirmTherapistSessionMove: შეცდომა - {ex.Message}")
+            RevertSessionMove()
+        End Try
+    End Sub
+
+#End Region
 
     ''' <summary>
     ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
@@ -1126,7 +2193,8 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' კალენდრის ხედის განახლება - ფუნდამენტურად გადამუშავებული ορმაგი სკროლის თავიდან აცილებისთვის
+    ''' UpdateCalendarView მეთოდის შესწორება - თერაპევტების ხედის მხარდაჭერით
+    ''' (ეს უნდა ჩანაცვლდეს არსებული UpdateCalendarView მეთოდი)
     ''' </summary>
     Public Sub UpdateCalendarView()
         Try
