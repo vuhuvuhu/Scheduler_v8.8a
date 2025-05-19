@@ -2291,17 +2291,479 @@ Public Class UC_Calendar
 #End Region
 
     ''' <summary>
-    ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
+    ''' ბენეფიციარების გრიდის სათაურების პანელის გენერაცია - განახლებული ცარიელი კომბობოქსით
+    ''' </summary>
+    Private Sub InitializeBeneficiaryHeaderPanel()
+        Try
+            Debug.WriteLine("InitializeBeneficiaryHeaderPanel: დაიწყო ბენეფიციარების სათაურების ინიციალიზაცია")
+
+            ' შევქმნათ ან ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                ' შევქმნათ ახალი პანელი
+                beneficiaryHeaderPanel = New Panel()
+                beneficiaryHeaderPanel.Name = "beneficiaryHeaderPanel"
+                beneficiaryHeaderPanel.AutoScroll = False
+                beneficiaryHeaderPanel.BackColor = Color.FromArgb(255, 230, 180) ' ღია ყაშაბისფერი ბენეფიციარების მიზანისთვის
+                beneficiaryHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+                pnlCalendarGrid.Controls.Add(beneficiaryHeaderPanel)
+            End If
+
+            ' პანელის ზომა და პოზიცია
+            Dim TIME_COLUMN_WIDTH As Integer = BASE_TIME_COLUMN_WIDTH
+            Dim DATE_COLUMN_WIDTH As Integer = BASE_DATE_COLUMN_WIDTH
+            Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT
+            Dim COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' საწყისი მდგომარეობა - მხოლოდ ერთი სვეტი ცარიელი კომბობოქსით
+            beneficiaryHeaderPanel.Size = New Size(COLUMN_WIDTH, HEADER_HEIGHT)
+            beneficiaryHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
+
+            ' გავასუფთავოთ პანელი
+            beneficiaryHeaderPanel.Controls.Clear()
+
+            ' შევქმნათ საწყისი კომბობოქსი ყველა ბენეფიციარით
+            CreateBeneficiaryColumnWithComboBox(beneficiaryHeaderPanel, 0)
+
+            Debug.WriteLine("InitializeBeneficiaryHeaderPanel: ბენეფიციარების სათაურების პანელი შეიქმნა ცარიელი კომბობოქსით")
+
+        Catch ex As Exception
+            Debug.WriteLine($"InitializeBeneficiaryHeaderPanel: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარის კომბობოქსის შექმნა მითითებულ სვეტში
+    ''' </summary>
+    ''' <param name="headerPanel">სათაურების პანელი</param>
+    ''' <param name="columnIndex">სვეტის ინდექსი</param>
+    Private Sub CreateBeneficiaryColumnWithComboBox(headerPanel As Panel, columnIndex As Integer)
+        Try
+            Debug.WriteLine($"CreateBeneficiaryColumnWithComboBox: ვქმნი კომბობოქსს სვეტისთვის {columnIndex}")
+
+            Dim COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT
+
+            ' კომბობოქსის ზომა და პოზიცია
+            Dim comboBox As New ComboBox()
+            comboBox.Name = $"comboBene_{columnIndex}"
+            comboBox.Size = New Size(COLUMN_WIDTH - 30, HEADER_HEIGHT - 6) ' ღილაკისთვის ადგილის დატოვება
+            comboBox.Location = New Point(columnIndex * COLUMN_WIDTH + 5, 3)
+            comboBox.Font = New Font("Sylfaen", 8, FontStyle.Regular)
+            comboBox.DropDownStyle = ComboBoxStyle.DropDownList
+            comboBox.FlatStyle = FlatStyle.Flat
+            comboBox.BackColor = Color.White
+
+            ' კომბობოქსის სია - ყველა ბენეფიციარი, რომელსაც ამ დღეს სესია აქვს
+            FillBeneficiaryComboBox(comboBox)
+
+            ' ივენთის მიბმა - ბენეფიციარის არჩევისას
+            AddHandler comboBox.SelectedIndexChanged, AddressOf BeneficiaryComboBox_SelectedIndexChanged
+
+            ' კომბობოქსის ტაგში შევინახოთ სვეტის ინდექსი
+            comboBox.Tag = columnIndex
+
+            ' კომბობოქსის დამატება პანელზე
+            headerPanel.Controls.Add(comboBox)
+
+            Debug.WriteLine($"CreateBeneficiaryColumnWithComboBox: კომბობოქსი შეიქმნა, ბენეფიციარების რაოდენობა: {comboBox.Items.Count}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"CreateBeneficiaryColumnWithComboBox: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარების კომბობოქსის შევსება - მხოლოდ ისინი, რომლებსაც ამ დღეს სესია აქვთ
+    ''' </summary>
+    ''' <param name="comboBox">შესავსები კომბობოქსი</param>
+    Private Sub FillBeneficiaryComboBox(comboBox As ComboBox)
+        Try
+            Debug.WriteLine("FillBeneficiaryComboBox: ვივსებ კომბობოქსს ბენეფიციარებით")
+
+            ' გავასუფთავოთ კომბობოქსი
+            comboBox.Items.Clear()
+
+            ' საწყისო ღია ეტიკეტი
+            comboBox.Items.Add("-- აირჩიეთ ბენეფიციარი --")
+
+            ' მიმდინარე თარიღი
+            Dim selectedDate As DateTime = DTPCalendar.Value.Date
+
+            ' ყველა ბენეფიციარი, რომელსაც მოცემულ დღეს სესია აქვს
+            If allSessions IsNot Nothing Then
+                Dim todaysBeneficiaries As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+                For Each session In allSessions
+                    If session.DateTime.Date = selectedDate Then
+                        Dim fullName = $"{session.BeneficiaryName.Trim()} {session.BeneficiarySurname.Trim()}"
+                        todaysBeneficiaries.Add(fullName)
+                    End If
+                Next
+
+                ' უკვე არჩეული ბენეფიციარების გამოკლება (თუ არსებობენ)
+                Dim selectedBeneficiaries = GetSelectedBeneficiaries()
+
+                ' დანარჩენი ბენეფიციარების დამატება კომბობოქსში
+                For Each beneficiary In todaysBeneficiaries.OrderBy(Function(b) b)
+                    If Not selectedBeneficiaries.Contains(beneficiary) Then
+                        comboBox.Items.Add(beneficiary)
+                    End If
+                Next
+            End If
+
+            ' საწყისი მითითება პირველ ელემენტზე
+            If comboBox.Items.Count > 0 Then
+                comboBox.SelectedIndex = 0
+            End If
+
+            Debug.WriteLine($"FillBeneficiaryComboBox: კომბობოქსი შევსებულია {comboBox.Items.Count} ელემენტით")
+
+        Catch ex As Exception
+            Debug.WriteLine($"FillBeneficiaryComboBox: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' უკვე არჩეული ბენეფიციარების სიის მოპოვება ყველა კომბობოქსიდან
+    ''' </summary>
+    ''' <returns>არჩეული ბენეფიციარების სია</returns>
+    Private Function GetSelectedBeneficiaries() As HashSet(Of String)
+        Try
+            Dim selectedBeneficiaries As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel IsNot Nothing Then
+                ' გადავირბინოთ ყველა კომბობოქსი და ამოვკრიბოთ არჩეული მნიშვნელობები
+                For Each ctrl As Control In beneficiaryHeaderPanel.Controls
+                    If TypeOf ctrl Is ComboBox Then
+                        Dim combo As ComboBox = DirectCast(ctrl, ComboBox)
+                        If combo.SelectedIndex > 0 AndAlso combo.SelectedItem IsNot Nothing Then
+                            Dim selectedText = combo.SelectedItem.ToString()
+                            If Not selectedText.StartsWith("--") Then
+                                selectedBeneficiaries.Add(selectedText)
+                            End If
+                        End If
+                    End If
+                Next
+            End If
+
+            Debug.WriteLine($"GetSelectedBeneficiaries: ნაპოვნია {selectedBeneficiaries.Count} არჩეული ბენეფიციარი")
+            Return selectedBeneficiaries
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetSelectedBeneficiaries: შეცდომა - {ex.Message}")
+            Return New HashSet(Of String)()
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' ბენეფიციარის კომბობოქსიდან არჩევის ივენთი
+    ''' </summary>
+    Private Sub BeneficiaryComboBox_SelectedIndexChanged(sender As Object, e As EventArgs)
+        Try
+            Dim comboBox As ComboBox = DirectCast(sender, ComboBox)
+            Dim columnIndex As Integer = CInt(comboBox.Tag)
+
+            Debug.WriteLine($"BeneficiaryComboBox_SelectedIndexChanged: არჩეულია {comboBox.SelectedItem} სვეტის {columnIndex} კომბობოქსში")
+
+            ' თუ არჩეული არ არის ნამდვილი ბენეფიციარი, არ გავაგრძელოთ
+            If comboBox.SelectedIndex <= 0 OrElse comboBox.SelectedItem.ToString().StartsWith("--") Then
+                Return
+            End If
+
+            ' მივიღოთ არჩეული ბენეფიციარი
+            Dim selectedBeneficiary As String = comboBox.SelectedItem.ToString()
+
+            ' შევცვალოთ კომბობოქსი ლეიბლით + წაშლის ღილაკით
+            ReplaceComboBoxWithLabelAndDeleteButton(comboBox, selectedBeneficiary)
+
+            ' შევქმნათ ახალი კომბობოქსი შემდეგ სვეტში
+            CreateNextBeneficiaryColumn()
+
+            ' განვაახლოთ ბენეფიციარების სვეტები და მონაცემები
+            UpdateBeneficiaryGrid()
+
+        Catch ex As Exception
+            Debug.WriteLine($"BeneficiaryComboBox_SelectedIndexChanged: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' კომბობოქსის ჩანაცვლება ლეიბლით და წაშლის ღილაკით
+    ''' </summary>
+    ''' <param name="comboBox">შესაცვლელი კომბობოქსი</param>
+    ''' <param name="selectedBeneficiary">არჩეული ბენეფიციარის სახელი</param>
+    Private Sub ReplaceComboBoxWithLabelAndDeleteButton(comboBox As ComboBox, selectedBeneficiary As String)
+        Try
+            Debug.WriteLine($"ReplaceComboBoxWithLabelAndDeleteButton: ვცვლი კომბობოქსს ლეიბლით - {selectedBeneficiary}")
+
+            Dim columnIndex As Integer = CInt(comboBox.Tag)
+            Dim parent As Panel = DirectCast(comboBox.Parent, Panel)
+
+            ' კომბობოქსის პოზიცია და ზომები
+            Dim comboLocation = comboBox.Location
+            Dim comboSize = comboBox.Size
+
+            ' ავშალოთ კომბობოქსი
+            parent.Controls.Remove(comboBox)
+            comboBox.Dispose()
+
+            ' შევქმნათ ლეიბლი ბენეფიციარის სახელით
+            Dim lblBeneficiary As New Label()
+            lblBeneficiary.Name = $"lblBene_{columnIndex}"
+            lblBeneficiary.Text = selectedBeneficiary
+            lblBeneficiary.Location = comboLocation
+            lblBeneficiary.Size = New Size(comboSize.Width - 25, comboSize.Height) ' ღილაკისთვის ადგილის დატოვება
+            lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
+            lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter
+            lblBeneficiary.BorderStyle = BorderStyle.FixedSingle
+            lblBeneficiary.BackColor = Color.FromArgb(255, 248, 220) ' კრემისფერი
+            lblBeneficiary.Tag = selectedBeneficiary ' ბენეფიციარის სახელი Tag-ში
+
+            ' წაშლის ღილაკის შექმნა
+            Dim btnDelete As New Button()
+            btnDelete.Name = $"btnDelBene_{columnIndex}"
+            btnDelete.Text = "✕" ' X სიმბოლო
+            btnDelete.Size = New Size(20, comboSize.Height - 2)
+            btnDelete.Location = New Point(comboLocation.X + comboSize.Width - 24, comboLocation.Y + 1)
+            btnDelete.Font = New Font("Segoe UI Symbol", 8, FontStyle.Bold)
+            btnDelete.ForeColor = Color.DarkRed
+            btnDelete.BackColor = Color.FromArgb(255, 230, 230)
+            btnDelete.FlatStyle = FlatStyle.Flat
+            btnDelete.FlatAppearance.BorderSize = 1
+            btnDelete.FlatAppearance.BorderColor = Color.Red
+            btnDelete.Cursor = Cursors.Hand
+            btnDelete.Tag = columnIndex ' სვეტის ინდექსი Tag-ში
+
+            ' წაშლის ღილაკის ივენთის მიბმა
+            AddHandler btnDelete.Click, AddressOf BeneficiaryDeleteButton_Click
+
+            ' კონტროლების დამატება
+            parent.Controls.Add(lblBeneficiary)
+            parent.Controls.Add(btnDelete)
+
+            Debug.WriteLine($"ReplaceComboBoxWithLabelAndDeleteButton: კომბობოქსი ჩანაცვლდა ლეიბლით და წაშლის ღილაკით")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ReplaceComboBoxWithLabelAndDeleteButton: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' შემდეგი ბენეფიციარის კომბობოქსის სვეტის შექმნა
+    ''' </summary>
+    Private Sub CreateNextBeneficiaryColumn()
+        Try
+            Debug.WriteLine("CreateNextBeneficiaryColumn: ვქმნი შემდეგ სვეტს")
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Debug.WriteLine("CreateNextBeneficiaryColumn: ბენეფიციარების სათაურების პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' დავითვალოთ მიმდინარე სვეტების რაოდენობა
+            Dim currentColumns As Integer = 0
+            For Each ctrl As Control In beneficiaryHeaderPanel.Controls
+                If TypeOf ctrl Is Label AndAlso ctrl.Name.StartsWith("lblBene_") Then
+                    currentColumns += 1
+                End If
+            Next
+
+            ' გავაფართოოთ სათაურების პანელი ახალი სვეტისთვის
+            Dim COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            beneficiaryHeaderPanel.Width += COLUMN_WIDTH
+
+            ' შევქმნათ ახალი კომბობოქსი
+            CreateBeneficiaryColumnWithComboBox(beneficiaryHeaderPanel, currentColumns)
+
+            Debug.WriteLine($"CreateNextBeneficiaryColumn: შეიქმნა ახალი სვეტი ინდექსით {currentColumns}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"CreateNextBeneficiaryColumn: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარის წაშლის ღილაკზე დაჭერის ივენთი
+    ''' </summary>
+    Private Sub BeneficiaryDeleteButton_Click(sender As Object, e As EventArgs)
+        Try
+            Dim btnDelete As Button = DirectCast(sender, Button)
+            Dim columnIndex As Integer = CInt(btnDelete.Tag)
+
+            Debug.WriteLine($"BeneficiaryDeleteButton_Click: ვშლი სვეტს ინდექსით {columnIndex}")
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Debug.WriteLine("BeneficiaryDeleteButton_Click: ბენეფიციარების სათაურების პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' წავშალოთ შესაბამისი ლეიბლი და ღილაკი
+            Dim lblToRemove As Label = DirectCast(beneficiaryHeaderPanel.Controls.Find($"lblBene_{columnIndex}", False).FirstOrDefault(), Label)
+            Dim btnToRemove As Button = DirectCast(beneficiaryHeaderPanel.Controls.Find($"btnDelBene_{columnIndex}", False).FirstOrDefault(), Button)
+
+            If lblToRemove IsNot Nothing Then
+                beneficiaryHeaderPanel.Controls.Remove(lblToRemove)
+                lblToRemove.Dispose()
+            End If
+
+            If btnToRemove IsNot Nothing Then
+                beneficiaryHeaderPanel.Controls.Remove(btnToRemove)
+                btnToRemove.Dispose()
+            End If
+
+            ' ვხოცავთ სვეტებს და ვანახლებთ მათ პოზიციებს
+            ReorganizeBeneficiaryColumns()
+
+            ' განავალოთ ბენეფიციარების გრიდი
+            UpdateBeneficiaryGrid()
+
+            ' განვაახლოთ ყველა კომბობოქსი დარჩენილ ბენეფიციარების ჩვენებისთვის
+            RefreshAllBeneficiaryComboBoxes()
+
+            Debug.WriteLine($"BeneficiaryDeleteButton_Click: სვეტი {columnIndex} წარმატებით წაიშალა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"BeneficiaryDeleteButton_Click: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარების სვეტების რეორგანიზაცია წაშლის შემდეგ
+    ''' </summary>
+    Private Sub ReorganizeBeneficiaryColumns()
+        Try
+            Debug.WriteLine("ReorganizeBeneficiaryColumns: ვირეორგანიზებ სვეტებს")
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Return
+            End If
+
+            Dim COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' ყველა ლეიბლი და ღილაკი ხელახლა დალაგება
+            Dim columnIndex As Integer = 0
+
+            ' ყველა ლეიბლი (ბენეფიციარების სახელები)
+            For Each ctrl As Control In beneficiaryHeaderPanel.Controls.OfType(Of Label)().OrderBy(Function(l) l.Name).ToList()
+                If ctrl.Name.StartsWith("lblBene_") Then
+                    ctrl.Name = $"lblBene_{columnIndex}"
+                    ctrl.Location = New Point(columnIndex * COLUMN_WIDTH + 5, ctrl.Location.Y)
+
+                    ' შესაბამისი წაშლის ღილაკი
+                    Dim correspondingButton = beneficiaryHeaderPanel.Controls.Find($"btnDelBene_{ctrl.Name.Split("_"c)(1)}", False).FirstOrDefault()
+                    If correspondingButton IsNot Nothing Then
+                        correspondingButton.Name = $"btnDelBene_{columnIndex}"
+                        correspondingButton.Location = New Point(columnIndex * COLUMN_WIDTH + COLUMN_WIDTH - 19, correspondingButton.Location.Y)
+                        correspondingButton.Tag = columnIndex
+                    End If
+
+                    columnIndex += 1
+                End If
+            Next
+
+            ' კომბობოქსების პოზიციის განახლება
+            For Each ctrl As Control In beneficiaryHeaderPanel.Controls.OfType(Of ComboBox)().ToList()
+                If ctrl.Name.StartsWith("comboBene_") Then
+                    ctrl.Name = $"comboBene_{columnIndex}"
+                    ctrl.Location = New Point(columnIndex * COLUMN_WIDTH + 5, ctrl.Location.Y)
+                    ctrl.Tag = columnIndex
+                    columnIndex += 1
+                End If
+            Next
+
+            ' პანელის სიგანის განახლება
+            beneficiaryHeaderPanel.Width = columnIndex * COLUMN_WIDTH
+
+            Debug.WriteLine($"ReorganizeBeneficiaryColumns: რეორგანიზაცია დასრულდა, სულ სვეტი: {columnIndex}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ReorganizeBeneficiaryColumns: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ყველა ბენეფიციარის კომბობოქსის განახლება
+    ''' </summary>
+    Private Sub RefreshAllBeneficiaryComboBoxes()
+        Try
+            Debug.WriteLine("RefreshAllBeneficiaryComboBoxes: ვანახლებ ყველა კომბობოქსს")
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Return
+            End If
+
+            ' განვაახლოთ ყველა კომბობოქსი
+            For Each ctrl As Control In beneficiaryHeaderPanel.Controls.OfType(Of ComboBox)().ToList()
+                If ctrl.Name.StartsWith("comboBene_") Then
+                    FillBeneficiaryComboBox(DirectCast(ctrl, ComboBox))
+                End If
+            Next
+
+            Debug.WriteLine("RefreshAllBeneficiaryComboBoxes: ყველა კომბობოქსი განახლდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"RefreshAllBeneficiaryComboBoxes: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარების ხედის ჩვენება - სრულიად ახალი იმპლემენტაცია
     ''' </summary>
     Private Sub ShowDayViewByBeneficiary()
-        ' ბენეფიციარების ხედით ჩვენება
-        Dim lblNotImplemented As New Label()
-        lblNotImplemented.Text = "ბენეფიციარების ხედი ჯერ არ არის იმპლემენტირებული"
-        lblNotImplemented.AutoSize = True
-        lblNotImplemented.Location = New Point(20, 20)
-        lblNotImplemented.Font = New Font("Sylfaen", 12, FontStyle.Bold)
-        pnlCalendarGrid.Controls.Clear()
-        pnlCalendarGrid.Controls.Add(lblNotImplemented)
+        Try
+            Debug.WriteLine("ShowDayViewByBeneficiary: დაიწყო ბენეფიციარების ხედის ჩვენება")
+
+            ' დავაყენოთ pnlFilter-ის ფერი
+            pnlFIlter.BackColor = Color.FromArgb(200, Color.White)
+
+            ' ======= 1. პანელების ინიციალიზაცია =======
+            InitializeBeneficiaryDayViewPanels()
+
+            ' ======= 2. თარიღის ზოლის შევსება =======
+            FillDateColumnPanel()
+
+            ' ======= 3. დროის პანელის შევსება =======
+            FillTimeColumnPanel()
+
+            ' ======= 4. ბენეფიციარების სათაურების პანელის ინიციალიზაცია =======
+            InitializeBeneficiaryHeaderPanel()
+
+            ' ======= 5. მთავარი გრიდის პანელის შევსება ბენეფიციარებისთვის =======
+            FillMainGridPanelForBeneficiaries()
+
+            ' ======= 6. სინქრონიზაცია სქროლისთვის =======
+            SetupScrollSynchronizationForBeneficiaries()
+
+            ' ======= 7. ძველი ბარათების გასუფთავება =======
+            ClearSessionCardsFromGrid()
+
+            ' ======= 8. სესიების განთავსება ბენეფიციარების გრიდში =======
+            PlaceSessionsOnBeneficiaryGrid()
+
+            Debug.WriteLine("ShowDayViewByBeneficiary: ბენეფიციარების ხედის ჩვენება დასრულდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowDayViewByBeneficiary: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"ShowDayViewByBeneficiary: StackTrace - {ex.StackTrace}")
+            MessageBox.Show($"ბენეფიციარების ხედის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ''' <summary>
