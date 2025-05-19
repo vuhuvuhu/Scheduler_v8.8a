@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.Text
 Imports System.Windows.Forms
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
@@ -785,14 +786,13 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' დღის ხედის ჩვენება სივრცეების მიხედვით - საბოლოო გასწორებული ვერსია
-    ''' განიცადა ფუნდამენტური ცვლილებები ორმაგი სკროლისა და თარიღის პრობლემების მოსაგვარებლად
+    ''' დღის ხედის ჩვენება სივრცეების მიხედვით - 🔧 ბარათების გასუფთავების დამატებით
     ''' </summary>
     Private Sub ShowDayViewBySpace()
         Try
             Debug.WriteLine("ShowDayViewBySpace: დაიწყო დღის ხედის ჩვენება სივრცეების მიხედვით")
 
-            ' დავაყენოთ pnlFilter-ის ფერი - ნახევრად გამჭვირვალე თეთრი
+            ' დავაყენოთ pnlFilter-ის ფერი
             pnlFIlter.BackColor = Color.FromArgb(200, Color.White)
 
             ' ======= 1. პანელების ინიციალიზაცია =======
@@ -816,7 +816,10 @@ Public Class UC_Calendar
             ' ======= 7. სინქრონიზაცია სქროლისთვის =======
             SetupScrollSynchronization()
 
-            ' ======= 8. სესიების განთავსება გრიდში =======
+            ' ======= 8. 🔧 ძველი ბარათების გასუფთავება =======
+            ClearSessionCardsFromGrid()
+
+            ' ======= 9. სესიების განთავსება გრიდში =======
             PlaceSessionsOnGrid()
 
             Debug.WriteLine("ShowDayViewBySpace: დღის ხედის ჩვენება დასრულდა")
@@ -1264,6 +1267,52 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
+    ''' უჯრედების ძველი ბარათების გასუფთავება - 🔧 ახლა mainGridPanel-დანაც შლის
+    ''' </summary>
+    Private Sub ClearSessionCardsFromGrid()
+        Try
+            Debug.WriteLine("ClearSessionCardsFromGrid: ვშლით ყველა ძველ ბარათს")
+
+            ' 1. ვშლით ბარათებს უჯრედებიდან (თუ რამე დაშენარჩუნებულა)
+            If gridCells IsNot Nothing Then
+                For col As Integer = 0 To gridCells.GetLength(0) - 1
+                    For row As Integer = 0 To gridCells.GetLength(1) - 1
+                        Dim cell = gridCells(col, row)
+                        If cell IsNot Nothing Then
+                            cell.Controls.Clear()
+                        End If
+                    Next
+                Next
+            End If
+
+            ' 2. 🔧 ახალი: ვშლით ბარათებს mainGridPanel-დანაც
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            If mainGridPanel IsNot Nothing Then
+                ' ვშლით ყველა ბარათს, რომელთაც Tag აქვთ (სესიის ID)
+                Dim cardsToRemove As New List(Of Control)
+                For Each ctrl As Control In mainGridPanel.Controls
+                    If TypeOf ctrl Is Panel AndAlso ctrl.Tag IsNot Nothing Then
+                        ' ეს სესიის ბარათია
+                        cardsToRemove.Add(ctrl)
+                    End If
+                Next
+
+                ' ვშლით ყველა ნაპოვნ ბარათს
+                For Each card In cardsToRemove
+                    mainGridPanel.Controls.Remove(card)
+                    card.Dispose()
+                Next
+
+                Debug.WriteLine($"ClearSessionCardsFromGrid: mainGridPanel-დან წაიშალა {cardsToRemove.Count} ბარათი")
+            End If
+
+            Debug.WriteLine("ClearSessionCardsFromGrid: ყველა ბარათი წარმატებით მოხსნილია")
+        Catch ex As Exception
+            Debug.WriteLine($"ClearSessionCardsFromGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' ჰორიზონტალური მასშტაბის გაზრდა - გაუმჯობესებული ვერსია
     ''' </summary>
     Private Sub BtnHUp_Click(sender As Object, e As EventArgs) Handles BtnHUp.Click
@@ -1678,151 +1727,247 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სესიების განთავსება გრიდში - გასწორებული ვერსია
-    ''' სესიები პირდაპირ mainGridPanel-ზე განთავსებული უჯრედებში
+    ''' სესიების განთავსება გრიდში - 🎨 ახალი ფერების სისტემით
+    ''' ✅ გამოყენებს SessionStatusColors კლასს ფერების გასაზღვრავად
     ''' </summary>
     Private Sub PlaceSessionsOnGrid()
         Try
-            Debug.WriteLine("PlaceSessionsOnGrid: დაიწყო სესიების განთავსება გრიდში")
+            Debug.WriteLine("=== PlaceSessionsOnGrid: დაიწყო (ახალი ფერების სისტემით) ===")
 
-            ' შევამოწმოთ გვაქვს თუ არა სესიები
+            ' ძირითადი შემოწმებები
             If allSessions Is Nothing OrElse allSessions.Count = 0 Then
                 Debug.WriteLine("PlaceSessionsOnGrid: სესიები არ არის")
                 Return
             End If
 
-            ' შევამოწმოთ გრიდის უჯრედები არსებობენ
             If gridCells Is Nothing Then
                 Debug.WriteLine("PlaceSessionsOnGrid: გრიდის უჯრედები არ არის")
                 Return
             End If
 
-            ' არჩეული თარიღი - DTPCalendar.Value
+            If timeIntervals.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnGrid: დროის ინტერვალები არ არის")
+                Return
+            End If
+
+            ' მნიშვნელოვანი: ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("❌ მთავარი გრიდის პანელი ვერ მოიძებნა!")
+                Return
+            End If
+
+            ' მასშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' არჩეული თარიღი
             Dim selectedDate As DateTime = DTPCalendar.Value.Date
+            Debug.WriteLine($"არჩეული თარიღი: {selectedDate:dd.MM.yyyy}")
 
             ' ფილტრი - მხოლოდ არჩეული დღის სესიები
             Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Debug.WriteLine($"ნაპოვნია {daySessions.Count} სესია ამ თარიღისთვის")
 
-            Debug.WriteLine($"PlaceSessionsOnGrid: მოიძებნა {daySessions.Count} სესია არჩეული თარიღისთვის")
-
-            ' თითოეული სესიისთვის
+            ' სესიების განთავსება
             For Each session In daySessions
-                ' გამოვთვალოთ სესიის განთავსების ადგილი გრიდში
-                Dim spaceIndex As Integer = spaces.IndexOf(session.Space)
-                If spaceIndex < 0 Then
-                    ' თუ ეს სივრცე არ არის ჩვენს სიაში, გავაგრძელოთ შემდეგ სესიასთან
-                    Continue For
-                End If
+                Try
+                    Debug.WriteLine($"--- ვამუშავებთ სესიას ID={session.Id}, სტატუსი='{session.Status}', დრო={session.DateTime:HH:mm}, ხანგრძლივობა={session.Duration}წთ ---")
 
-                ' ვიპოვოთ სესიის დროის ინტერვალი
-                Dim sessionTime As DateTime = New DateTime(selectedDate.Year, selectedDate.Month, selectedDate.Day,
-                                                    session.DateTime.Hour, session.DateTime.Minute, 0)
+                    ' 1. სივრცის ინდექსის განსაზღვრა
+                    Dim spaceIndex As Integer = -1
+                    For i As Integer = 0 To spaces.Count - 1
+                        If String.Equals(spaces(i).Trim(), session.Space.Trim(), StringComparison.OrdinalIgnoreCase) Then
+                            spaceIndex = i
+                            Exit For
+                        End If
+                    Next
 
-                ' ვიპოვოთ უახლოესი ინტერვალი timeIntervals-ში
-                Dim timeIndex As Integer = -1
-                Dim minDiff As TimeSpan = TimeSpan.MaxValue
-
-                For i As Integer = 0 To timeIntervals.Count - 1
-                    Dim diff As TimeSpan = If(sessionTime > timeIntervals(i),
-                                       sessionTime - timeIntervals(i),
-                                       timeIntervals(i) - sessionTime)
-
-                    If diff < minDiff Then
-                        minDiff = diff
-                        timeIndex = i
-                    End If
-                Next
-
-                If timeIndex < 0 Then
-                    ' ვერ ვიპოვეთ შესაბამისი დროის ინტერვალი
-                    Continue For
-                End If
-
-                ' სესიის სტატუსის მიხედვით ფერის შერჩევა
-                Dim cardColor As Color
-                Select Case session.Status.Trim().ToLower()
-                    Case "დაგეგმილი"
-                        cardColor = Color.FromArgb(200, 255, 200)  ' ღია მწვანე
-                    Case "შესრულების პროცესში"
-                        cardColor = Color.FromArgb(150, 255, 150)  ' მწვანე
-                    Case "შესრულებული"
-                        cardColor = Color.FromArgb(220, 255, 220)  ' ძალიან ღია მწვანე
-                    Case "გაუქმებული"
-                        cardColor = Color.FromArgb(255, 200, 200) ' ღია წითელი
-                    Case Else
-                        cardColor = Color.FromArgb(200, 255, 200) ' ნაგულისხმები
-                End Select
-
-                ' თუ უჯრედები ინიციალიზებულია და საზღვრებში ვართ
-                If spaceIndex >= 0 AndAlso spaceIndex < spaces.Count AndAlso
-               timeIndex >= 0 AndAlso timeIndex < timeIntervals.Count Then
-
-                    ' შევამოწმოთ რომ უჯრედი არსებობს
-                    Dim cell As Panel = gridCells(spaceIndex, timeIndex)
-                    If cell Is Nothing Then
+                    If spaceIndex < 0 Then
+                        Debug.WriteLine($"❌ სივრცე '{session.Space}' ვერ მოიძებნა!")
                         Continue For
                     End If
 
-                    ' შევქმნათ სესიის ბარათი
+                    ' 2. დროის ინტერვალის განსაზღვრა
+                    Dim sessionTime As TimeSpan = session.DateTime.TimeOfDay
+                    Dim timeIndex As Integer = -1
+
+                    ' ვიპოვოთ ყველაზე ახლო დროის ინტერვალი
+                    Dim minDifference As TimeSpan = TimeSpan.MaxValue
+                    For i As Integer = 0 To timeIntervals.Count - 1
+                        Dim intervalTime As TimeSpan = timeIntervals(i).TimeOfDay
+                        Dim difference As TimeSpan = If(sessionTime >= intervalTime,
+                                                       sessionTime - intervalTime,
+                                                       intervalTime - sessionTime)
+
+                        If difference < minDifference Then
+                            minDifference = difference
+                            timeIndex = i
+                        End If
+                    Next
+
+                    ' ალტერნატიული მეთოდი
+                    If timeIndex < 0 OrElse minDifference.TotalMinutes > 15 Then
+                        Dim startTime As TimeSpan = timeIntervals(0).TimeOfDay
+                        Dim elapsedMinutes As Double = (sessionTime - startTime).TotalMinutes
+                        timeIndex = CInt(Math.Round(elapsedMinutes / 30))
+                        If timeIndex < 0 Then timeIndex = 0
+                        If timeIndex >= timeIntervals.Count Then timeIndex = timeIntervals.Count - 1
+                    End If
+
+                    ' 3. საზღვრების შემოწმება
+                    If spaceIndex < 0 OrElse timeIndex < 0 OrElse
+                       spaceIndex >= spaces.Count OrElse timeIndex >= timeIntervals.Count Then
+                        Debug.WriteLine($"❌ არასწორი ინდექსები: space={spaceIndex}, time={timeIndex}")
+                        Continue For
+                    End If
+
+                    ' 4. ბარათის პოზიციის გამოთვლა
+                    Dim cardX As Integer = spaceIndex * SPACE_COLUMN_WIDTH + 4
+                    Dim cardY As Integer = timeIndex * ROW_HEIGHT + 2
+
+                    ' 5. პროპორციული ბარათის სიმაღლის გამოთვლა
+                    Dim sessionDurationMinutes As Integer = session.Duration
+                    Dim baseCardHeight As Double = ROW_HEIGHT * (sessionDurationMinutes / 30.0)
+                    Dim minCardHeight As Integer = ROW_HEIGHT
+                    Dim cardHeight As Integer = CInt(Math.Max(baseCardHeight, minCardHeight))
+                    Dim maxCardHeight As Integer = ROW_HEIGHT * 8
+                    If cardHeight > maxCardHeight Then cardHeight = maxCardHeight
+
+                    ' 6. 🎨 ახალი ფერების განსაზღვრა SessionStatusColors კლასიდან
+                    Dim cardColor As Color = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
+                    Dim borderColor As Color = SessionStatusColors.GetStatusBorderColor(session.Status, session.DateTime)
+
+                    Debug.WriteLine($"🎨 ფერის განსაზღვრა: სტატუსი='{session.Status}' -> ფონი={cardColor}, ჩარჩო={borderColor}")
+
+                    ' 7. ბარათის შექმნა
                     Dim sessionCard As New Panel()
-                    sessionCard.Size = New Size(cell.Width - 4, cell.Height - 4)
-                    sessionCard.Location = New Point(2, 2)
+                    sessionCard.Size = New Size(SPACE_COLUMN_WIDTH - 8, cardHeight)
+                    sessionCard.Location = New Point(cardX, cardY)
                     sessionCard.BackColor = cardColor
                     sessionCard.BorderStyle = BorderStyle.None
-                    sessionCard.Tag = session.Id ' შევინახოთ სესიის ID ბარათის Tag-ში
+                    sessionCard.Tag = session.Id
+                    sessionCard.Cursor = Cursors.Hand
 
-                    ' ბენეფიციარის სახელის ლეიბლი
+                    ' 8. კასტომ ჩარჩოს დამატება
+                    AddHandler sessionCard.Paint, Sub(sender, e)
+                                                      ' ძირითადი ფონი
+                                                      Using brush As New SolidBrush(cardColor)
+                                                          e.Graphics.FillRectangle(brush, sessionCard.ClientRectangle)
+                                                      End Using
+
+                                                      ' ჩარჩო
+                                                      Using pen As New Pen(borderColor, 2)
+                                                          e.Graphics.DrawRectangle(pen, 1, 1, sessionCard.Width - 2, sessionCard.Height - 2)
+                                                      End Using
+                                                  End Sub
+
+                    ' 9. ლეიბლების დინამიური განთავსება
+                    Dim currentY As Integer = 5
+                    Dim labelSpacing As Integer = 15
+
+                    ' ბენეფიციარის სახელი (ყოველთვის ჩანს)
                     Dim lblBeneficiary As New Label()
-                    lblBeneficiary.Text = $"{session.BeneficiaryName} {session.BeneficiarySurname}"
-                    lblBeneficiary.AutoSize = False
-                    lblBeneficiary.Size = New Size(sessionCard.Width - 4, 20)
-                    lblBeneficiary.Location = New Point(2, 2)
+                    lblBeneficiary.Text = $"{session.BeneficiaryName} {session.BeneficiarySurname}".Trim()
+                    lblBeneficiary.Size = New Size(sessionCard.Width - 10, 16)
+                    lblBeneficiary.Location = New Point(5, currentY)
                     lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
-                    lblBeneficiary.TextAlign = ContentAlignment.MiddleCenter
+                    lblBeneficiary.TextAlign = ContentAlignment.TopCenter
+                    lblBeneficiary.ForeColor = Color.Black
+                    lblBeneficiary.BackColor = Color.Transparent
                     sessionCard.Controls.Add(lblBeneficiary)
+                    currentY += labelSpacing
 
-                    ' თერაპევტის სახელის ლეიბლი
-                    Dim lblTherapist As New Label()
-                    lblTherapist.Text = session.TherapistName
-                    lblTherapist.AutoSize = False
-                    lblTherapist.Size = New Size(sessionCard.Width - 4, 16)
-                    lblTherapist.Location = New Point(2, 22)
-                    lblTherapist.Font = New Font("Sylfaen", 7, FontStyle.Regular)
-                    sessionCard.Controls.Add(lblTherapist)
+                    ' სტატუსი (კომპაქტური, მაგრამ ხილვადი)
+                    If cardHeight > 40 Then
+                        Dim lblStatus As New Label()
+                        lblStatus.Text = session.Status
+                        lblStatus.Size = New Size(sessionCard.Width - 10, 12)
+                        lblStatus.Location = New Point(5, currentY)
+                        lblStatus.Font = New Font("Sylfaen", 6, FontStyle.Bold)
+                        lblStatus.ForeColor = Color.DarkSlateGray
+                        lblStatus.BackColor = Color.Transparent
+                        lblStatus.TextAlign = ContentAlignment.TopCenter
+                        sessionCard.Controls.Add(lblStatus)
+                        currentY += 12
+                    End If
 
-                    ' ზუსტი დროის ლეიბლი
+                    ' თერაპევტი (თუ ბარათი საკმარისად დიდია)
+                    If cardHeight > 60 AndAlso Not String.IsNullOrEmpty(session.TherapistName) Then
+                        Dim lblTherapist As New Label()
+                        lblTherapist.Text = session.TherapistName
+                        lblTherapist.Size = New Size(sessionCard.Width - 10, 13)
+                        lblTherapist.Location = New Point(5, currentY)
+                        lblTherapist.Font = New Font("Sylfaen", 7, FontStyle.Regular)
+                        lblTherapist.ForeColor = Color.FromArgb(40, 40, 40)
+                        lblTherapist.BackColor = Color.Transparent
+                        lblTherapist.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblTherapist)
+                        currentY += 13
+                    End If
+
+                    ' თერაპიის ტიპი (თუ ბარათი ძალიან დიდია)
+                    If cardHeight > 90 AndAlso Not String.IsNullOrEmpty(session.TherapyType) Then
+                        Dim lblTherapyType As New Label()
+                        lblTherapyType.Text = session.TherapyType
+                        lblTherapyType.Size = New Size(sessionCard.Width - 10, 12)
+                        lblTherapyType.Location = New Point(5, currentY)
+                        lblTherapyType.Font = New Font("Sylfaen", 6, FontStyle.Italic)
+                        lblTherapyType.ForeColor = Color.FromArgb(60, 60, 60)
+                        lblTherapyType.BackColor = Color.Transparent
+                        lblTherapyType.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblTherapyType)
+                        currentY += 12
+                    End If
+
+                    ' დრო და ხანგრძლივობა (ყოველთვის ქვედა ნაწილში)
                     Dim lblTime As New Label()
-                    lblTime.Text = session.DateTime.ToString("HH:mm")
-                    lblTime.AutoSize = True
-                    lblTime.Location = New Point(sessionCard.Width - 40, sessionCard.Height - 18)
+                    lblTime.Text = $"{session.DateTime:HH:mm} ({session.Duration}წთ)"
+                    lblTime.Size = New Size(sessionCard.Width - 10, 12)
+                    lblTime.Location = New Point(5, cardHeight - 17)
                     lblTime.Font = New Font("Segoe UI", 7, FontStyle.Regular)
+                    lblTime.ForeColor = Color.FromArgb(60, 60, 60)
+                    lblTime.BackColor = Color.Transparent
+                    lblTime.TextAlign = ContentAlignment.BottomRight
                     sessionCard.Controls.Add(lblTime)
 
-                    ' მოვუმრგვალოთ კუთხეები სესიის ბარათს
-                    Dim path As New Drawing2D.GraphicsPath()
-                    Dim cornerRadius As Integer = 5
-                    path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
-                    path.AddArc(sessionCard.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
-                    path.AddArc(sessionCard.Width - cornerRadius * 2, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
-                    path.AddArc(0, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
-                    path.CloseFigure()
-                    sessionCard.Region = New Region(path)
+                    ' 10. მომრგვალებული კუთხეები
+                    Try
+                        Dim path As New Drawing2D.GraphicsPath()
+                        Dim cornerRadius As Integer = 6
+                        If sessionCard.Width > cornerRadius * 2 AndAlso sessionCard.Height > cornerRadius * 2 Then
+                            path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
+                            path.AddArc(0, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
+                            path.CloseFigure()
+                            sessionCard.Region = New Region(path)
+                        End If
+                    Catch
+                        ' Region შექმნის პრობლემისას გაგრძელება
+                    End Try
 
-                    ' Click ივენთის მიბმა სესიის ბარათზე
+                    ' 11. ივენთების მიბმა
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
-                    ' ორჯერ დაწკაპუნების ივენთიც დავამატოთ
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
-                    ' დავამატოთ სესიის ბარათი უჯრედზე
-                    cell.Controls.Add(sessionCard)
-                End If
+                    ' 12. ბარათის mainGridPanel-ზე დამატება
+                    mainGridPanel.Controls.Add(sessionCard)
+                    sessionCard.BringToFront()
+
+                    Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, სტატუსი='{session.Status}', " &
+                                  $"ზომა={sessionCard.Width}x{sessionCard.Height}px, ფერი={cardColor}")
+
+                Catch sessionEx As Exception
+                    Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
+                    Continue For
+                End Try
             Next
 
-            Debug.WriteLine("PlaceSessionsOnGrid: სესიების განთავსება დასრულდა")
+            Debug.WriteLine("=== PlaceSessionsOnGrid: დასრულება ===")
 
         Catch ex As Exception
-            Debug.WriteLine($"PlaceSessionsOnGrid: შეცდომა - {ex.Message}")
-            Debug.WriteLine($"PlaceSessionsOnGrid: StackTrace - {ex.StackTrace}")
+            Debug.WriteLine($"❌ PlaceSessionsOnGrid: ზოგადი შეცდომა - {ex.Message}")
         End Try
     End Sub
 
@@ -1859,4 +2004,179 @@ Public Class UC_Calendar
             Debug.WriteLine($"SessionCard_Click: შეცდომა - {ex.Message}")
         End Try
     End Sub
+End Class
+''' <summary>
+''' სტატუსების ფერების კონფიგურაცია - ცენტრალური ადგილი ყველა სტატუსის ფერისთვის
+''' გამოიყენება როგორც კალენდარში, ასევე სხვა ადგილებში სადაც სესიის ბარათები ჩანს
+''' </summary>
+Public Class SessionStatusColors
+
+    ''' <summary>
+    ''' სტატუსის მიხედვით ფერის დაბრუნება
+    ''' </summary>
+    ''' <param name="status">სესიის სტატუსი</param>
+    ''' <param name="sessionDateTime">სესიის თარიღი და დრო (ვადაგადაცილების შემოწმებისთვის)</param>
+    ''' <returns>შესაბამისი ფერი</returns>
+    Public Shared Function GetStatusColor(status As String, sessionDateTime As DateTime) As Color
+        ' სტატუსის დანორმალიზება
+        Dim normalizedStatus As String = status.Trim().ToLower()
+
+        ' დაგეგმილი სესიებისთვის ვამოწმებთ ვადაგადაცილებას
+        If normalizedStatus = "დაგეგმილი" Then
+            ' თუ ვადა გავიდა - ვარდისფერი
+            If sessionDateTime < DateTime.Now Then
+                Return OverdueColor
+            Else
+                ' თუ ვადა ჯერ არ მოსულა - თეთრი
+                Return PlannedColor
+            End If
+        End If
+
+        ' დანარჩენი სტატუსები
+        Select Case normalizedStatus
+            Case "შესრულებული"
+                Return CompletedColor
+            Case "გაუქმებული", "გაუქმება"
+                Return CancelledColor
+            Case "პროგრამით გატარება"
+                Return AutoProcessedColor
+            Case "აღდგენა"
+                Return RestoredColor
+            Case "გაცდენა არასაპატიო"
+                Return MissedUnexcusedColor
+            Case "გაცდენა საპატიო"
+                Return MissedExcusedColor
+            Case "შესრულების პროცესში"
+                Return InProgressColor
+            Case Else
+                ' უცნობი სტატუსისთვის ნაგულისხმევი ფერი
+                Return DefaultColor
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' ღია მწვანე - შესრულებული სესიებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property CompletedColor As Color
+        Get
+            Return Color.FromArgb(200, 255, 200) ' ღია მწვანე
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' თეთრი - დაგეგმილი სესიებისთვის (ვადა ჯერ არ მოსულა)
+    ''' </summary>
+    Public Shared ReadOnly Property PlannedColor As Color
+        Get
+            Return Color.FromArgb(255, 255, 255) ' თეთრი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ვარდისფერი - ვადაგადაცილებული დაგეგმილი სესიებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property OverdueColor As Color
+        Get
+            Return Color.FromArgb(255, 182, 193) ' ღია ვარდისფერი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' წითელი - გაუქმებული სესიებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property CancelledColor As Color
+        Get
+            Return Color.FromArgb(255, 150, 150) ' წითელი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ნაცრისფერი - პროგრამით გატარებული სესიებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property AutoProcessedColor As Color
+        Get
+            Return Color.FromArgb(220, 220, 220) ' ნაცრისფერი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' უფრო ღია მწვანე - აღდგენილი სესიებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property RestoredColor As Color
+        Get
+            Return Color.FromArgb(170, 255, 170) ' უფრო ღია მწვანე
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ღია იასამნისფერი - არასაპატიო გაცდენისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property MissedUnexcusedColor As Color
+        Get
+            Return Color.FromArgb(230, 230, 255) ' ღია იასამნისფერი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ყვითელი - საპატიო გაცდენისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property MissedExcusedColor As Color
+        Get
+            Return Color.FromArgb(255, 255, 200) ' ღია ყვითელი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ღია ლურჯი - შესრულების პროცესშია
+    ''' </summary>
+    Public Shared ReadOnly Property InProgressColor As Color
+        Get
+            Return Color.FromArgb(200, 230, 255) ' ღია ლურჯი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ნაგულისხმევი ფერი უცნობი სტატუსებისთვის
+    ''' </summary>
+    Public Shared ReadOnly Property DefaultColor As Color
+        Get
+            Return Color.FromArgb(240, 240, 240) ' ღია ნაცრისფერი
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' ყველა შესაძლო სტატუსის სია მათი ფერებით
+    ''' გამოიყენება ლეგენდისა და რეპორტებისთვის
+    ''' </summary>
+    Public Shared Function GetAllStatusColorsForLegend() As Dictionary(Of String, Color)
+        Dim statusColors As New Dictionary(Of String, Color)
+
+        statusColors.Add("შესრულებული", CompletedColor)
+        statusColors.Add("დაგეგმილი (ვადაში)", PlannedColor)
+        statusColors.Add("დაგეგმილი (ვადაგადაცილებული)", OverdueColor)
+        statusColors.Add("გაუქმებული", CancelledColor)
+        statusColors.Add("პროგრამით გატარება", AutoProcessedColor)
+        statusColors.Add("აღდგენა", RestoredColor)
+        statusColors.Add("გაცდენა არასაპატიო", MissedUnexcusedColor)
+        statusColors.Add("გაცდენა საპატიო", MissedExcusedColor)
+        statusColors.Add("შესრულების პროცესში", InProgressColor)
+
+        Return statusColors
+    End Function
+
+    ''' <summary>
+    ''' ბარათის ჩარჩოს ფერის დაბრუნება სტატუსის მიხედვით
+    ''' ზოგიერთი ბარათისთვის შეიძლება სხვადასხვა ჩარჩო გვჭირდებოდეს
+    ''' </summary>
+    Public Shared Function GetStatusBorderColor(status As String, sessionDateTime As DateTime) As Color
+        ' ძირითადი ფერი
+        Dim mainColor As Color = GetStatusColor(status, sessionDateTime)
+
+        ' ჩარჩო ოდნავ უფრო მუქია
+        Return Color.FromArgb(
+            Math.Max(0, mainColor.R - 30),
+            Math.Max(0, mainColor.G - 30),
+            Math.Max(0, mainColor.B - 30)
+        )
+    End Function
 End Class
