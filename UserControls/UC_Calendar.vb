@@ -1996,6 +1996,9 @@ Public Class UC_Calendar
                     End Try
 
                     ' 14. ივენთების მიბმა
+                    AddHandler sessionCard.MouseDown, AddressOf SessionCard_MouseDown
+                    AddHandler sessionCard.MouseMove, AddressOf SessionCard_MouseMove
+                    AddHandler sessionCard.MouseUp, AddressOf SessionCard_MouseUp
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
@@ -2016,6 +2019,263 @@ Public Class UC_Calendar
 
         Catch ex As Exception
             Debug.WriteLine($"❌ PlaceSessionsOnGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ბარათის Mouse ივენთების ცვლადები გადატანისთვის
+    ''' </summary>
+    Private isDragging As Boolean = False
+    Private dragStartPoint As Point
+    Private draggedCard As Panel = Nothing
+    Private originalCardPosition As Point
+    Private originalSessionData As SessionModel = Nothing
+
+    ''' <summary>
+    ''' სესიის ბარათზე MouseDown ივენთი
+    ''' </summary>
+    Private Sub SessionCard_MouseDown(sender As Object, e As MouseEventArgs)
+        Try
+            Debug.WriteLine($"SessionCard_MouseDown: დაჭერა {e.Button}")
+
+            If e.Button = MouseButtons.Left Then
+                draggedCard = DirectCast(sender, Panel)
+                isDragging = True
+                dragStartPoint = e.Location
+                originalCardPosition = draggedCard.Location
+
+                ' შევინახოთ ორიგინალური სესიის მონაცემები
+                Dim sessionId As Integer = CInt(draggedCard.Tag)
+                originalSessionData = allSessions.FirstOrDefault(Function(s) s.Id = sessionId)
+
+                ' ბარათი გადავიტანოთ ყველაზე წინ
+                draggedCard.BringToFront()
+                draggedCard.Cursor = Cursors.SizeAll
+
+                ' მნიშვნელოვანი: Capture-ის დაყენება
+                draggedCard.Capture = True
+
+                Debug.WriteLine($"SessionCard_MouseDown: დაიწყო გადატანა სესია ID={sessionId}, დარჩა Capturing={draggedCard.Capture}")
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"SessionCard_MouseDown: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ბარათზე MouseMove ივენთი
+    ''' </summary>
+    Private Sub SessionCard_MouseMove(sender As Object, e As MouseEventArgs)
+        Try
+            If isDragging AndAlso draggedCard IsNot Nothing Then
+                ' გამოვთვალოთ ახალი პოზიცია მაუსის კოორდინატების მიხედვით
+                Dim currentLocation As Point = draggedCard.Location
+                currentLocation.X += e.X - dragStartPoint.X
+                currentLocation.Y += e.Y - dragStartPoint.Y
+
+                ' მასშტაბირებული პარამეტრები გადატანისთვის
+                Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+                Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+                ' ვამოწმებთ საზღვრებს - mainGridPanel-ის ფარგლებში
+                Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+                If mainGridPanel IsNot Nothing Then
+                    Dim maxX As Integer = (SPACE_COLUMN_WIDTH * spaces.Count) - draggedCard.Width
+                    Dim maxY As Integer = (ROW_HEIGHT * timeIntervals.Count) - draggedCard.Height
+
+                    ' შეზღუდავთ მოძრაობას გრიდის ფარგლებში
+                    If currentLocation.X < 0 Then currentLocation.X = 0
+                    If currentLocation.Y < 0 Then currentLocation.Y = 0
+                    If currentLocation.X > maxX Then currentLocation.X = maxX
+                    If currentLocation.Y > maxY Then currentLocation.Y = maxY
+
+                    ' დავაყენოთ ახალი პოზიცია
+                    draggedCard.Location = currentLocation
+
+                    Debug.WriteLine($"SessionCard_MouseMove: ახალი პოზიცია - X={currentLocation.X}, Y={currentLocation.Y}")
+                End If
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"SessionCard_MouseMove: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ბარათზე MouseUp ივენთი
+    ''' </summary>
+    Private Sub SessionCard_MouseUp(sender As Object, e As MouseEventArgs)
+        Try
+            Debug.WriteLine($"SessionCard_MouseUp: მაუსის ღილაკი მოიხსნა, isDragging={isDragging}")
+
+            If isDragging AndAlso draggedCard IsNot Nothing Then
+                isDragging = False
+                draggedCard.Cursor = Cursors.Hand
+                draggedCard.Capture = False
+
+                ' გამოვთვალოთ ახალი გრიდის პოზიცია
+                Dim newGridPosition = CalculateGridPosition(draggedCard.Location)
+                Dim originalGridPosition = CalculateGridPosition(originalCardPosition)
+
+                Debug.WriteLine($"SessionCard_MouseUp: ორიგინალური პოზიცია - Space={originalGridPosition.spaceIndex}, Time={originalGridPosition.timeIndex}")
+                Debug.WriteLine($"SessionCard_MouseUp: ახალი პოზიცია - Space={newGridPosition.spaceIndex}, Time={newGridPosition.timeIndex}")
+
+                ' ვამოწმებთ შეიცვალა თუ არა პოზიცია
+                If newGridPosition.spaceIndex <> originalGridPosition.spaceIndex OrElse
+               newGridPosition.timeIndex <> originalGridPosition.timeIndex Then
+
+                    ' მესიჯბოქსი დადასტურებისთვის
+                    Dim newSpace As String = spaces(newGridPosition.spaceIndex)
+                    Dim newTime As String = timeIntervals(newGridPosition.timeIndex).ToString("HH:mm")
+
+                    Dim result As DialogResult = MessageBox.Show(
+                    $"გსურთ შევცვალოთ სეანსის პარამეტრები?{Environment.NewLine}" &
+                    $"ახალი სივრცე: {newSpace}{Environment.NewLine}" &
+                    $"ახალი დრო: {newTime}",
+                    "სეანსის განახლება",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button1
+                )
+
+                    If result = DialogResult.Yes Then
+                        ' დავადასტუროთ ცვლილება
+                        ConfirmSessionMove(newGridPosition)
+                    Else
+                        ' დავაბრუნოთ ძველ ადგილას
+                        RevertSessionMove()
+                    End If
+                Else
+                    ' პოზიცია არ შეცვლილა
+                    Debug.WriteLine("SessionCard_MouseUp: პოზიცია არ შეცვლილა")
+                End If
+
+                ' გავასუფთავოთ ცვლადები
+                draggedCard = Nothing
+                originalSessionData = Nothing
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"SessionCard_MouseUp: შეცდომა - {ex.Message}")
+            ' შეცდომის შემთხვევაში დავაბრუნოთ ძველ ადგილას
+            RevertSessionMove()
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' გრიდის პოზიციის გამოთვლა pixel კოორდინატებიდან
+    ''' </summary>
+    Private Function CalculateGridPosition(pixelLocation As Point) As (spaceIndex As Integer, timeIndex As Integer)
+        Try
+            ' მასშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' გამოვთვალოთ ინდექსები (მარჯინების გათვალისწინებით)
+            Dim spaceIndex As Integer = pixelLocation.X \ SPACE_COLUMN_WIDTH
+            Dim timeIndex As Integer = pixelLocation.Y \ ROW_HEIGHT
+
+            ' შევამოწმოთ საზღვრები
+            If spaceIndex < 0 Then spaceIndex = 0
+            If spaceIndex >= spaces.Count Then spaceIndex = spaces.Count - 1
+            If timeIndex < 0 Then timeIndex = 0
+            If timeIndex >= timeIntervals.Count Then timeIndex = timeIntervals.Count - 1
+
+            Debug.WriteLine($"CalculateGridPosition: Pixel({pixelLocation.X}, {pixelLocation.Y}) -> Grid({spaceIndex}, {timeIndex})")
+            Return (spaceIndex, timeIndex)
+
+        Catch ex As Exception
+            Debug.WriteLine($"CalculateGridPosition: შეცდომა - {ex.Message}")
+            Return (0, 0)
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' სესიის მოძრაობის დადასტურება და მონაცემების განახლება
+    ''' </summary>
+    Private Sub ConfirmSessionMove(newGridPosition As (spaceIndex As Integer, timeIndex As Integer))
+        Try
+            Debug.WriteLine($"ConfirmSessionMove: ახალი პოზიცია - Space={newGridPosition.spaceIndex}, Time={newGridPosition.timeIndex}")
+
+            If originalSessionData Is Nothing OrElse dataService Is Nothing Then
+                Debug.WriteLine("ConfirmSessionMove: originalSessionData ან dataService არის null")
+                RevertSessionMove()
+                Return
+            End If
+
+            ' ახალი სივრცე და დრო
+            Dim newSpace As String = spaces(newGridPosition.spaceIndex)
+            Dim newDateTime As DateTime = timeIntervals(newGridPosition.timeIndex)
+
+            ' შევქმნათ ახალი DateTime, რომელიც ინარჩუნებს ორიგინალურ თარიღს მაგრამ ცვლის დროს
+            Dim originalDate As DateTime = originalSessionData.DateTime.Date
+            Dim newFullDateTime As DateTime = originalDate.Add(newDateTime.TimeOfDay)
+
+            ' განვაახლოთ სესიის ობიექტი
+            originalSessionData.Space = newSpace
+            originalSessionData.DateTime = newFullDateTime
+
+            ' შევცდოთ მონაცემთა ბაზაში განახლება
+            Try
+                ' მივიღოთ ყველა სესიის მონაცემები
+                Dim allSessionsData = dataService.GetData("DB-Schedule!A2:O")
+
+                ' ვიპოვოთ ჩვენი სესიის მწკრივი
+                For i As Integer = 0 To allSessionsData.Count - 1
+                    Dim row = allSessionsData(i)
+                    If row.Count > 0 AndAlso Integer.TryParse(row(0).ToString(), Nothing) Then
+                        Dim rowId As Integer = Integer.Parse(row(0).ToString())
+                        If rowId = originalSessionData.Id Then
+                            ' განვაახლოთ სივრცე (K სვეტი - ინდექსი 10)
+                            Dim updatedRow As New List(Of Object)(row)
+                            If updatedRow.Count > 10 Then updatedRow(10) = newSpace
+
+                            ' განვაახლოთ თარიღი (F სვეტი - ინდექსი 5)
+                            If updatedRow.Count > 5 Then updatedRow(5) = newFullDateTime.ToString("dd.MM.yyyy HH:mm")
+
+                            ' განვაახლოთ მონაცემები Google Sheets-ში
+                            Dim updateRange As String = $"DB-Schedule!A{i + 2}:O{i + 2}"
+                            dataService.UpdateData(updateRange, updatedRow)
+
+                            Debug.WriteLine($"ConfirmSessionMove: წარმატებით განახლდა სესია ID={originalSessionData.Id}")
+                            Exit For
+                        End If
+                    End If
+                Next
+
+                ' განვაახლოთ ლოკალური მონაცემები
+                LoadSessions()
+
+                ' განვაახლოთ კალენდრის ხედი
+                UpdateCalendarView()
+
+                ' შეტყობინება წარმატებული განახლების შესახებ
+                MessageBox.Show($"სესია წარმატებით გადატანილია {newSpace} სივრცეში {newDateTime:HH:mm} დროზე",
+                          "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            Catch updateEx As Exception
+                Debug.WriteLine($"ConfirmSessionMove: მონაცემების განახლების შეცდომა - {updateEx.Message}")
+                MessageBox.Show($"სესიის განახლების შეცდომა: {updateEx.Message}",
+                          "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ' შეცდომის შემთხვევაში დავაბრუნოთ ძველ ადგილას
+                RevertSessionMove()
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"ConfirmSessionMove: შეცდომა - {ex.Message}")
+            RevertSessionMove()
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ძველ ადგილას დაბრუნება
+    ''' </summary>
+    Private Sub RevertSessionMove()
+        Try
+            If draggedCard IsNot Nothing Then
+                draggedCard.Location = originalCardPosition
+                Debug.WriteLine("RevertSessionMove: ბარათი დაბრუნდა ძველ ადგილას")
+            End If
+        Catch ex As Exception
+            Debug.WriteLine($"RevertSessionMove: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
