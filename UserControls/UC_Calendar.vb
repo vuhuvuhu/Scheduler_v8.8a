@@ -1797,8 +1797,8 @@ Public Class UC_Calendar
                     For i As Integer = 0 To timeIntervals.Count - 1
                         Dim intervalTime As TimeSpan = timeIntervals(i).TimeOfDay
                         Dim difference As TimeSpan = If(sessionTime >= intervalTime,
-                                                       sessionTime - intervalTime,
-                                                       intervalTime - sessionTime)
+                                                  sessionTime - intervalTime,
+                                                  intervalTime - sessionTime)
 
                         If difference < minDifference Then
                             minDifference = difference
@@ -1817,7 +1817,7 @@ Public Class UC_Calendar
 
                     ' 3. საზღვრების შემოწმება
                     If spaceIndex < 0 OrElse timeIndex < 0 OrElse
-                       spaceIndex >= spaces.Count OrElse timeIndex >= timeIntervals.Count Then
+                  spaceIndex >= spaces.Count OrElse timeIndex >= timeIntervals.Count Then
                         Debug.WriteLine($"❌ არასწორი ინდექსები: space={spaceIndex}, time={timeIndex}")
                         Continue For
                     End If
@@ -1826,19 +1826,25 @@ Public Class UC_Calendar
                     Dim cardX As Integer = spaceIndex * SPACE_COLUMN_WIDTH + 4
                     Dim cardY As Integer = timeIndex * ROW_HEIGHT + 2
 
-                    ' 5. პროპორციული ბარათის სიმაღლის გამოთვლა
+                    ' 5. პროპორციული ბარათის სიმაღლის გამოთვლა (შემცირებული მაქსიმუმი)
                     Dim sessionDurationMinutes As Integer = session.Duration
                     Dim baseCardHeight As Double = ROW_HEIGHT * (sessionDurationMinutes / 30.0)
                     Dim minCardHeight As Integer = ROW_HEIGHT
                     Dim cardHeight As Integer = CInt(Math.Max(baseCardHeight, minCardHeight))
-                    Dim maxCardHeight As Integer = ROW_HEIGHT * 8
+                    Dim maxCardHeight As Integer = ROW_HEIGHT * 4
                     If cardHeight > maxCardHeight Then cardHeight = maxCardHeight
 
                     ' 6. 🎨 ახალი ფერების განსაზღვრა SessionStatusColors კლასიდან
                     Dim cardColor As Color = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
                     Dim borderColor As Color = SessionStatusColors.GetStatusBorderColor(session.Status, session.DateTime)
+                    ' ახალი: header-ისთვის მუქი ფერი
+                    Dim headerColor As Color = Color.FromArgb(
+                   Math.Max(0, cardColor.R - 50),
+                   Math.Max(0, cardColor.G - 50),
+                   Math.Max(0, cardColor.B - 50)
+               )
 
-                    Debug.WriteLine($"🎨 ფერის განსაზღვრა: სტატუსი='{session.Status}' -> ფონი={cardColor}, ჩარჩო={borderColor}")
+                    Debug.WriteLine($"🎨 ფერის განსაზღვრა: სტატუსი='{session.Status}' -> ფონი={cardColor}, ჩარჩო={borderColor}, header={headerColor}")
 
                     ' 7. ბარათის შექმნა
                     Dim sessionCard As New Panel()
@@ -1849,7 +1855,47 @@ Public Class UC_Calendar
                     sessionCard.Tag = session.Id
                     sessionCard.Cursor = Cursors.Hand
 
-                    ' 8. კასტომ ჩარჩოს დამატება
+                    ' 8. ზედა მუქი ზოლი (header)
+                    Dim HEADER_HEIGHT As Integer = 24
+                    Dim headerPanel As New Panel()
+                    headerPanel.Size = New Size(sessionCard.Width, HEADER_HEIGHT)
+                    headerPanel.Location = New Point(0, 0)
+                    headerPanel.BackColor = headerColor
+                    sessionCard.Controls.Add(headerPanel)
+
+                    ' 9. ბენეფიციარის სახელი header-ში მთავრული ფონტით (ჯერ გვარი, მერე სახელი)
+                    Dim mtavruliFont As String = "Sylfaen" ' ნაგულისხმევი ფონტი
+                    Try
+                        Using testFont As New Font("KA_LITERATURULI_MT", 8)
+                            mtavruliFont = "KA_LITERATURULI_MT"
+                        End Using
+                    Catch
+                        ' ალტერნატიული ფონტები
+                        Dim altFonts As String() = {"BPG_Nino_Mtavruli", "ALK_Tall_Mtavruli", "Sylfaen"}
+                        For Each fontName In altFonts
+                            Try
+                                Using testFont As New Font(fontName, 8)
+                                    mtavruliFont = fontName
+                                    Exit For
+                                End Using
+                            Catch
+                                Continue For
+                            End Try
+                        Next
+                    End Try
+
+                    Dim lblBeneficiary As New Label()
+                    ' ცვლილება: ჯერ გვარი, მერე სახელი
+                    Dim beneficiaryText As String = $"{session.BeneficiarySurname.ToUpper()} {session.BeneficiaryName.ToUpper()}"
+                    lblBeneficiary.Text = beneficiaryText
+                    lblBeneficiary.Location = New Point(8, 2)
+                    lblBeneficiary.Size = New Size(headerPanel.Width - 16, 20)
+                    lblBeneficiary.Font = New Font(mtavruliFont, 8, FontStyle.Bold)
+                    lblBeneficiary.ForeColor = Color.White
+                    lblBeneficiary.TextAlign = ContentAlignment.MiddleLeft
+                    headerPanel.Controls.Add(lblBeneficiary)
+
+                    ' 10. კასტომ ჩარჩოს დამატება
                     AddHandler sessionCard.Paint, Sub(sender, e)
                                                       ' ძირითადი ფონი
                                                       Using brush As New SolidBrush(cardColor)
@@ -1862,76 +1908,78 @@ Public Class UC_Calendar
                                                       End Using
                                                   End Sub
 
-                    ' 9. ლეიბლების დინამიური განთავსება
-                    Dim currentY As Integer = 5
-                    Dim labelSpacing As Integer = 15
-
-                    ' ბენეფიციარის სახელი (ყოველთვის ჩანს)
-                    Dim lblBeneficiary As New Label()
-                    lblBeneficiary.Text = $"{session.BeneficiaryName} {session.BeneficiarySurname}".Trim()
-                    lblBeneficiary.Size = New Size(sessionCard.Width - 10, 16)
-                    lblBeneficiary.Location = New Point(5, currentY)
-                    lblBeneficiary.Font = New Font("Sylfaen", 8, FontStyle.Bold)
-                    lblBeneficiary.TextAlign = ContentAlignment.TopCenter
-                    lblBeneficiary.ForeColor = Color.Black
-                    lblBeneficiary.BackColor = Color.Transparent
-                    sessionCard.Controls.Add(lblBeneficiary)
-                    currentY += labelSpacing
+                    ' 11. ლეიბლების დინამიური განთავსება (ოდნავ გაზრდილი პადინგი)
+                    Dim currentY As Integer = HEADER_HEIGHT + 5 ' 3-დან 5-ზე დავაბრუნე
+                    Dim labelSpacing As Integer = 12 ' 10-დან 12-ზე გავაზრდე
 
                     ' სტატუსი (კომპაქტური, მაგრამ ხილვადი)
-                    If cardHeight > 40 Then
+                    If cardHeight > HEADER_HEIGHT + 15 Then
                         Dim lblStatus As New Label()
                         lblStatus.Text = session.Status
-                        lblStatus.Size = New Size(sessionCard.Width - 10, 12)
+                        lblStatus.Size = New Size(sessionCard.Width - 10, 10)
                         lblStatus.Location = New Point(5, currentY)
                         lblStatus.Font = New Font("Sylfaen", 6, FontStyle.Bold)
                         lblStatus.ForeColor = Color.DarkSlateGray
                         lblStatus.BackColor = Color.Transparent
                         lblStatus.TextAlign = ContentAlignment.TopCenter
                         sessionCard.Controls.Add(lblStatus)
-                        currentY += 12
+                        currentY += labelSpacing
                     End If
 
                     ' თერაპევტი (თუ ბარათი საკმარისად დიდია)
-                    If cardHeight > 60 AndAlso Not String.IsNullOrEmpty(session.TherapistName) Then
+                    If cardHeight > HEADER_HEIGHT + 30 AndAlso Not String.IsNullOrEmpty(session.TherapistName) Then
                         Dim lblTherapist As New Label()
                         lblTherapist.Text = session.TherapistName
-                        lblTherapist.Size = New Size(sessionCard.Width - 10, 13)
+                        lblTherapist.Size = New Size(sessionCard.Width - 10, 11)
                         lblTherapist.Location = New Point(5, currentY)
                         lblTherapist.Font = New Font("Sylfaen", 7, FontStyle.Regular)
                         lblTherapist.ForeColor = Color.FromArgb(40, 40, 40)
                         lblTherapist.BackColor = Color.Transparent
                         lblTherapist.TextAlign = ContentAlignment.TopLeft
                         sessionCard.Controls.Add(lblTherapist)
-                        currentY += 13
+                        currentY += labelSpacing
                     End If
 
                     ' თერაპიის ტიპი (თუ ბარათი ძალიან დიდია)
-                    If cardHeight > 90 AndAlso Not String.IsNullOrEmpty(session.TherapyType) Then
+                    If cardHeight > HEADER_HEIGHT + 50 AndAlso Not String.IsNullOrEmpty(session.TherapyType) Then
                         Dim lblTherapyType As New Label()
                         lblTherapyType.Text = session.TherapyType
-                        lblTherapyType.Size = New Size(sessionCard.Width - 10, 12)
+                        lblTherapyType.Size = New Size(sessionCard.Width - 10, 10)
                         lblTherapyType.Location = New Point(5, currentY)
                         lblTherapyType.Font = New Font("Sylfaen", 6, FontStyle.Italic)
                         lblTherapyType.ForeColor = Color.FromArgb(60, 60, 60)
                         lblTherapyType.BackColor = Color.Transparent
                         lblTherapyType.TextAlign = ContentAlignment.TopLeft
                         sessionCard.Controls.Add(lblTherapyType)
-                        currentY += 12
+                        currentY += labelSpacing
                     End If
 
-                    ' დრო და ხანგრძლივობა (ყოველთვის ქვედა ნაწილში)
-                    Dim lblTime As New Label()
-                    lblTime.Text = $"{session.DateTime:HH:mm} ({session.Duration}წთ)"
-                    lblTime.Size = New Size(sessionCard.Width - 10, 12)
-                    lblTime.Location = New Point(5, cardHeight - 17)
-                    lblTime.Font = New Font("Segoe UI", 7, FontStyle.Regular)
-                    lblTime.ForeColor = Color.FromArgb(60, 60, 60)
-                    lblTime.BackColor = Color.Transparent
-                    lblTime.TextAlign = ContentAlignment.BottomRight
-                    sessionCard.Controls.Add(lblTime)
+                    ' 12. რედაქტირების ღილაკი ბარათის ქვედა მარჯვენა კუთხეში
+                    Dim btnEdit As New Button()
+                    btnEdit.Text = "✎" ' ფანქრის სიმბოლო
+                    btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
+                    btnEdit.ForeColor = Color.White
+                    btnEdit.BackColor = Color.FromArgb(80, 80, 80) ' მუქი ფონი
+                    btnEdit.Size = New Size(24, 24) ' მრგვალი ღილაკისთვის
+                    btnEdit.Location = New Point(sessionCard.Width - 30, sessionCard.Height - 30)
+                    btnEdit.FlatStyle = FlatStyle.Flat
+                    btnEdit.FlatAppearance.BorderSize = 0
+                    btnEdit.Tag = session.Id ' შევინახოთ სესიის ID ღილაკის Tag-ში
+                    btnEdit.Cursor = Cursors.Hand
 
-                    ' 10. მომრგვალებული კუთხეები
+                    ' მოვუმრგვალოთ ღილაკი
+                    Dim btnPath As New Drawing2D.GraphicsPath()
+                    btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
+                    btnEdit.Region = New Region(btnPath)
+
+                    ' ღილაკის მიბმა ფუნქციაზე
+                    AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+
+                    ' ღილაკის დამატება ბარათზე
+                    sessionCard.Controls.Add(btnEdit)
+                    btnEdit.BringToFront()
+
+                    ' 13. მომრგვალებული კუთხეები
                     Try
                         Dim path As New Drawing2D.GraphicsPath()
                         Dim cornerRadius As Integer = 6
@@ -1947,16 +1995,16 @@ Public Class UC_Calendar
                         ' Region შექმნის პრობლემისას გაგრძელება
                     End Try
 
-                    ' 11. ივენთების მიბმა
+                    ' 14. ივენთების მიბმა
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
-                    ' 12. ბარათის mainGridPanel-ზე დამატება
+                    ' 15. ბარათის mainGridPanel-ზე დამატება
                     mainGridPanel.Controls.Add(sessionCard)
                     sessionCard.BringToFront()
 
                     Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, სტატუსი='{session.Status}', " &
-                                  $"ზომა={sessionCard.Width}x{sessionCard.Height}px, ფერი={cardColor}")
+                             $"ზომა={sessionCard.Width}x{sessionCard.Height}px, ფერი={cardColor}")
 
                 Catch sessionEx As Exception
                     Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
@@ -2002,6 +2050,51 @@ Public Class UC_Calendar
             End If
         Catch ex As Exception
             Debug.WriteLine($"SessionCard_Click: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' რედაქტირების ღილაკზე დაჭერის დამუშავება
+    ''' </summary>
+    Private Sub BtnEditSession_Click(sender As Object, e As EventArgs)
+        Try
+            Dim btn = DirectCast(sender, Button)
+            Dim sessionId As Integer = CInt(btn.Tag)
+
+            Debug.WriteLine($"BtnEditSession_Click: სესიის რედაქტირების მოთხოვნა, ID={sessionId}")
+
+            ' შევამოწმოთ არის თუ არა მომხმარებელი ავტორიზებული რედაქტირებისთვის
+            If String.IsNullOrEmpty(userEmail) Then
+                MessageBox.Show("ავტორიზაციის გარეშე ვერ მოხდება სესიის რედაქტირება", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ხელმისაწვდომი", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' შევქმნათ და გავხსნათ რედაქტირების ფორმა
+            Dim editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Calendar")
+
+            ' გავხსნათ ფორმა
+            Dim result = editForm.ShowDialog()
+
+            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
+            If result = DialogResult.OK Then
+                Debug.WriteLine($"BtnEditSession_Click: სესია ID={sessionId} წარმატებით განახლდა")
+
+                ' ჩავტვირთოთ სესიები თავიდან
+                LoadSessions()
+
+                ' განვაახლოთ კალენდრის ხედი
+                UpdateCalendarView()
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnEditSession_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
