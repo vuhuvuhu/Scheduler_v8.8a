@@ -88,6 +88,10 @@ Public Class UC_Calendar
         ' რადიობუტონების საწყისი მნიშვნელობები
         rbDay.Checked = True
         RBSpace.Checked = True
+
+        ' ✨ ახალი: ფილტრების ინიციალიზაცია
+        InitializeStatusFilters()
+
     End Sub
 
     ''' <summary>
@@ -491,6 +495,142 @@ Public Class UC_Calendar
             Debug.WriteLine($"InitializeDayViewPanels: StackTrace - {ex.StackTrace}")
             MessageBox.Show($"პანელების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' ჩეკბოქსების ფილტრაციის ინიციალიზაცია
+    ''' ჩეკბოქსები უკვე შექმნილია დიზაინერში, მხოლოდ ივენთების მიბმა ხდება
+    ''' </summary>
+    Private Sub InitializeStatusFilters()
+        Try
+            Debug.WriteLine("InitializeStatusFilters: ჩეკბოქსების ინიციალიზაცია")
+
+            ' ყველა ჩეკბოქსი საწყისად ჩართული უნდა იყოს
+            CheckBox1.Checked = True  ' დაგეგმილი
+            CheckBox2.Checked = True  ' შესრულებული
+            CheckBox3.Checked = True  ' გაცდენა საპატიო
+            CheckBox4.Checked = True  ' გაცდენა არასაპატიო
+            CheckBox5.Checked = True  ' აღდგენა
+            CheckBox6.Checked = True  ' პროგრამით გატარება
+            CheckBox7.Checked = True  ' გაუქმებული
+
+            ' ივენთების მიბმა - CheckedChanged ივენთებზე
+            AddHandler CheckBox1.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox2.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox3.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox4.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox5.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox6.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+            AddHandler CheckBox7.CheckedChanged, AddressOf StatusFilter_CheckedChanged
+
+            Debug.WriteLine("InitializeStatusFilters: ყველა ჩეკბოქსი ჩართულია და ივენთები მიბმულია")
+        Catch ex As Exception
+            Debug.WriteLine($"InitializeStatusFilters: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ჩეკბოქსის ცვლილების ივენთი - სტატუსის ფილტრაციისთვის
+    ''' </summary>
+    Private Sub StatusFilter_CheckedChanged(sender As Object, e As EventArgs)
+        Try
+            Dim checkbox As CheckBox = DirectCast(sender, CheckBox)
+            Debug.WriteLine($"StatusFilter_CheckedChanged: {checkbox.Name} = {checkbox.Checked}")
+
+            ' კალენდრის ხედის განახლება ფილტრაციით
+            UpdateCalendarView()
+        Catch ex As Exception
+            Debug.WriteLine($"StatusFilter_CheckedChanged: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ფილტრაციისთვის შესაბამისი სესიების მიღება სტატუსის მიხედვით
+    ''' </summary>
+    Private Function GetFilteredSessions() As List(Of SessionModel)
+        Try
+            Debug.WriteLine("GetFilteredSessions: სესიების ფილტრაცია")
+
+            ' არჩეული თარიღი
+            Dim selectedDate As DateTime = DTPCalendar.Value.Date
+
+            ' მხოლოდ არჩეული დღის სესიები
+            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+
+            ' ფილტრაცია სტატუსების მიხედვით
+            Dim filteredSessions As New List(Of SessionModel)()
+
+            For Each session In daySessions
+                Dim shouldShow As Boolean = False
+                Dim sessionStatus As String = session.Status.Trim().ToLower()
+
+                ' CheckBox1 - დაგეგმილი
+                If CheckBox1.Checked AndAlso sessionStatus = "დაგეგმილი" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox2 - შესრულებული
+                If CheckBox2.Checked AndAlso sessionStatus = "შესრულებული" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox3 - გაცდენა საპატიო
+                If CheckBox3.Checked AndAlso sessionStatus = "გაცდენა საპატიო" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox4 - გაცდენა არასაპატიო
+                If CheckBox4.Checked AndAlso sessionStatus = "გაცდენა არასაპატიო" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox5 - აღდგენა
+                If CheckBox5.Checked AndAlso sessionStatus = "აღდგენა" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox6 - პროგრამით გატარება
+                If CheckBox6.Checked AndAlso sessionStatus = "პროგრამით გატარება" Then
+                    shouldShow = True
+                End If
+
+                ' CheckBox7 - გაუქმებული
+                If CheckBox7.Checked AndAlso (sessionStatus = "გაუქმებული" OrElse sessionStatus = "გაუქმება") Then
+                    shouldShow = True
+                End If
+
+                ' თუ ჩეკბოქსი ჩართულია, დავამატოთ სესია
+                If shouldShow Then
+                    filteredSessions.Add(session)
+                End If
+            Next
+
+            Debug.WriteLine($"GetFilteredSessions: {daySessions.Count}-დან ფილტრაციის შემდეგ დარჩა {filteredSessions.Count} სესია")
+            Return filteredSessions
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetFilteredSessions: შეცდომა - {ex.Message}")
+            Return New List(Of SessionModel)()
+        End Try
+    End Function
+
+    ' ═══════════════════════════════════════
+    ' 🔧 მოდიფიკაცია: კონსტრუქტორში ფილტრების ინიციალიზაცია
+    ' ═══════════════════════════════════════
+
+    ''' <summary>
+    ''' კონსტრუქტორი კალენდრის ViewModel-ით (განახლებული ვერსია ფილტრებით)
+    ''' ჩაამატე ეს ხაზი არსებულ კონსტრუქტორში, სადაც სხვა ივენთებია მიბმული
+    ''' </summary>
+    Private Sub InitializeConstructorWithFilters()
+        ' ... შენი არსებული კოდი ...
+
+        ' რადიობუტონების საწყისი მნიშვნელობები
+        rbDay.Checked = True
+        RBSpace.Checked = True
+
+        ' ✨ ახალი: ფილტრების ინიციალიზაცია
+        InitializeStatusFilters()
     End Sub
 
     ''' <summary>
@@ -1658,7 +1798,7 @@ Public Class UC_Calendar
             Debug.WriteLine($"არჩეული თარიღი: {selectedDate:dd.MM.yyyy}")
 
             ' ფილტრი - მხოლოდ אחรოული дღის සเสียები
-            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Dim daySessions = GetFilteredSessions()
             Debug.WriteLine($"ნაპოვნია {daySessions.Count} სესია ამ თарიღისთვის")
 
             ' სწيებიេბ ગানთავსება
@@ -2834,7 +2974,7 @@ Public Class UC_Calendar
             Debug.WriteLine($"არჩეული თარიღი: {selectedDate:dd.MM.yyyy}")
 
             ' ფილტრი - მხოლოდ არჩეული დღის სესიები
-            Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Dim daySessions = GetFilteredSessions()
             Debug.WriteLine($"ნაპოვნია {daySessions.Count} სესია ამ თარიღისთვის")
 
             ' სესიების განთავსება
@@ -3087,6 +3227,105 @@ Public Class UC_Calendar
 
         Catch ex As Exception
             Debug.WriteLine($"❌ PlaceSessionsOnGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ' ═══════════════════════════════════════
+    ' 🔧 მოდიფიკაცია: PlaceSessionsOnGrid (ფილტრაციით)
+    ' ═══════════════════════════════════════
+
+    ''' <summary>
+    ''' სესიების განთავსება გრიდში - ფილტრაციით
+    ''' ყველა კოდი იგივეა, მაგრამ daySessions-ის ნაცვლად ვიყენებთ GetFilteredSessions()-ს
+    ''' </summary>
+    Private Sub PlaceSessionsOnGridWithFilter()
+        Try
+            Debug.WriteLine("=== PlaceSessionsOnGrid: დაიწყო (ფილტრაციით) ===")
+
+            ' ძირითადი შემოწმებები
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnGrid: სესიები არ არის")
+                Return
+            End If
+
+            If gridCells Is Nothing Then
+                Debug.WriteLine("PlaceSessionsOnGrid: გრიდის უჯრედები არ არის")
+                Return
+            End If
+
+            If timeIntervals.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnGrid: დროის ინტერვალები არ არის")
+                Return
+            End If
+
+            ' მნიშვნელოვანი: ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("❌ მთავარი გრიდის პანელი ვერ მოიძებნა!")
+                Return
+            End If
+
+            ' მასშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' ✨ ძირითადი ცვლილება: ფილტრირებული სესიების მიღება ჩეკბოქსების მიხედვით
+            ' არის მაგივრად: Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Dim daySessions = GetFilteredSessions()
+            Debug.WriteLine($"ნაპოვნია {daySessions.Count} ფილტრირებული სესია")
+
+            ' <--- აქ ყველა დანარჩენი კოდი იგივე რჩება, რაც PlaceSessionsOnGrid-ში არის --->
+            ' სესიების განთავსება, ბარათების შექმნა, ფერების განსაზღვრა, ა.შ.
+
+            For Each session In daySessions
+                ' [თქვენი არსებული ყველა კოდი ბარათის შექმნისთვის]
+                ' ...
+            Next
+
+            Debug.WriteLine("=== PlaceSessionsOnGrid: დასრულება ===")
+
+        Catch ex As Exception
+            Debug.WriteLine($"❌ PlaceSessionsOnGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ' ═══════════════════════════════════════
+    ' 🔧 მოდიფიკაცია: PlaceSessionsOnTherapistGrid (ფილტრაციით)
+    ' ═══════════════════════════════════════
+
+    ''' <summary>
+    ''' სესიების განთავსება თერაპევტების გრიდში - ფილტრაციით
+    ''' ყველა კოდი იგივეა, მაგრამ daySessions-ის ნაცვლად ვიყენებთ GetFilteredSessions()-ს
+    ''' </summary>
+    Private Sub PlaceSessionsOnTherapistGridWithFilter()
+        Try
+            Debug.WriteLine("=== PlaceSessionsOnTherapistGrid: დაიწყო (ფილტრაციით) ===")
+
+            ' ძირითადი შემოწმებები (იგივე)
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnTherapistGrid: სესიები არ არის")
+                Return
+            End If
+
+            ' ... სხვა შემოწმებები ...
+
+            ' ✨ ძირითადი ცვლილება: ფილტრირებული სესიების მიღება ჩეკბოქსების მიხედვით
+            ' არის მაგივრად: Dim daySessions = allSessions.Where(Function(s) s.DateTime.Date = selectedDate).ToList()
+            Dim daySessions = GetFilteredSessions()
+            Debug.WriteLine($"ნაპოვნია {daySessions.Count} ფილტრირებული სესია თერაპევტების ხედისთვის")
+
+            ' <--- აქ ყველა დანარჩენი კოდი იგივე რჩება, რაც PlaceSessionsOnTherapistGrid-ში არის --->
+            ' სესიების განთავსება, ბარათების შექმნა, ფერების განსაზღვრა, ა.შ.
+
+            For Each session In daySessions
+                ' [თქვენი არსებული ყველა კოდი ბარათის შექმნისთვის]
+                ' ...
+            Next
+
+            Debug.WriteLine("=== PlaceSessionsOnTherapistGrid: დასრულება ===")
+
+        Catch ex As Exception
+            Debug.WriteLine($"❌ PlaceSessionsOnTherapistGrid: ზოგადი შეცდომა - {ex.Message}")
         End Try
     End Sub
 
