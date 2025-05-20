@@ -5285,6 +5285,242 @@ Public Class UC_Calendar
             MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' ახალი სესიის დამატების ღილაკზე დაჭერის დამუშავება
+    ''' </summary>
+    Private Sub BtnAddSchedule_Click(sender As Object, e As EventArgs) Handles BtnAddSchedule.Click
+        Debug.WriteLine("UC_Home.BtnAddAray_Click: ახალი ჩანაწერის დამატების მოთხოვნა")
+
+        Try
+            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
+            For Each frm As Form In Application.OpenForms
+                If TypeOf frm Is NewRecordForm Then
+                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
+                    Debug.WriteLine("UC_Home.BtnAddAray_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
+                    frm.Focus()
+                    Return
+                End If
+            Next
+
+            ' შევამოწმოთ გვაქვს თუ არა dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Debug.WriteLine("UC_Home.BtnAddAray_Click: dataService არ არის ინიციალიზებული")
+                Return
+            End If
+
+            ' მომხმარებლის email მიღება
+            Dim userEmail As String = "უცნობი"
+            ' მოვძებნოთ მთავარი ფორმა და თუ იქ არის GetUserEmail მეთოდი, გამოვიყენოთ
+            Dim mainForm = TryCast(Application.OpenForms("Form1"), Form1)
+            If mainForm IsNot Nothing AndAlso mainForm.GetType().GetMethod("GetUserEmail") IsNot Nothing Then
+                ' თუ GetUserEmail მეთოდი არსებობს, გამოვიყენოთ
+                userEmail = CType(mainForm.GetType().GetMethod("GetUserEmail").Invoke(mainForm, Nothing), String)
+            End If
+
+            ' ნაგულისხმევად "სესია" ტიპი
+            Dim recordType As String = "სესია"
+
+            ' NewRecordForm-ის გახსნა Add რეჟიმში
+            Dim newRecordForm As New NewRecordForm(dataService, recordType, userEmail, "UC_Home")
+            newRecordForm.Show()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Home.BtnAddAray_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ახალი ჩანაწერის ფორმის გახსნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიების განახლების (refresh) ღილაკზე დაჭერის დამუშავება
+    ''' </summary>
+    Private Sub BtnRef_Click(sender As Object, e As EventArgs) Handles BtnRef.Click
+        Try
+            Debug.WriteLine("BtnRef_Click: იწყება მონაცემების განახლება")
+
+            ' გამოვაჩინოთ მაუსის მაჩვენებელი როგორც WaitCursor
+            Cursor = Cursors.WaitCursor
+
+            ' გავასუფთავოთ სესიების ქეში
+            allSessions = Nothing
+
+            ' ჩავტვირთოთ სესიები თავიდან
+            LoadSessions()
+
+            ' გავასუფთავოთ კალენდარი და ხელახლა დავტვირთოთ ყველაფერი
+            ClearSessionCardsFromGrid()
+            UpdateCalendarView()
+
+            ' დავაბრუნოთ მაუსის მაჩვენებელი
+            Cursor = Cursors.Default
+
+            Debug.WriteLine("BtnRef_Click: მონაცემები წარმატებით განახლდა")
+
+            ' შეტყობინება (არასავალდებულო)
+            ' MessageBox.Show("კალენდარი წარმატებით განახლდა", "განახლება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            Debug.WriteLine($"BtnRef_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"მონაცემების განახლებისას მოხდა შეცდომა: {ex.Message}",
+                       "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+
+            ' დავაბრუნოთ მაუსის მაჩვენებელი შეცდომის შემთხვევაშიც
+            Cursor = Cursors.Default
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის სტატუსის სწრაფი შეცვლა კონტექსტური მენიუდან
+    ''' </summary>
+    Private Sub QuickChangeSessionStatus(session As SessionModel, newStatus As String)
+        Try
+            Debug.WriteLine($"QuickChangeSessionStatus: სესიის ID={session.Id} სტატუსის შეცვლა '{session.Status}' -> '{newStatus}'")
+
+            ' შევამოწმოთ არის თუ არა მომხმარებელი ავტორიზებული
+            If String.IsNullOrEmpty(userEmail) Then
+                MessageBox.Show("სესიის სტატუსის შესაცვლელად საჭიროა ავტორიზაცია",
+                               "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი ვერ მოიძებნა",
+                               "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' დადასტურების მოთხოვნა
+            Dim result = MessageBox.Show(
+                $"გსურთ სესიის #{session.Id} ({session.BeneficiaryName} {session.BeneficiarySurname}) სტატუსის შეცვლა?" & Environment.NewLine &
+                $"ძველი სტატუსი: {session.Status}" & Environment.NewLine &
+                $"ახალი სტატუსი: {newStatus}",
+                "სტატუსის შეცვლა",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1)
+
+            If result = DialogResult.Yes Then
+                ' მივიღოთ ყველა სესიის მონაცემები
+                Dim allSessionsData = dataService.GetData("DB-Schedule!A2:O")
+
+                ' ვიპოვოთ ჩვენი სესიის მწკრივი
+                For i As Integer = 0 To allSessionsData.Count - 1
+                    Dim row = allSessionsData(i)
+                    If row.Count > 0 AndAlso Integer.TryParse(row(0).ToString(), Nothing) Then
+                        Dim rowId As Integer = Integer.Parse(row(0).ToString())
+                        If rowId = session.Id Then
+                            ' განვაახლოთ სტატუსი (M სვეტი - ინდექსი 12)
+                            Dim updatedRow As New List(Of Object)(row)
+                            If updatedRow.Count > 12 Then updatedRow(12) = newStatus
+
+                            ' განვაახლოთ მონაცემები Google Sheets-ში
+                            Dim updateRange As String = $"DB-Schedule!A{i + 2}:O{i + 2}"
+                            dataService.UpdateData(updateRange, updatedRow)
+
+                            Debug.WriteLine($"QuickChangeSessionStatus: წარმატებით განახლდა სესია ID={session.Id}")
+
+                            ' ჩავტვირთოთ სესიები თავიდან
+                            LoadSessions()
+
+                            ' განვაახლოთ კალენდრის ხედი
+                            UpdateCalendarView()
+
+                            ' შეტყობინება
+                            MessageBox.Show($"სესიის სტატუსი წარმატებით შეიცვალა: {newStatus}",
+                                           "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                            Exit For
+                        End If
+                    End If
+                Next
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"QuickChangeSessionStatus: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სტატუსის შეცვლისას მოხდა შეცდომა: {ex.Message}",
+                           "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის ბარათის კონტექსტური მენიუს შექმნა
+    ''' </summary>
+    Private Sub CreateSessionCardContextMenu(sessionCard As Panel, session As SessionModel)
+        Try
+            ' შევქმნათ კონტექსტური მენიუ
+            Dim contextMenu As New ContextMenuStrip()
+
+            ' სესიის ინფორმაციის მენიუს პუნქტი
+            Dim infoMenuItem As New ToolStripMenuItem($"სესია #{session.Id} - {session.BeneficiaryName} {session.BeneficiarySurname}")
+            infoMenuItem.Font = New Font(infoMenuItem.Font, FontStyle.Bold)
+            infoMenuItem.Enabled = False
+            contextMenu.Items.Add(infoMenuItem)
+
+            ' გამყოფი
+            contextMenu.Items.Add(New ToolStripSeparator())
+
+            ' რედაქტირების პუნქტი
+            Dim editMenuItem As New ToolStripMenuItem("რედაქტირება")
+            AddHandler editMenuItem.Click, Sub(sender, e)
+                                               Try
+                                                   ' ვხსნით რედაქტირების ფორმას
+                                                   Dim editForm As New NewRecordForm(dataService, "სესია", session.Id, userEmail, "UC_Calendar")
+                                                   Dim result = editForm.ShowDialog()
+
+                                                   ' ფორმის დახურვის შემდეგ ვანახლებთ მონაცემებს
+                                                   If result = DialogResult.OK Then
+                                                       LoadSessions()
+                                                       UpdateCalendarView()
+                                                   End If
+                                               Catch ex As Exception
+                                                   Debug.WriteLine($"EditMenuItem_Click: შეცდომა - {ex.Message}")
+                                               End Try
+                                           End Sub
+            contextMenu.Items.Add(editMenuItem)
+
+            ' სტატუსის შეცვლის ქვემენიუ
+            Dim statusMenuItem As New ToolStripMenuItem("სტატუსის შეცვლა")
+
+            ' ყველა შესაძლო სტატუსი
+            Dim statuses As String() = {"დაგეგმილი", "შესრულებული", "გაუქმებული", "გაცდენა საპატიო", "გაცდენა არასაპატიო", "აღდგენა", "პროგრამით გატარება"}
+
+            ' დავამატოთ ყველა სტატუსი ქვემენიუში
+            For Each status In statuses
+                ' ამჟამინდელი სტატუსი არ გვინდა მენიუში
+                If Not String.Equals(status, session.Status, StringComparison.OrdinalIgnoreCase) Then
+                    Dim statusItem As New ToolStripMenuItem(status)
+
+                    ' ვუყენებთ შესაბამის ფერს
+                    statusItem.BackColor = SessionStatusColors.GetStatusColor(status, DateTime.Now)
+
+                    ' ვამატებთ ქმედებას
+                    Dim statusName As String = status ' ლოკალური ცვლადი closure-ისთვის
+                    AddHandler statusItem.Click, Sub(sender, e) QuickChangeSessionStatus(session, statusName)
+
+                    statusMenuItem.DropDownItems.Add(statusItem)
+                End If
+            Next
+
+            contextMenu.Items.Add(statusMenuItem)
+
+            ' გამყოფი
+            contextMenu.Items.Add(New ToolStripSeparator())
+
+            ' ინფორმაციის ჩვენების პუნქტი
+            Dim showInfoMenuItem As New ToolStripMenuItem("ინფორმაციის ნახვა")
+            AddHandler showInfoMenuItem.Click, Sub(sender, e) SessionCard_Click(sessionCard, New EventArgs())
+            contextMenu.Items.Add(showInfoMenuItem)
+
+            ' კონტექსტური მენიუს მიბმა პანელზე
+            sessionCard.ContextMenuStrip = contextMenu
+
+        Catch ex As Exception
+            Debug.WriteLine($"CreateSessionCardContextMenu: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
 End Class
 ''' <summary>
 ''' სტატუსების ფერების კონფიგურაცია - ცენტრალური ადგილი ყველა სტატუსის ფერისთვის

@@ -2452,6 +2452,7 @@ Public Class NewRecordForm
             MessageBox.Show($"სესიის დამატება/რედაქტირება ვერ მოხერხდა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
     ''' <summary>
     ''' აბრუნებს არჩეულ სივრცეს ფორმიდან
     ''' </summary>
