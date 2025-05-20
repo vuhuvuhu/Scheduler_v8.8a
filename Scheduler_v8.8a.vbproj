@@ -175,6 +175,12 @@
     <Compile Include="UserControls\UC_Home.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="UserControls\UC_Schedule.Designer.vb">
+      <DependentUpon>UC_Schedule.vb</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\UC_Schedule.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Utils\MenuManager.vb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
@@ -209,6 +215,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\UC_Home.resx">
       <DependentUpon>UC_Home.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\UC_Schedule.resx">
+      <DependentUpon>UC_Schedule.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

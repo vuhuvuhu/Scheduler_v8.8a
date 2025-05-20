@@ -31,6 +31,18 @@ Public Class MenuManager
 
     Private mnuUserRegistration As ToolStripMenuItem
 
+    ' განრიგის მენიუს არჩევისას გამოძახებული მეთოდი
+    Public Event ScheduleMenuSelected As EventHandler
+    Private Sub OnScheduleMenuClick(sender As Object, e As EventArgs)
+        ' გამოვიძახოთ ScheduleMenuSelected ივენთი, თუ მოსმენელი არსებობს
+        RaiseEvent ScheduleMenuSelected(Me, EventArgs.Empty)
+    End Sub
+
+    ' სხვა ქვემენიუს ელემენტების დამმუშავებელი
+    Private Sub OnSubmenuClick(sender As Object, e As EventArgs)
+        ' აქ შეგვიძლია დავამატოთ სხვა ქვემენიუს ელემენტების დამუშავება საჭიროებისამებრ
+    End Sub
+
     Public Sub New(menuStrip As MenuStrip)
         menu = menuStrip
         InitializeMenu()
@@ -53,14 +65,21 @@ Public Class MenuManager
         mnuTherapies = New ToolStripMenuItem("თერაპიები")
         mnuFunding = New ToolStripMenuItem("დაფინანსება")
 
+        ' ქვემენიუს ელემენტებისთვის ივენთის დამმუშავებლების დამატება
+        AddHandler mnuSchedule.Click, AddressOf OnScheduleMenuClick
+        AddHandler mnuBeneficiaries.Click, AddressOf OnSubmenuClick
+        AddHandler mnuTherapists.Click, AddressOf OnSubmenuClick
+        AddHandler mnuTherapies.Click, AddressOf OnSubmenuClick
+        AddHandler mnuFunding.Click, AddressOf OnSubmenuClick
+
         mnuUserRegistration = New ToolStripMenuItem("მომხმარებელთა რეგისტრაცია")
+        AddHandler mnuUserRegistration.Click, AddressOf OnSubmenuClick
 
         mnuDatabases.DropDownItems.AddRange({mnuSchedule, mnuBeneficiaries, mnuTherapists, mnuTherapies, mnuFunding})
         mnuAdmin.DropDownItems.Add(mnuUserRegistration)
 
         menu.Items.AddRange({mnuHome, mnuCalendar, mnuDatabases, mnuGraphs, mnuDocuments, mnuFinances, mnuAdmin})
-        ' არ მივაბათ OnMenuItemClicked ივენთი მენიუს ელემენტებს
-        ' AddHandlers() - ეს ხაზი არის წაშლილი
+
         ShowOnlyHomeMenu()
     End Sub
 

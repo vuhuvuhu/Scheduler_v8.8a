@@ -38,7 +38,7 @@ Public Class Form1
     End Function
 
     ''' <summary>
-    ''' კონსტრუქტორი: ძირითადი ინიციალიზაცია
+    ''' "განრიგი" მენიუს არჩევისას გამოძახებული მეთოდი
     ''' </summary>
     Public Sub New()
         InitializeComponent()
@@ -49,11 +49,25 @@ Public Class Form1
 
         ' მენიუს მენეჯერის ინიციალიზაცია
         menuMgr = New MenuManager(mainMenu)
+
+        ' დავამატოთ ივენთის მსმენელი "განრიგი" მენიუს არჩევისას
+        AddHandler menuMgr.ScheduleMenuSelected, AddressOf OnScheduleMenuSelected
+
         ' UC_Home-ის შექმნისას SheetDataService-ის მიბმა
         homeControl = New UC_Home(homeViewModel)
         homeControl.Dock = DockStyle.Fill
         homeControl.SetDataService(dataService) ' ახალი ხაზი
         pnlMain.Controls.Add(homeControl)
+    End Sub
+
+    ''' <summary>
+    ''' ViewModel-ის PropertyChanged ივენთის დამუშავება
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Sub OnScheduleMenuSelected(sender As Object, e As EventArgs)
+        Debug.WriteLine("OnScheduleMenuSelected: 'განრიგი' არჩეულია მენიუში")
+        ShowSchedule()
     End Sub
 
     ''' <summary>
@@ -630,6 +644,7 @@ Public Class Form1
             homeControl.SetToolsVisibility(False)
         End If
     End Sub
+
     ''' <summary>
     ''' Menu ItemClicked: MenuStrip-ის ივენთის დამმუშავებელი
     ''' </summary>
@@ -639,13 +654,23 @@ Public Class Form1
             Dim menuItemText = e.ClickedItem.Text
             Debug.WriteLine($"mainMenu_ItemClicked: მომხმარებელმა აირჩია '{menuItemText}'")
 
+            ' ვნახოთ ელემენტის ტიპი დებაგირებისთვის
+            Debug.WriteLine($"ClickedItem ტიპი: {e.ClickedItem.GetType().Name}")
+
             ' კონკრეტული მენიუს პუნქტების დაჭერის დამუშავება
             Select Case menuItemText
                 Case "საწყისი"
                     ShowHome()
                 Case "კალენდარი"
                     ShowCalendar()
-                Case "ბაზები", "განრიგი", "ბენეფიციარები", "თერაპევტები", "თერაპიები", "დაფინანსება"
+                Case "ბაზები"
+                    ' თუ "ბაზები" არჩეულია, არ გავაკეთოთ არაფერი, რადგან ეს აჩვენებს ქვემენიუს
+                    Debug.WriteLine("'ბაზები' არჩეულია, ველოდებით ქვემენიუს არჩევას")
+                Case "განრიგი"
+                    ' განრიგის გვერდის ჩვენება
+                    Debug.WriteLine("'განრიგი' არჩეულია, ვაჩვენებთ განრიგის გვერდს")
+                    ShowSchedule()
+                Case "ბენეფიციარები", "თერაპევტები", "თერაპიები", "დაფინანსება"
                     ' დროებითი UI-ის ჩვენება შეტყობინების გარეშე
                     ShowTemporaryDatabasesUI(menuItemText)
                 Case "გრაფიკები"
@@ -910,6 +935,36 @@ Public Class Form1
             MessageBox.Show($"კალენდრის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' განრიგის გვერდის ჩვენება
+    ''' </summary>
+    Private Sub ShowSchedule()
+        Try
+            Debug.WriteLine("ShowSchedule: დაიწყო")
+
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' UC_Schedule კონტროლის შექმნა
+            Dim scheduleControl As New UC_Schedule()
+            scheduleControl.Dock = DockStyle.Fill
+
+            ' მონაცემთა სერვისის მითითება
+            If dataService IsNot Nothing Then
+                scheduleControl.SetDataService(dataService)
+            End If
+
+            ' დავამატოთ კონტროლი პანელზე
+            pnlMain.Controls.Add(scheduleControl)
+
+            Debug.WriteLine("ShowSchedule: განრიგის გვერდი წარმატებით გამოჩნდა")
+        Catch ex As Exception
+            Debug.WriteLine($"ShowSchedule: შეცდომა - {ex.Message}")
+            MessageBox.Show($"განრიგის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     ''' <summary>
     ''' ამოწმებს და აღწერს კონტროლის ხილვადობის მდგომარეობას დებაგირებისთვის
     ''' </summary>

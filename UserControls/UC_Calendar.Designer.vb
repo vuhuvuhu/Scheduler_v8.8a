@@ -28,13 +28,8 @@ Partial Class UC_Calendar
         Me.RBSpace = New System.Windows.Forms.RadioButton()
         Me.RBPer = New System.Windows.Forms.RadioButton()
         Me.RBBene = New System.Windows.Forms.RadioButton()
-        Me.CheckBox1 = New System.Windows.Forms.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
-        Me.CheckBox6 = New System.Windows.Forms.CheckBox()
-        Me.CheckBox4 = New System.Windows.Forms.CheckBox()
-        Me.CheckBox2 = New System.Windows.Forms.CheckBox()
         Me.Label4 = New System.Windows.Forms.Label()
-        Me.CheckBox7 = New System.Windows.Forms.CheckBox()
         Me.DTPCalendar = New System.Windows.Forms.DateTimePicker()
         Me.cbFinish = New System.Windows.Forms.ComboBox()
         Me.Label1 = New System.Windows.Forms.Label()
@@ -46,13 +41,18 @@ Partial Class UC_Calendar
         Me.BtnAddSchedule = New System.Windows.Forms.Button()
         Me.BtnRef = New System.Windows.Forms.Button()
         Me.BtnHDown = New System.Windows.Forms.Button()
-        Me.CheckBox3 = New System.Windows.Forms.CheckBox()
         Me.BtnHUp = New System.Windows.Forms.Button()
         Me.BtnVDown = New System.Windows.Forms.Button()
         Me.BtnVUp = New System.Windows.Forms.Button()
-        Me.CheckBox5 = New System.Windows.Forms.CheckBox()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.pnlCalendarGrid = New System.Windows.Forms.Panel()
+        Me.CheckBox6 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox4 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox2 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox7 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox3 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox5 = New System.Windows.Forms.CheckBox()
+        Me.CheckBox1 = New System.Windows.Forms.CheckBox()
         Me.pnlFIlter.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
@@ -133,16 +133,6 @@ Partial Class UC_Calendar
         Me.RBBene.Text = "ბენეფიციარი"
         Me.RBBene.UseVisualStyleBackColor = True
         '
-        'CheckBox1
-        '
-        Me.CheckBox1.AutoSize = True
-        Me.CheckBox1.Location = New System.Drawing.Point(444, 8)
-        Me.CheckBox1.Name = "CheckBox1"
-        Me.CheckBox1.Size = New System.Drawing.Size(90, 17)
-        Me.CheckBox1.TabIndex = 33
-        Me.CheckBox1.Text = "დაგეგმილი"
-        Me.CheckBox1.UseVisualStyleBackColor = True
-        '
         'Label3
         '
         Me.Label3.AutoSize = True
@@ -152,36 +142,6 @@ Partial Class UC_Calendar
         Me.Label3.TabIndex = 34
         Me.Label3.Text = "შესრულება:"
         '
-        'CheckBox6
-        '
-        Me.CheckBox6.AutoSize = True
-        Me.CheckBox6.Location = New System.Drawing.Point(444, 52)
-        Me.CheckBox6.Name = "CheckBox6"
-        Me.CheckBox6.Size = New System.Drawing.Size(144, 17)
-        Me.CheckBox6.TabIndex = 39
-        Me.CheckBox6.Text = "პროგრამით გატარება"
-        Me.CheckBox6.UseVisualStyleBackColor = True
-        '
-        'CheckBox4
-        '
-        Me.CheckBox4.AutoSize = True
-        Me.CheckBox4.Location = New System.Drawing.Point(594, 29)
-        Me.CheckBox4.Name = "CheckBox4"
-        Me.CheckBox4.Size = New System.Drawing.Size(140, 17)
-        Me.CheckBox4.TabIndex = 37
-        Me.CheckBox4.Text = "გაცდენა არასაპატიო"
-        Me.CheckBox4.UseVisualStyleBackColor = True
-        '
-        'CheckBox2
-        '
-        Me.CheckBox2.AutoSize = True
-        Me.CheckBox2.Location = New System.Drawing.Point(594, 8)
-        Me.CheckBox2.Name = "CheckBox2"
-        Me.CheckBox2.Size = New System.Drawing.Size(110, 17)
-        Me.CheckBox2.TabIndex = 35
-        Me.CheckBox2.Text = "შესრულებული"
-        Me.CheckBox2.UseVisualStyleBackColor = True
-        '
         'Label4
         '
         Me.Label4.AutoSize = True
@@ -190,16 +150,6 @@ Partial Class UC_Calendar
         Me.Label4.Size = New System.Drawing.Size(32, 13)
         Me.Label4.TabIndex = 36
         Me.Label4.Text = "-მდე"
-        '
-        'CheckBox7
-        '
-        Me.CheckBox7.AutoSize = True
-        Me.CheckBox7.Location = New System.Drawing.Point(594, 52)
-        Me.CheckBox7.Name = "CheckBox7"
-        Me.CheckBox7.Size = New System.Drawing.Size(94, 17)
-        Me.CheckBox7.TabIndex = 40
-        Me.CheckBox7.Text = "გაუქმებული"
-        Me.CheckBox7.UseVisualStyleBackColor = True
         '
         'DTPCalendar
         '
@@ -311,16 +261,6 @@ Partial Class UC_Calendar
         Me.BtnHDown.TabIndex = 44
         Me.BtnHDown.UseVisualStyleBackColor = True
         '
-        'CheckBox3
-        '
-        Me.CheckBox3.AutoSize = True
-        Me.CheckBox3.Location = New System.Drawing.Point(444, 29)
-        Me.CheckBox3.Name = "CheckBox3"
-        Me.CheckBox3.Size = New System.Drawing.Size(120, 17)
-        Me.CheckBox3.TabIndex = 36
-        Me.CheckBox3.Text = "გაცდენა საპატიო"
-        Me.CheckBox3.UseVisualStyleBackColor = True
-        '
         'BtnHUp
         '
         Me.BtnHUp.BackgroundImage = CType(resources.GetObject("BtnHUp.BackgroundImage"), System.Drawing.Image)
@@ -351,16 +291,6 @@ Partial Class UC_Calendar
         Me.BtnVUp.TabIndex = 41
         Me.BtnVUp.UseVisualStyleBackColor = True
         '
-        'CheckBox5
-        '
-        Me.CheckBox5.AutoSize = True
-        Me.CheckBox5.Location = New System.Drawing.Point(694, 52)
-        Me.CheckBox5.Name = "CheckBox5"
-        Me.CheckBox5.Size = New System.Drawing.Size(74, 17)
-        Me.CheckBox5.TabIndex = 38
-        Me.CheckBox5.Text = "აღდგენა"
-        Me.CheckBox5.UseVisualStyleBackColor = True
-        '
         'Label2
         '
         Me.Label2.AutoSize = True
@@ -382,6 +312,76 @@ Partial Class UC_Calendar
         Me.pnlCalendarGrid.Name = "pnlCalendarGrid"
         Me.pnlCalendarGrid.Size = New System.Drawing.Size(1296, 496)
         Me.pnlCalendarGrid.TabIndex = 3
+        '
+        'CheckBox6
+        '
+        Me.CheckBox6.AutoSize = True
+        Me.CheckBox6.Location = New System.Drawing.Point(444, 52)
+        Me.CheckBox6.Name = "CheckBox6"
+        Me.CheckBox6.Size = New System.Drawing.Size(144, 17)
+        Me.CheckBox6.TabIndex = 39
+        Me.CheckBox6.Text = "პროგრამით გატარება"
+        Me.CheckBox6.UseVisualStyleBackColor = True
+        '
+        'CheckBox4
+        '
+        Me.CheckBox4.AutoSize = True
+        Me.CheckBox4.Location = New System.Drawing.Point(594, 29)
+        Me.CheckBox4.Name = "CheckBox4"
+        Me.CheckBox4.Size = New System.Drawing.Size(140, 17)
+        Me.CheckBox4.TabIndex = 37
+        Me.CheckBox4.Text = "გაცდენა არასაპატიო"
+        Me.CheckBox4.UseVisualStyleBackColor = True
+        '
+        'CheckBox2
+        '
+        Me.CheckBox2.AutoSize = True
+        Me.CheckBox2.Location = New System.Drawing.Point(594, 8)
+        Me.CheckBox2.Name = "CheckBox2"
+        Me.CheckBox2.Size = New System.Drawing.Size(110, 17)
+        Me.CheckBox2.TabIndex = 35
+        Me.CheckBox2.Text = "შესრულებული"
+        Me.CheckBox2.UseVisualStyleBackColor = True
+        '
+        'CheckBox7
+        '
+        Me.CheckBox7.AutoSize = True
+        Me.CheckBox7.Location = New System.Drawing.Point(594, 52)
+        Me.CheckBox7.Name = "CheckBox7"
+        Me.CheckBox7.Size = New System.Drawing.Size(94, 17)
+        Me.CheckBox7.TabIndex = 40
+        Me.CheckBox7.Text = "გაუქმებული"
+        Me.CheckBox7.UseVisualStyleBackColor = True
+        '
+        'CheckBox3
+        '
+        Me.CheckBox3.AutoSize = True
+        Me.CheckBox3.Location = New System.Drawing.Point(444, 29)
+        Me.CheckBox3.Name = "CheckBox3"
+        Me.CheckBox3.Size = New System.Drawing.Size(120, 17)
+        Me.CheckBox3.TabIndex = 36
+        Me.CheckBox3.Text = "გაცდენა საპატიო"
+        Me.CheckBox3.UseVisualStyleBackColor = True
+        '
+        'CheckBox5
+        '
+        Me.CheckBox5.AutoSize = True
+        Me.CheckBox5.Location = New System.Drawing.Point(694, 52)
+        Me.CheckBox5.Name = "CheckBox5"
+        Me.CheckBox5.Size = New System.Drawing.Size(74, 17)
+        Me.CheckBox5.TabIndex = 38
+        Me.CheckBox5.Text = "აღდგენა"
+        Me.CheckBox5.UseVisualStyleBackColor = True
+        '
+        'CheckBox1
+        '
+        Me.CheckBox1.AutoSize = True
+        Me.CheckBox1.Location = New System.Drawing.Point(444, 8)
+        Me.CheckBox1.Name = "CheckBox1"
+        Me.CheckBox1.Size = New System.Drawing.Size(90, 17)
+        Me.CheckBox1.TabIndex = 33
+        Me.CheckBox1.Text = "დაგეგმილი"
+        Me.CheckBox1.UseVisualStyleBackColor = True
         '
         'UC_Calendar
         '
@@ -409,26 +409,26 @@ Partial Class UC_Calendar
     Friend WithEvents BtnAddSchedule As Button
     Friend WithEvents DTPCalendar As DateTimePicker
     Friend WithEvents BtnRef As Button
-    Friend WithEvents CheckBox2 As CheckBox
     Friend WithEvents BtnHDown As Button
-    Friend WithEvents CheckBox3 As CheckBox
     Friend WithEvents BtnHUp As Button
     Friend WithEvents Label3 As Label
     Friend WithEvents BtnVDown As Button
-    Friend WithEvents CheckBox4 As CheckBox
     Friend WithEvents BtnVUp As Button
-    Friend WithEvents CheckBox1 As CheckBox
     Friend WithEvents RBSpace As RadioButton
-    Friend WithEvents CheckBox5 As CheckBox
     Friend WithEvents RBPer As RadioButton
-    Friend WithEvents CheckBox6 As CheckBox
     Friend WithEvents RBBene As RadioButton
     Friend WithEvents Label2 As Label
-    Friend WithEvents CheckBox7 As CheckBox
     Friend WithEvents GroupBox2 As GroupBox
     Friend WithEvents Label4 As Label
     Friend WithEvents cbFinish As ComboBox
     Friend WithEvents Label1 As Label
     Friend WithEvents cbStart As ComboBox
     Friend WithEvents pnlCalendarGrid As Panel
+    Friend WithEvents CheckBox1 As CheckBox
+    Friend WithEvents CheckBox6 As CheckBox
+    Friend WithEvents CheckBox4 As CheckBox
+    Friend WithEvents CheckBox2 As CheckBox
+    Friend WithEvents CheckBox7 As CheckBox
+    Friend WithEvents CheckBox3 As CheckBox
+    Friend WithEvents CheckBox5 As CheckBox
 End Class
