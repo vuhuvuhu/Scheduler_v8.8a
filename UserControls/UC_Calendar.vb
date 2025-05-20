@@ -2767,6 +2767,593 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
+    ''' ბენეფიციარების დღის ხედის პანელების ინიციალიზაცია
+    ''' იგივე ლოგიკა, რაც სივრცეებისა და თერაპევტებისთვის
+    ''' </summary>
+    Private Sub InitializeBeneficiaryDayViewPanels()
+        Try
+            Debug.WriteLine("InitializeBeneficiaryDayViewPanels: დაიწყო ბენეფიციარების დღის ხედის პანელების ინიციალიზაცია")
+
+            ' გავასუფთავოთ კალენდრის პანელი
+            pnlCalendarGrid.Controls.Clear()
+
+            ' pnlCalendarGrid-ს არ ჰქონდეს AutoScroll!
+            pnlCalendarGrid.AutoScroll = False
+
+            ' თუ დროის ინტერვალები არ არის ინიციალიზებული, დავამატოთ
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
+
+            ' წავკითხოთ მშობელი პანელის ზომები
+            Dim totalWidth As Integer = pnlCalendarGrid.ClientSize.Width
+            Dim totalHeight As Integer = pnlCalendarGrid.ClientSize.Height
+
+            Debug.WriteLine($"InitializeBeneficiaryDayViewPanels: კონტეინერის ზომები - Width={totalWidth}, Height={totalHeight}")
+
+            ' კონსტანტები, რომლებიც არ იცვლება მასშტაბირებისას
+            Dim HEADER_HEIGHT As Integer = BASE_HEADER_HEIGHT
+            Dim TIME_COLUMN_WIDTH As Integer = BASE_TIME_COLUMN_WIDTH
+            Dim DATE_COLUMN_WIDTH As Integer = BASE_DATE_COLUMN_WIDTH
+
+            ' გამოვთვალოთ დროისა და თარიღის პანელების ზომები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim totalRowsHeight As Integer = ROW_HEIGHT * timeIntervals.Count
+
+            Debug.WriteLine($"InitializeBeneficiaryDayViewPanels: ROW_HEIGHT={ROW_HEIGHT}, totalRowsHeight={totalRowsHeight}")
+
+            ' ======= 1. შევქმნათ თარიღის ზოლის პანელი =======
+            Dim dateColumnPanel As New Panel()
+            dateColumnPanel.Name = "dateColumnPanel"
+            dateColumnPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            dateColumnPanel.AutoScroll = False
+            dateColumnPanel.Size = New Size(DATE_COLUMN_WIDTH, totalRowsHeight)
+            dateColumnPanel.Location = New Point(0, HEADER_HEIGHT)
+            dateColumnPanel.BackColor = Color.FromArgb(60, 80, 150)
+            dateColumnPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(dateColumnPanel)
+
+            ' ======= 2. შევქმნათ საათების პანელი =======
+            Dim timeColumnPanel As New Panel()
+            timeColumnPanel.Name = "timeColumnPanel"
+            timeColumnPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            timeColumnPanel.AutoScroll = False
+            timeColumnPanel.Size = New Size(TIME_COLUMN_WIDTH, totalRowsHeight)
+            timeColumnPanel.Location = New Point(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            timeColumnPanel.BackColor = Color.FromArgb(240, 240, 245)
+            timeColumnPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(timeColumnPanel)
+
+            ' ======= 3. შევქმნათ თარიღის სათაურის პანელი =======
+            Dim dateHeaderPanel As New Panel()
+            dateHeaderPanel.Name = "dateHeaderPanel"
+            dateHeaderPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            dateHeaderPanel.Size = New Size(DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            dateHeaderPanel.Location = New Point(0, 0)
+            dateHeaderPanel.BackColor = Color.FromArgb(40, 60, 120)
+            dateHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(dateHeaderPanel)
+
+            ' თარიღის სათაურის ლეიბლი
+            Dim dateHeaderLabel As New Label()
+            dateHeaderLabel.Size = New Size(DATE_COLUMN_WIDTH - 2, HEADER_HEIGHT - 2)
+            dateHeaderLabel.Location = New Point(1, 1)
+            dateHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            dateHeaderLabel.Text = "თარიღი"
+            dateHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            dateHeaderLabel.ForeColor = Color.White
+            dateHeaderPanel.Controls.Add(dateHeaderLabel)
+
+            ' ======= 4. შევქმნათ დროის სათაურის პანელი =======
+            Dim timeHeaderPanel As New Panel()
+            timeHeaderPanel.Name = "timeHeaderPanel"
+            timeHeaderPanel.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            timeHeaderPanel.Size = New Size(TIME_COLUMN_WIDTH, HEADER_HEIGHT)
+            timeHeaderPanel.Location = New Point(DATE_COLUMN_WIDTH, 0)
+            timeHeaderPanel.BackColor = Color.FromArgb(180, 180, 220)
+            timeHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+            pnlCalendarGrid.Controls.Add(timeHeaderPanel)
+
+            ' დროის სათაურის ლეიბლი
+            Dim timeHeaderLabel As New Label()
+            timeHeaderLabel.Size = New Size(TIME_COLUMN_WIDTH - 2, HEADER_HEIGHT - 2)
+            timeHeaderLabel.Location = New Point(1, 1)
+            timeHeaderLabel.TextAlign = ContentAlignment.MiddleCenter
+            timeHeaderLabel.Text = "დრო"
+            timeHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            timeHeaderPanel.Controls.Add(timeHeaderLabel)
+
+            ' ======= 5. შევქმნათ მთავარი გრიდის პანელი =======
+            Dim mainGridPanel As New Panel()
+            mainGridPanel.Name = "mainGridPanel"
+            mainGridPanel.Size = New Size(totalWidth - TIME_COLUMN_WIDTH - DATE_COLUMN_WIDTH, totalHeight - HEADER_HEIGHT)
+            mainGridPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, HEADER_HEIGHT)
+            mainGridPanel.BackColor = Color.White
+            mainGridPanel.BorderStyle = BorderStyle.FixedSingle
+            mainGridPanel.AutoScroll = True
+            pnlCalendarGrid.Controls.Add(mainGridPanel)
+
+            Debug.WriteLine("InitializeBeneficiaryDayViewPanels: პანელების ინიციალიზაცია დასრულდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"InitializeBeneficiaryDayViewPanels: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"InitializeBeneficiaryDayViewPanels: StackTrace - {ex.StackTrace}")
+            MessageBox.Show($"ბენეფიციარების პანელების ინიციალიზაციის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' მთავარი გრიდის პანელის შევსება ბენეფიციარებისთვის
+    ''' დინამიკურად ქმნის უჯრედებს არჩეული ბენეფიციარების მიხედვით
+    ''' </summary>
+    Private Sub FillMainGridPanelForBeneficiaries()
+        Try
+            Debug.WriteLine("FillMainGridPanelForBeneficiaries: დაიწყო მთავარი გრიდის შევსება ბენეფიციარებისთვის")
+
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("FillMainGridPanelForBeneficiaries: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' გავასუფთავოთ მთავარი პანელი
+            mainGridPanel.Controls.Clear()
+
+            ' შევამოწმოთ დროის ინტერვალები
+            If timeIntervals.Count = 0 Then
+                InitializeTimeIntervals()
+            End If
+
+            ' მივიღოთ არჩეული ბენეფიციარების სია
+            Dim selectedBeneficiaries = GetBeneficiaryColumns()
+
+            If selectedBeneficiaries.Count = 0 Then
+                Debug.WriteLine("FillMainGridPanelForBeneficiaries: არჩეული ბენეფიციარები ვერ მოიძებნა")
+                Return
+            End If
+
+            ' პარამეტრები მასშტაბის გათვალისწინებით
+            Dim BENEFICIARY_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+
+            ' გრიდის სრული სიგანე
+            Dim gridWidth As Integer = BENEFICIARY_COLUMN_WIDTH * selectedBeneficiaries.Count
+
+            ' გრიდის სრული სიმაღლე
+            Dim gridHeight As Integer = ROW_HEIGHT * timeIntervals.Count
+
+            ' მნიშვნელოვანი: დავაყენოთ mainGridPanel-ის AutoScrollMinSize
+            mainGridPanel.AutoScrollMinSize = New Size(gridWidth, gridHeight)
+
+            Debug.WriteLine($"FillMainGridPanelForBeneficiaries: გრიდის ზომები - Width={gridWidth}, Height={gridHeight}")
+
+            ' უჯრედების მასივი (ახლა ბენეფიციარებისთვის)
+            ReDim gridCells(selectedBeneficiaries.Count - 1, timeIntervals.Count - 1)
+
+            ' უჯრედების შექმნა
+            For col As Integer = 0 To selectedBeneficiaries.Count - 1
+                For row As Integer = 0 To timeIntervals.Count - 1
+                    Dim cell As New Panel()
+                    cell.Size = New Size(BENEFICIARY_COLUMN_WIDTH, ROW_HEIGHT)
+                    cell.Location = New Point(col * BENEFICIARY_COLUMN_WIDTH, row * ROW_HEIGHT)
+
+                    ' ალტერნატიული ფერები (ღია ყვითელი ფერები ბენეფიციარებისთვის)
+                    If row Mod 2 = 0 Then
+                        cell.BackColor = Color.FromArgb(255, 255, 250) ' ღია კრემისფერი
+                    Else
+                        cell.BackColor = Color.FromArgb(255, 250, 245) ' უფრო კრემისფერი
+                    End If
+
+                    ' უჯრედის ჩარჩო
+                    AddHandler cell.Paint, AddressOf Cell_Paint
+
+                    ' ვინახავთ უჯრედის ობიექტს მასივში
+                    gridCells(col, row) = cell
+
+                    ' ვამატებთ უჯრედს პირდაპირ mainGridPanel-ზე
+                    mainGridPanel.Controls.Add(cell)
+                Next
+            Next
+
+            Debug.WriteLine($"FillMainGridPanelForBeneficiaries: შეიქმნა {selectedBeneficiaries.Count * timeIntervals.Count} უჯრედი ბენეფიციარებისთვის")
+
+        Catch ex As Exception
+            Debug.WriteLine($"FillMainGridPanelForBeneficiaries: შეცდომა - {ex.Message}")
+            Debug.WriteLine($"FillMainGridPanelForBeneficiaries: StackTrace - {ex.StackTrace}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარების ხედისთვის სქროლის სინქრონიზაცია
+    ''' </summary>
+    Private Sub SetupScrollSynchronizationForBeneficiaries()
+        Try
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("SetupScrollSynchronizationForBeneficiaries: მთავარი გრიდის პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            ' ჯერ მოვხსნათ არსებული ივენთის ჰენდლერები, თუ ისინი არსებობენ
+            RemoveHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
+
+            ' მივაბათ Scroll ივენთი ხელახლა
+            AddHandler mainGridPanel.Scroll, AddressOf MainGridPanel_Scroll
+
+            ' ასევე, დავამატოთ ივენთი გორგოლჭის სქროლისთვის
+            AddHandler mainGridPanel.MouseWheel, AddressOf MainGridPanel_MouseWheel
+
+            Debug.WriteLine("SetupScrollSynchronizationForBeneficiaries: სქროლის სინქრონიზაცია დაყენებულია")
+            Debug.WriteLine($"  beneficiaryHeaderPanel: {If(beneficiaryHeaderPanel IsNot Nothing, "მოიძებნა", "არ მოიძებნა")}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"SetupScrollSynchronizationForBeneficiaries: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიების განთავსება ბენეფიციარების გრიდში
+    ''' დაფუძნებულია PlaceSessionsOnGrid და PlaceSessionsOnTherapistGrid მეთოდებზე
+    ''' </summary>
+    Private Sub PlaceSessionsOnBeneficiaryGrid()
+        Try
+            Debug.WriteLine("=== PlaceSessionsOnBeneficiaryGrid: დაიწყო ===")
+
+            ' ბაზისური შემოწმებები
+            If allSessions Is Nothing OrElse allSessions.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnBeneficiaryGrid: სესიები არ არის")
+                Return
+            End If
+
+            If gridCells Is Nothing Then
+                Debug.WriteLine("PlaceSessionsOnBeneficiaryGrid: გრიდის უჯრედები არ არის")
+                Return
+            End If
+
+            If timeIntervals.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnBeneficiaryGrid: დროის ინტერვალები არ არის")
+                Return
+            End If
+
+            ' მივიღოთ არჩეული ბენეფიციარები
+            Dim selectedBeneficiaries = GetBeneficiaryColumns()
+
+            If selectedBeneficiaries.Count = 0 Then
+                Debug.WriteLine("PlaceSessionsOnBeneficiaryGrid: არჩეული ბენეფიციარები არ არის")
+                Return
+            End If
+
+            ' ვიპოვოთ მთავარი გრიდის პანელი
+            Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
+            If mainGridPanel Is Nothing Then
+                Debug.WriteLine("❌ მთავარი გრიდის პანელი ვერ მოიძებნა!")
+                Return
+            End If
+
+            ' მასშტაბირებული პარამეტრები
+            Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
+            Dim BENEFICIARY_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+
+            ' ფილტრი - მხოლოდ ფილტრირებული სესიები
+            Dim daySessions = GetFilteredSessions()
+            Debug.WriteLine($"ნაპოვნია {daySessions.Count} ფილტრირებული სესია ბენეფიციარების ხედისთვის")
+
+            ' სესიების განთავსება
+            For Each session In daySessions
+                Try
+                    Debug.WriteLine($"--- ვამუშავებთ სესიას ID={session.Id}, ბენეფიციარი='{session.BeneficiaryName} {session.BeneficiarySurname}', დრო={session.DateTime:HH:mm} ---")
+
+                    ' 1. ბენეფიციარის ინდექსის განსაზღვრა
+                    Dim beneficiaryIndex As Integer = -1
+                    Dim sessionBeneficiaryFullName As String = $"{session.BeneficiaryName.Trim()} {session.BeneficiarySurname.Trim()}"
+
+                    For i As Integer = 0 To selectedBeneficiaries.Count - 1
+                        If String.Equals(selectedBeneficiaries(i).Trim(), sessionBeneficiaryFullName, StringComparison.OrdinalIgnoreCase) Then
+                            beneficiaryIndex = i
+                            Exit For
+                        End If
+                    Next
+
+                    If beneficiaryIndex < 0 Then
+                        Debug.WriteLine($"❌ ბენეფიციარი '{sessionBeneficiaryFullName}' ვერ მოიძებნა არჩეულ ბენეფიციარებში!")
+                        Continue For
+                    End If
+
+                    ' 2. დროის ინტერვალის განსაზღვრა (იგივე ლოგიკა, რაც სივრცეებისთვის)
+                    Dim sessionTime As TimeSpan = session.DateTime.TimeOfDay
+                    Dim timeIndex As Integer = -1
+
+                    Dim minDifference As TimeSpan = TimeSpan.MaxValue
+                    For i As Integer = 0 To timeIntervals.Count - 1
+                        Dim intervalTime As TimeSpan = timeIntervals(i).TimeOfDay
+                        Dim difference As TimeSpan = If(sessionTime >= intervalTime,
+                                              sessionTime - intervalTime,
+                                              intervalTime - sessionTime)
+
+                        If difference < minDifference Then
+                            minDifference = difference
+                            timeIndex = i
+                        End If
+                    Next
+
+                    ' ალტერნატიული მეთოდი
+                    If timeIndex < 0 OrElse minDifference.TotalMinutes > 15 Then
+                        Dim startTime As TimeSpan = timeIntervals(0).TimeOfDay
+                        Dim elapsedMinutes As Double = (sessionTime - startTime).TotalMinutes
+                        timeIndex = CInt(Math.Round(elapsedMinutes / 30))
+                        If timeIndex < 0 Then timeIndex = 0
+                        If timeIndex >= timeIntervals.Count Then timeIndex = timeIntervals.Count - 1
+                    End If
+
+                    ' 3. საზღვრების შემოწმება
+                    If beneficiaryIndex < 0 OrElse timeIndex < 0 OrElse
+              beneficiaryIndex >= selectedBeneficiaries.Count OrElse timeIndex >= timeIntervals.Count Then
+                        Debug.WriteLine($"❌ არასწორი ინდექსები: beneficiary={beneficiaryIndex}, time={timeIndex}")
+                        Continue For
+                    End If
+
+                    ' 4. ბარათის პოზიციის გამოთვლა
+                    Dim cardX As Integer = beneficiaryIndex * BENEFICIARY_COLUMN_WIDTH + 4
+                    Dim cardY As Integer = timeIndex * ROW_HEIGHT + 2
+
+                    ' 5. პროპორციული ბარათის სიმაღლის გამოთვლა
+                    Dim sessionDurationMinutes As Integer = session.Duration
+                    Dim baseCardHeight As Double = ROW_HEIGHT * (sessionDurationMinutes / 30.0)
+                    Dim minCardHeight As Integer = ROW_HEIGHT
+                    Dim cardHeight As Integer = CInt(Math.Max(baseCardHeight, minCardHeight))
+                    Dim maxCardHeight As Integer = ROW_HEIGHT * 4
+                    If cardHeight > maxCardHeight Then cardHeight = maxCardHeight
+
+                    ' 6. ფერების განსაზღვრა SessionStatusColors კლასიდან
+                    Dim cardColor As Color = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
+                    Dim borderColor As Color = SessionStatusColors.GetStatusBorderColor(session.Status, session.DateTime)
+                    Dim headerColor As Color = Color.FromArgb(
+               Math.Max(0, cardColor.R - 50),
+               Math.Max(0, cardColor.G - 50),
+               Math.Max(0, cardColor.B - 50)
+           )
+
+                    Debug.WriteLine($"🎨 ფერის განსაზღვრა: სტატუსი='{session.Status}' -> ფონი={cardColor}, ჩარჩო={borderColor}, header={headerColor}")
+
+                    ' 7. ბარათის შექმნა
+                    Dim sessionCard As New Panel()
+                    sessionCard.Size = New Size(BENEFICIARY_COLUMN_WIDTH - 8, cardHeight)
+                    sessionCard.Location = New Point(cardX, cardY)
+                    sessionCard.BackColor = cardColor
+                    sessionCard.BorderStyle = BorderStyle.None
+                    sessionCard.Tag = session.Id
+                    sessionCard.Cursor = Cursors.Hand
+
+                    ' 8. ზედა მუქი ზოლი (header)
+                    Dim HEADER_HEIGHT As Integer = 24
+                    Dim headerPanel As New Panel()
+                    headerPanel.Size = New Size(sessionCard.Width, HEADER_HEIGHT)
+                    headerPanel.Location = New Point(0, 0)
+                    headerPanel.BackColor = headerColor
+                    sessionCard.Controls.Add(headerPanel)
+
+                    ' 9. სესიის ID header-ში
+                    Dim lblId As New Label()
+                    lblId.Text = $"#{session.Id}"
+                    lblId.Location = New Point(8, 2)
+                    lblId.Size = New Size(headerPanel.Width - 16, 20)
+                    lblId.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+                    lblId.ForeColor = Color.White
+                    lblId.TextAlign = ContentAlignment.MiddleCenter
+                    headerPanel.Controls.Add(lblId)
+
+                    ' 10. კასტომ ჩარჩოს დამატება
+                    AddHandler sessionCard.Paint, Sub(sender, e)
+                                                      ' ძირითადი ფონი
+                                                      Using brush As New SolidBrush(cardColor)
+                                                          e.Graphics.FillRectangle(brush, sessionCard.ClientRectangle)
+                                                      End Using
+
+                                                      ' ჩარჩო
+                                                      Using pen As New Pen(borderColor, 2)
+                                                          e.Graphics.DrawRectangle(pen, 1, 1, sessionCard.Width - 2, sessionCard.Height - 2)
+                                                      End Using
+                                                  End Sub
+
+                    ' 11. ლეიბლების დინამიური განთავსება
+                    Dim currentY As Integer = HEADER_HEIGHT + 5
+                    Dim labelSpacing As Integer = 12
+
+                    ' სტატუსი
+                    If cardHeight > HEADER_HEIGHT + 15 Then
+                        Dim lblStatus As New Label()
+                        lblStatus.Text = session.Status
+                        lblStatus.Size = New Size(sessionCard.Width - 10, 10)
+                        lblStatus.Location = New Point(5, currentY)
+                        lblStatus.Font = New Font("Sylfaen", 6, FontStyle.Bold)
+                        lblStatus.ForeColor = Color.DarkSlateGray
+                        lblStatus.BackColor = Color.Transparent
+                        lblStatus.TextAlign = ContentAlignment.TopCenter
+                        sessionCard.Controls.Add(lblStatus)
+                        currentY += labelSpacing
+                    End If
+
+                    ' თერაპევტი
+                    If cardHeight > HEADER_HEIGHT + 30 AndAlso Not String.IsNullOrEmpty(session.TherapistName) Then
+                        Dim lblTherapist As New Label()
+                        lblTherapist.Text = session.TherapistName
+                        lblTherapist.Size = New Size(sessionCard.Width - 10, 11)
+                        lblTherapist.Location = New Point(5, currentY)
+                        lblTherapist.Font = New Font("Sylfaen", 7, FontStyle.Regular)
+                        lblTherapist.ForeColor = Color.FromArgb(40, 40, 40)
+                        lblTherapist.BackColor = Color.Transparent
+                        lblTherapist.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblTherapist)
+                        currentY += labelSpacing
+                    End If
+
+                    ' სივრცე
+                    If cardHeight > HEADER_HEIGHT + 50 AndAlso Not String.IsNullOrEmpty(session.Space) Then
+                        Dim lblSpace As New Label()
+                        lblSpace.Text = $"სივრცე: {session.Space}"
+                        lblSpace.Size = New Size(sessionCard.Width - 10, 10)
+                        lblSpace.Location = New Point(5, currentY)
+                        lblSpace.Font = New Font("Sylfaen", 6, FontStyle.Italic)
+                        lblSpace.ForeColor = Color.FromArgb(60, 60, 60)
+                        lblSpace.BackColor = Color.Transparent
+                        lblSpace.TextAlign = ContentAlignment.TopLeft
+                        sessionCard.Controls.Add(lblSpace)
+                        currentY += labelSpacing
+                    End If
+
+                    ' 12. რედაქტირების ღილაკი
+                    Dim btnEdit As New Button()
+                    btnEdit.Text = "✎"
+                    btnEdit.Font = New Font("Segoe UI Symbol", 10, FontStyle.Bold)
+                    btnEdit.ForeColor = Color.White
+                    btnEdit.BackColor = Color.FromArgb(80, 80, 80)
+                    btnEdit.Size = New Size(24, 24)
+                    btnEdit.Location = New Point(sessionCard.Width - 30, sessionCard.Height - 30)
+                    btnEdit.FlatStyle = FlatStyle.Flat
+                    btnEdit.FlatAppearance.BorderSize = 0
+                    btnEdit.Tag = session.Id
+                    btnEdit.Cursor = Cursors.Hand
+
+                    ' მოვუმრგვალოთ ღილაკი
+                    Dim btnPath As New Drawing2D.GraphicsPath()
+                    btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
+                    btnEdit.Region = New Region(btnPath)
+
+                    ' ღილაკის მიბმა ფუნქციაზე
+                    AddHandler btnEdit.Click, AddressOf BtnEditSession_Click
+
+                    ' ღილაკის დამატება ბარათზე
+                    sessionCard.Controls.Add(btnEdit)
+                    btnEdit.BringToFront()
+
+                    ' 13. მომრგვალებული კუთხეები
+                    Try
+                        Dim path As New Drawing2D.GraphicsPath()
+                        Dim cornerRadius As Integer = 6
+                        If sessionCard.Width > cornerRadius * 2 AndAlso sessionCard.Height > cornerRadius * 2 Then
+                            path.AddArc(0, 0, cornerRadius * 2, cornerRadius * 2, 180, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, 0, cornerRadius * 2, cornerRadius * 2, 270, 90)
+                            path.AddArc(sessionCard.Width - cornerRadius * 2, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90)
+                            path.AddArc(0, sessionCard.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90)
+                            path.CloseFigure()
+                            sessionCard.Region = New Region(path)
+                        End If
+                    Catch
+                        ' Region შექმნის პრობლემისას გაგრძელება
+                    End Try
+
+                    ' 14. ივენთების მიბმა (საშუალო მსგავსი დრაგ ენდ დროპისთვის)
+                    AddHandler sessionCard.Click, AddressOf SessionCard_Click
+                    AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
+
+                    ' 15. ბარათის mainGridPanel-ზე დამატება
+                    mainGridPanel.Controls.Add(sessionCard)
+                    sessionCard.BringToFront()
+
+                    Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, ბენეფიციარი='{sessionBeneficiaryFullName}', " &
+                         $"ზომა={sessionCard.Width}x{sessionCard.Height}px, ფერი={cardColor}")
+
+                Catch sessionEx As Exception
+                    Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
+                    Continue For
+                End Try
+            Next
+
+            Debug.WriteLine("=== PlaceSessionsOnBeneficiaryGrid: დასრულება ===")
+
+        Catch ex As Exception
+            Debug.WriteLine($"❌ PlaceSessionsOnBeneficiaryGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარების გრიდის განახლება - განაახლებს ყველა ლოგიკას
+    ''' გამოიძახება ბენეფიციარის დამატებისა და წაშლის შემდეგ
+    ''' </summary>
+    Private Sub UpdateBeneficiaryGrid()
+        Try
+            Debug.WriteLine("UpdateBeneficiaryGrid: დაიწყო ბენეფიციარების გრიდის განახლება")
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Debug.WriteLine("UpdateBeneficiaryGrid: ბენეფიციარების სათაურების პანელი ვერ მოიძებნა")
+                Return
+            End If
+
+            ' მივიღოთ არჩეული ბენეფიციარები
+            Dim selectedBeneficiaries = GetBeneficiaryColumns()
+
+            Debug.WriteLine($"UpdateBeneficiaryGrid: მოიძებნა {selectedBeneficiaries.Count} არჩეული ბენეფიციარი")
+
+            ' განვაახლოთ ბენეფიციარების სათაურების პანელის სიგანე
+            Dim BENEFICIARY_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+            Dim totalColumns As Integer = Math.Max(1, selectedBeneficiaries.Count + 1) ' +1 ცარიელი კომბობოქსისთვის
+            beneficiaryHeaderPanel.Width = totalColumns * BENEFICIARY_COLUMN_WIDTH
+
+            ' განვაახლოთ მთავარი გრიდი
+            FillMainGridPanelForBeneficiaries()
+
+            ' განვაახლოთ სქროლის სინქრონიზაცია
+            SetupScrollSynchronizationForBeneficiaries()
+
+            ' ძველი ბარათების გასუფთავება და ხელახლა განთავსება
+            ClearSessionCardsFromGrid()
+            PlaceSessionsOnBeneficiaryGrid()
+
+            Debug.WriteLine("UpdateBeneficiaryGrid: ბენეფიციარების გრიდი წარმატებით განახლდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UpdateBeneficiaryGrid: შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' მივიღოთ არჩეული ბენეფიციარების სია სათაურების პანელიდან
+    ''' აბრუნებს მხოლოდ იმ ბენეფიციარებს, რომლებიც არჩეულია (არა კომბობოქსებს)
+    ''' </summary>
+    ''' <returns>არჩეული ბენეფიციარების სია</returns>
+    Private Function GetBeneficiaryColumns() As List(Of String)
+        Try
+            Debug.WriteLine("GetBeneficiaryColumns: ვიღებ არჩეულ ბენეფიციარებს")
+
+            Dim beneficiaries As New List(Of String)()
+
+            ' ვიპოვოთ ბენეფიციარების სათაურების პანელი
+            Dim beneficiaryHeaderPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("beneficiaryHeaderPanel", False).FirstOrDefault(), Panel)
+
+            If beneficiaryHeaderPanel Is Nothing Then
+                Debug.WriteLine("GetBeneficiaryColumns: ბენეფიციარების სათაურების პანელი ვერ მოიძებნა")
+                Return beneficiaries
+            End If
+
+            ' გავიაროთ ყველა ლეიბლი (არა კომბობოქსი) და ამოვკრიბოთ ბენეფიციარების სახელები
+            For Each ctrl As Control In beneficiaryHeaderPanel.Controls.OfType(Of Label)().OrderBy(Function(l) l.Location.X).ToList()
+                If ctrl.Name.StartsWith("lblBene_") AndAlso ctrl.Tag IsNot Nothing Then
+                    Dim beneficiaryName As String = ctrl.Tag.ToString()
+                    beneficiaries.Add(beneficiaryName)
+                    Debug.WriteLine($"GetBeneficiaryColumns: დაემატა ბენეფიციარი: '{beneficiaryName}'")
+                End If
+            Next
+
+            Debug.WriteLine($"GetBeneficiaryColumns: საბოლოოდ მოიძებნა {beneficiaries.Count} ბენეფიციარი")
+            Return beneficiaries
+
+        Catch ex As Exception
+            Debug.WriteLine($"GetBeneficiaryColumns: შეცდომა - {ex.Message}")
+            Return New List(Of String)()
+        End Try
+    End Function
+
+    ''' <summary>
     ''' დროებითი მეთოდი - ჯერ არ არის იმპლემენტირებული
     ''' </summary>
     Private Sub ShowWeekView()
