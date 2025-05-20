@@ -128,7 +128,7 @@ Public Class NewRecordForm
                 LN.Text = (maxId + 1).ToString()
 
                 ' BtnAdd ტექსტის დაყენება
-                BtnAdd.Text = "დამატება"
+                BtnAdd.Text = ""
             Else
                 ' რედაქტირების რეჟიმი - ღია ყვითელი ფონი
                 Me.BackColor = Color.FromArgb(255, 255, 200) ' ღია ყვითელი
@@ -138,7 +138,7 @@ Public Class NewRecordForm
                 LN.Text = _editRecordId.ToString()
 
                 ' BtnAdd ტექსტის დაყენება
-                BtnAdd.Text = "შენახვა"
+                BtnAdd.Text = ""
             End If
 
             ' მიმდინარე თარიღის და დროის დაყენება
@@ -517,7 +517,7 @@ Public Class NewRecordForm
             End If
 
             ' BtnAdd ტექსტის შეცვლა
-            BtnAdd.Text = "შენახვა"
+            BtnAdd.Text = ""
 
             ' ვალიდაცია - შეგვიძლია გამოვიყენოთ ValidateFormInputs, თუ ის არ ბლოკავს შენახვას რადიობუტონების არ მონიშვნის გამო
             ValidateFormInputs()

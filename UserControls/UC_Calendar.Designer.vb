@@ -28,8 +28,6 @@ Partial Class UC_Calendar
         Me.RBSpace = New System.Windows.Forms.RadioButton()
         Me.RBPer = New System.Windows.Forms.RadioButton()
         Me.RBBene = New System.Windows.Forms.RadioButton()
-        Me.CBSurname = New System.Windows.Forms.ComboBox()
-        Me.CBName = New System.Windows.Forms.ComboBox()
         Me.CheckBox1 = New System.Windows.Forms.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.CheckBox6 = New System.Windows.Forms.CheckBox()
@@ -65,8 +63,6 @@ Partial Class UC_Calendar
         Me.pnlFIlter.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.pnlFIlter.Controls.Add(Me.GroupBox2)
-        Me.pnlFIlter.Controls.Add(Me.CBSurname)
-        Me.pnlFIlter.Controls.Add(Me.CBName)
         Me.pnlFIlter.Controls.Add(Me.CheckBox1)
         Me.pnlFIlter.Controls.Add(Me.Label3)
         Me.pnlFIlter.Controls.Add(Me.CheckBox6)
@@ -137,22 +133,6 @@ Partial Class UC_Calendar
         Me.RBBene.Text = "ბენეფიციარი"
         Me.RBBene.UseVisualStyleBackColor = True
         '
-        'CBSurname
-        '
-        Me.CBSurname.FormattingEnabled = True
-        Me.CBSurname.Location = New System.Drawing.Point(494, 50)
-        Me.CBSurname.Name = "CBSurname"
-        Me.CBSurname.Size = New System.Drawing.Size(121, 21)
-        Me.CBSurname.TabIndex = 32
-        '
-        'CBName
-        '
-        Me.CBName.FormattingEnabled = True
-        Me.CBName.Location = New System.Drawing.Point(367, 50)
-        Me.CBName.Name = "CBName"
-        Me.CBName.Size = New System.Drawing.Size(121, 21)
-        Me.CBName.TabIndex = 31
-        '
         'CheckBox1
         '
         Me.CheckBox1.AutoSize = True
@@ -175,7 +155,7 @@ Partial Class UC_Calendar
         'CheckBox6
         '
         Me.CheckBox6.AutoSize = True
-        Me.CheckBox6.Location = New System.Drawing.Point(716, 29)
+        Me.CheckBox6.Location = New System.Drawing.Point(444, 52)
         Me.CheckBox6.Name = "CheckBox6"
         Me.CheckBox6.Size = New System.Drawing.Size(144, 17)
         Me.CheckBox6.TabIndex = 39
@@ -185,7 +165,7 @@ Partial Class UC_Calendar
         'CheckBox4
         '
         Me.CheckBox4.AutoSize = True
-        Me.CheckBox4.Location = New System.Drawing.Point(570, 29)
+        Me.CheckBox4.Location = New System.Drawing.Point(594, 29)
         Me.CheckBox4.Name = "CheckBox4"
         Me.CheckBox4.Size = New System.Drawing.Size(140, 17)
         Me.CheckBox4.TabIndex = 37
@@ -195,7 +175,7 @@ Partial Class UC_Calendar
         'CheckBox2
         '
         Me.CheckBox2.AutoSize = True
-        Me.CheckBox2.Location = New System.Drawing.Point(540, 8)
+        Me.CheckBox2.Location = New System.Drawing.Point(594, 8)
         Me.CheckBox2.Name = "CheckBox2"
         Me.CheckBox2.Size = New System.Drawing.Size(110, 17)
         Me.CheckBox2.TabIndex = 35
@@ -214,7 +194,7 @@ Partial Class UC_Calendar
         'CheckBox7
         '
         Me.CheckBox7.AutoSize = True
-        Me.CheckBox7.Location = New System.Drawing.Point(736, 8)
+        Me.CheckBox7.Location = New System.Drawing.Point(594, 52)
         Me.CheckBox7.Name = "CheckBox7"
         Me.CheckBox7.Size = New System.Drawing.Size(94, 17)
         Me.CheckBox7.TabIndex = 40
@@ -374,7 +354,7 @@ Partial Class UC_Calendar
         'CheckBox5
         '
         Me.CheckBox5.AutoSize = True
-        Me.CheckBox5.Location = New System.Drawing.Point(656, 8)
+        Me.CheckBox5.Location = New System.Drawing.Point(694, 52)
         Me.CheckBox5.Name = "CheckBox5"
         Me.CheckBox5.Size = New System.Drawing.Size(74, 17)
         Me.CheckBox5.TabIndex = 38
@@ -440,11 +420,9 @@ Partial Class UC_Calendar
     Friend WithEvents CheckBox1 As CheckBox
     Friend WithEvents RBSpace As RadioButton
     Friend WithEvents CheckBox5 As CheckBox
-    Friend WithEvents CBName As ComboBox
     Friend WithEvents RBPer As RadioButton
     Friend WithEvents CheckBox6 As CheckBox
     Friend WithEvents RBBene As RadioButton
-    Friend WithEvents CBSurname As ComboBox
     Friend WithEvents Label2 As Label
     Friend WithEvents CheckBox7 As CheckBox
     Friend WithEvents GroupBox2 As GroupBox
