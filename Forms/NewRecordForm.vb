@@ -2814,4 +2814,5 @@ Public Class NewRecordForm
             MessageBox.Show($"დაფინანსების პროგრამის დამატების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
 End Class

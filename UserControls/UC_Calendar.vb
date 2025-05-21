@@ -433,6 +433,9 @@ Public Class UC_Calendar
             ' შევქმნათ გრიდის მენეჯერი
             gridManager = New CalendarGridManager(pnlCalendarGrid, spaces, Nothing, timeIntervals, hScale, vScale)
 
+            ' დავაყენოთ ხედვის ტიპი "space"
+            gridManager.SetViewType("space")
+
             ' ინიციალიზაცია დღის ხედისთვის
             gridManager.InitializeDayViewPanels()
 
@@ -451,14 +454,12 @@ Public Class UC_Calendar
             ' სქროლის სინქრონიზაცია
             SetupScrollSynchronization()
 
+            ' შევინახოთ გრიდის უჯრედები ლოკალურად
+            gridCells = gridManager.gridCells
+
             ' სესიების განთავსება გრიდში
             PlaceSessionsOnGrid()
 
-            ' მთავარი გრიდის პანელის შევსება
-            gridManager.FillMainGridPanel()
-
-            ' შევინახოთ გრიდის უჯრედები ლოკალურად
-            gridCells = gridManager.gridCells
             Debug.WriteLine("ShowDayViewBySpace: დღის ხედის ჩვენება დასრულდა")
 
         Catch ex As Exception
@@ -484,6 +485,9 @@ Public Class UC_Calendar
             ' შევქმნათ გრიდის მენეჯერი თერაპევტებისთვის
             gridManager = New CalendarGridManager(pnlCalendarGrid, Nothing, therapists, timeIntervals, hScale, vScale)
 
+            ' დავაყენოთ ხედვის ტიპი "therapist"
+            gridManager.SetViewType("therapist")
+
             ' ინიციალიზაცია დღის ხედისთვის
             gridManager.InitializeDayViewPanels()
 
@@ -502,14 +506,12 @@ Public Class UC_Calendar
             ' სქროლის სინქრონიზაცია
             SetupScrollSynchronization()
 
+            ' შევინახოთ გრიდის უჯრედები ლოკალურად
+            gridCells = gridManager.gridCells
+
             ' სესიების განთავსება გრიდში
             PlaceSessionsOnTherapistGrid()
 
-            ' მთავარი გრიდის პანელის შევსება თერაპევტებისთვის
-            gridManager.FillMainGridPanelForTherapists()
-
-            ' შევინახოთ გრიდის უჯრედები ლოკალურად
-            gridCells = gridManager.gridCells
             Debug.WriteLine("ShowDayViewByTherapist: დღის ხედის ჩვენება დასრულდა")
 
         Catch ex As Exception
@@ -807,18 +809,20 @@ Public Class UC_Calendar
                 Return
             End If
 
-            ' შევამოწმოთ გრიდის უჯრედები
-            If gridCells Is Nothing Then
-                Debug.WriteLine("PlaceSessionsOnGrid: გრიდის უჯრედები არ არის")
-                Return
-            End If
-
             ' ვიპოვოთ მთავარი გრიდის პანელი
             Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
             If mainGridPanel Is Nothing Then
                 Debug.WriteLine("❌ მთავარი გრიდის პანელი ვერ მოიძებნა!")
                 Return
             End If
+
+            ' გავასუფთავოთ არსებული სესიის ბარათები მაინპანელიდან
+            For Each ctrl In mainGridPanel.Controls.OfType(Of Panel)().ToList()
+                If ctrl.Tag IsNot Nothing AndAlso TypeOf ctrl.Tag Is Integer Then
+                    mainGridPanel.Controls.Remove(ctrl)
+                    ctrl.Dispose()
+                End If
+            Next
 
             ' მასშტაბირებული პარამეტრები
             Dim scalingFactors = gridManager.GetScaleFactors()
@@ -854,7 +858,7 @@ Public Class UC_Calendar
 
                     ' 3. საზღვრების შემოწმება
                     If spaceIndex < 0 OrElse timeIndex < 0 OrElse
-                       spaceIndex >= spaces.Count OrElse timeIndex >= timeIntervals.Count Then
+                   spaceIndex >= spaces.Count OrElse timeIndex >= timeIntervals.Count Then
                         Debug.WriteLine($"❌ არასწორი ინდექსები: space={spaceIndex}, time={timeIndex}")
                         Continue For
                     End If
@@ -873,11 +877,12 @@ Public Class UC_Calendar
 
                     ' 6. ბარათის შექმნა SessionCardFactory-ის გამოყენებით
                     Dim sessionCard = SessionCardFactory.CreateSessionCard(
-                        session,
-                        SPACE_COLUMN_WIDTH - 8,
-                        cardHeight,
-                        New Point(cardX, cardY)
-                    )
+    session,
+    SPACE_COLUMN_WIDTH - 8,
+    cardHeight,
+    New Point(cardX, cardY),
+    AddressOf EditSession ' დამატებული: რედაქტირების დელეგატი
+)
 
                     ' 7. კონტექსტური მენიუს შექმნა
                     SessionCardFactory.CreateContextMenu(sessionCard, session, AddressOf QuickChangeStatus_Click)
@@ -889,12 +894,50 @@ Public Class UC_Calendar
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
+                    ' კონტექსტური მენიუს ივენთების დამატება
+                    If sessionCard.ContextMenuStrip IsNot Nothing Then
+                        ' რედაქტირების მენიუს პუნქტი
+                        Dim editMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "რედაქტირება")
+                        If editMenuItem IsNot Nothing Then
+                            AddHandler editMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               EditSession(menuSessionId)
+                                                           End Sub
+                        End If
+
+                        ' ინფორმაციის ნახვა მენიუს პუნქტი
+                        Dim infoMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "ინფორმაციის ნახვა")
+                        If infoMenuItem IsNot Nothing Then
+                            AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               ' იგივე რაც SessionCard_Click
+                                                               Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
+                                                               If clickedSession IsNot Nothing Then
+                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
+                                                                   Dim sb As New System.Text.StringBuilder()
+                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
+                                                                   sb.AppendLine("----------------------------")
+                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
+                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
+                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
+                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
+                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
+                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
+                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
+
+                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                               End If
+                                                           End Sub
+                        End If
+                    End If
                     ' ბარათის გრიდზე დამატება
                     mainGridPanel.Controls.Add(sessionCard)
                     sessionCard.BringToFront()
 
                     Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, სივრცე='{session.Space}', " &
-                         $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
+                     $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
 
                 Catch sessionEx As Exception
                     Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
@@ -927,18 +970,20 @@ Public Class UC_Calendar
                 Return
             End If
 
-            ' შევამოწმოთ გრიდის უჯრედები
-            If gridCells Is Nothing Then
-                Debug.WriteLine("PlaceSessionsOnGrid: გრიდის უჯრედები არ არის")
-                Return
-            End If
-
             ' ვიპოვოთ მთავარი გრიდის პანელი
             Dim mainGridPanel As Panel = DirectCast(pnlCalendarGrid.Controls.Find("mainGridPanel", False).FirstOrDefault(), Panel)
             If mainGridPanel Is Nothing Then
                 Debug.WriteLine("❌ მთავარი გრიდის პანელი ვერ მოიძებნა!")
                 Return
             End If
+
+            ' გავასუფთავოთ არსებული სესიის ბარათები მაინპანელიდან
+            For Each ctrl In mainGridPanel.Controls.OfType(Of Panel)().ToList()
+                If ctrl.Tag IsNot Nothing AndAlso TypeOf ctrl.Tag Is Integer Then
+                    mainGridPanel.Controls.Remove(ctrl)
+                    ctrl.Dispose()
+                End If
+            Next
 
             ' მასშტაბირებული პარამეტრები
             Dim scalingFactors = gridManager.GetScaleFactors()
@@ -974,7 +1019,7 @@ Public Class UC_Calendar
 
                     ' 3. საზღვრების შემოწმება
                     If therapistIndex < 0 OrElse timeIndex < 0 OrElse
-                       therapistIndex >= therapists.Count OrElse timeIndex >= timeIntervals.Count Then
+                   therapistIndex >= therapists.Count OrElse timeIndex >= timeIntervals.Count Then
                         Debug.WriteLine($"❌ არასწორი ინდექსები: therapist={therapistIndex}, time={timeIndex}")
                         Continue For
                     End If
@@ -993,11 +1038,12 @@ Public Class UC_Calendar
 
                     ' 6. ბარათის შექმნა SessionCardFactory-ის გამოყენებით
                     Dim sessionCard = SessionCardFactory.CreateSessionCard(
-                        session,
-                        THERAPIST_COLUMN_WIDTH - 8,
-                        cardHeight,
-                        New Point(cardX, cardY)
-                    )
+    session,
+    THERAPIST_COLUMN_WIDTH - 8,
+    cardHeight,
+    New Point(cardX, cardY),
+    AddressOf EditSession ' დამატებული: რედაქტირების დელეგატი
+)
 
                     ' 7. კონტექსტური მენიუს შექმნა
                     SessionCardFactory.CreateContextMenu(sessionCard, session, AddressOf QuickChangeStatus_Click)
@@ -1009,12 +1055,51 @@ Public Class UC_Calendar
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
+                    ' კონტექსტური მენიუს ივენთების დამატება
+                    If sessionCard.ContextMenuStrip IsNot Nothing Then
+                        ' რედაქტირების მენიუს პუნქტი
+                        Dim editMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "რედაქტირება")
+                        If editMenuItem IsNot Nothing Then
+                            AddHandler editMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               EditSession(menuSessionId)
+                                                           End Sub
+                        End If
+
+                        ' ინფორმაციის ნახვა მენიუს პუნქტი
+                        Dim infoMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "ინფორმაციის ნახვა")
+                        If infoMenuItem IsNot Nothing Then
+                            AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               ' იგივე რაც SessionCard_Click
+                                                               Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
+                                                               If clickedSession IsNot Nothing Then
+                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
+                                                                   Dim sb As New System.Text.StringBuilder()
+                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
+                                                                   sb.AppendLine("----------------------------")
+                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
+                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
+                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
+                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
+                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
+                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
+                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
+
+                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                               End If
+                                                           End Sub
+                        End If
+                    End If
+
                     ' ბარათის გრიდზე დამატება
                     mainGridPanel.Controls.Add(sessionCard)
                     sessionCard.BringToFront()
 
                     Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, თერაპევტი='{session.TherapistName}', " &
-                         $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
+                     $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
 
                 Catch sessionEx As Exception
                     Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
@@ -2762,7 +2847,7 @@ Public Class UC_Calendar
                 pnlFIlter.Width = Me.Width - pnlFIlter.Left - 20
             End If
 
-            ' თუ კალენდრის ხედი უკვე გაშლილია, განვაახლოთ შემცველობა
+            ' თუ კალენდრის ხედი უკვე გაშლილია, განვაახლოთ ხედი
             UpdateCalendarView()
 
             Debug.WriteLine($"UC_Calendar_Resize: კალენდრის ზომები განახლდა, ახალი ზომები: {Me.Width}x{Me.Height}")
@@ -2799,6 +2884,14 @@ Public Class UC_Calendar
                 Return
             End If
 
+            ' გავასუფთავოთ არსებული სესიის ბარათები მაინპანელიდან
+            For Each ctrl In mainGridPanel.Controls.OfType(Of Panel)().ToList()
+                If ctrl.Tag IsNot Nothing AndAlso TypeOf ctrl.Tag Is Integer Then
+                    mainGridPanel.Controls.Remove(ctrl)
+                    ctrl.Dispose()
+                End If
+            Next
+
             ' მასშტაბირებული პარამეტრები
             Dim ROW_HEIGHT As Integer = CInt(CalendarGridManager.BASE_ROW_HEIGHT * vScale)
             Dim BENEFICIARY_COLUMN_WIDTH As Integer = CInt(CalendarGridManager.BASE_SPACE_COLUMN_WIDTH * hScale)
@@ -2834,7 +2927,7 @@ Public Class UC_Calendar
 
                     ' 3. საზღვრების შემოწმება
                     If beneficiaryIndex < 0 OrElse timeIndex < 0 OrElse
-                       beneficiaryIndex >= selectedBeneficiaries.Count OrElse timeIndex >= timeIntervals.Count Then
+                   beneficiaryIndex >= selectedBeneficiaries.Count OrElse timeIndex >= timeIntervals.Count Then
                         Debug.WriteLine($"❌ არასწორი ინდექსები: beneficiary={beneficiaryIndex}, time={timeIndex}")
                         Continue For
                     End If
@@ -2853,25 +2946,65 @@ Public Class UC_Calendar
 
                     ' 6. ბარათის შექმნა SessionCardFactory-ის გამოყენებით
                     Dim sessionCard = SessionCardFactory.CreateSessionCard(
-                        session,
-                        BENEFICIARY_COLUMN_WIDTH - 8,
-                        cardHeight,
-                        New Point(cardX, cardY)
-                    )
+                    session,
+                    BENEFICIARY_COLUMN_WIDTH - 8,
+                    cardHeight,
+                    New Point(cardX, cardY),
+                    AddressOf EditSession ' დამატებული: რედაქტირების დელეგატი
+                )
 
                     ' 7. კონტექსტური მენიუს შექმნა
                     SessionCardFactory.CreateContextMenu(sessionCard, session, AddressOf QuickChangeStatus_Click)
 
-                    ' 8. ღონისძიებების მიბმა
+                    ' 8. მაუსის ივენთების მიბმა
                     AddHandler sessionCard.Click, AddressOf SessionCard_Click
                     AddHandler sessionCard.DoubleClick, AddressOf SessionCard_DoubleClick
 
-                    ' 9. ბარათის დამატება გრიდზე
+                    ' კონტექსტური მენიუს ივენთების დამატება
+                    If sessionCard.ContextMenuStrip IsNot Nothing Then
+                        ' რედაქტირების მენიუს პუნქტი
+                        Dim editMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "რედაქტირება")
+                        If editMenuItem IsNot Nothing Then
+                            AddHandler editMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               EditSession(menuSessionId)
+                                                           End Sub
+                        End If
+
+                        ' ინფორმაციის ნახვა მენიუს პუნქტი
+                        Dim infoMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "ინფორმაციის ნახვა")
+                        If infoMenuItem IsNot Nothing Then
+                            AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
+                                                               Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
+                                                               Dim menuSessionId As Integer = CInt(menuItem.Tag)
+                                                               ' იგივე რაც SessionCard_Click
+                                                               Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
+                                                               If clickedSession IsNot Nothing Then
+                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
+                                                                   Dim sb As New System.Text.StringBuilder()
+                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
+                                                                   sb.AppendLine("----------------------------")
+                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
+                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
+                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
+                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
+                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
+                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
+                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
+
+                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                               End If
+                                                           End Sub
+                        End If
+                    End If
+
+                    ' ბარათის გრიდზე დამატება
                     mainGridPanel.Controls.Add(sessionCard)
                     sessionCard.BringToFront()
 
                     Debug.WriteLine($"✅ ბარათი განთავსდა: ID={session.Id}, ბენეფიციარი='{sessionBeneficiaryFullName}', " &
-                         $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
+                     $"ზომა={sessionCard.Width}x{sessionCard.Height}px")
 
                 Catch sessionEx As Exception
                     Debug.WriteLine($"❌ შეცდომა სესია ID={session.Id}: {sessionEx.Message}")
@@ -2883,6 +3016,49 @@ Public Class UC_Calendar
 
         Catch ex As Exception
             Debug.WriteLine($"❌ PlaceSessionsOnBeneficiaryGrid: ზოგადი შეცდომა - {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' სესიის რედაქტირების ღილაკზე დაჭერის დამუშავება
+    ''' </summary>
+    ''' <param name="sessionId"></param>
+    Private Sub EditSession(sessionId As Integer)
+        Try
+            Debug.WriteLine($"EditSession: სესიის რედაქტირების მოთხოვნა, ID={sessionId}")
+
+            ' შევამოწმოთ არის თუ არა მომხმარებელი ავტორიზებული რედაქტირებისთვის
+            If String.IsNullOrEmpty(userEmail) Then
+                MessageBox.Show("ავტორიზაციის გარეშე ვერ მოხდება სესიის რედაქტირება", "გაფრთხილება", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' შევამოწმოთ dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ხელმისაწვდომი", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' შევქმნათ და გავხსნათ რედაქტირების ფორმა
+            Dim editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Calendar")
+
+            ' გავხსნათ ფორმა
+            Dim result = editForm.ShowDialog()
+
+            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
+            If result = DialogResult.OK Then
+                Debug.WriteLine($"EditSession: სესია ID={sessionId} წარმატებით განახლდა")
+
+                ' ჩავტვირთოთ სესიები თავიდან
+                LoadSessions()
+
+                ' განვაახლოთ კალენდრის ხედი
+                UpdateCalendarView()
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"EditSession: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

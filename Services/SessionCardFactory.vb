@@ -1,7 +1,7 @@
 ﻿' ===========================================
 ' 📄 Services/SessionCardFactory.vb
 ' -------------------------------------------
-' სესიის ბარათების შექმნის სერვისი
+' სესიის ბარათების შექმნის სერვისი - შესწორებული რედაქტირების ღილაკის ფუნქციონალით
 ' ===========================================
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
@@ -17,13 +17,17 @@ Namespace Scheduler_v8_8a.Services
         ' კონსტანტები
         Private Const HEADER_HEIGHT As Integer = 24 ' ბარათის ჰედერის სიმაღლე
 
+        ' დელეგატი რედაქტირების ღილაკის დააჭერისათვის
+        Public Delegate Sub SessionCardActionDelegate(sessionId As Integer)
+
         ''' <summary>
         ''' სესიის ბარათის შექმნა
         ''' </summary>
         Public Shared Function CreateSessionCard(session As SessionModel,
                                               cardWidth As Integer,
                                               cardHeight As Integer,
-                                              cardPosition As Point) As Panel
+                                              cardPosition As Point,
+                                              Optional editDelegate As SessionCardActionDelegate = Nothing) As Panel
             Try
                 Debug.WriteLine($"CreateSessionCard: ID={session.Id}, სტატუსი='{session.Status}', ზომა: {cardWidth}x{cardHeight}")
 
@@ -159,6 +163,22 @@ Namespace Scheduler_v8_8a.Services
                 btnEdit.Tag = session.Id
                 btnEdit.Cursor = Cursors.Hand
 
+                ' რედაქტირების ღილაკზე დაჭერის ივენთი
+                AddHandler btnEdit.Click, Sub(sender, e)
+                                              ' გამოვიძახოთ სესიის რედაქტირების ფორმა პირდაპირ
+                                              Try
+                                                  Dim sessionId As Integer = CInt(btnEdit.Tag)
+                                                  Debug.WriteLine($"რედაქტირების ღილაკზე დაჭერა: სესია ID={sessionId}")
+
+                                                  ' თუ დელეგატი მითითებულია, გამოვიძახოთ
+                                                  If editDelegate IsNot Nothing Then
+                                                      editDelegate(sessionId)
+                                                  End If
+                                              Catch ex As Exception
+                                                  Debug.WriteLine($"შეცდომა რედაქტირების ღილაკზე: {ex.Message}")
+                                              End Try
+                                          End Sub
+
                 ' მოვუმრგვალოთ ღილაკი
                 Dim btnPath As New GraphicsPath()
                 btnPath.AddEllipse(0, 0, btnEdit.Width, btnEdit.Height)
@@ -208,7 +228,7 @@ Namespace Scheduler_v8_8a.Services
                 ' გამყოფი
                 contextMenu.Items.Add(New ToolStripSeparator())
 
-                ' რედაქტირების პუნქტი
+                ' რედაქტირების პუნქტი - ივენთ ჰენდლერის გარეშე, ეს უნდა იმართებოდეს UC_Calendar-დან
                 Dim editMenuItem As New ToolStripMenuItem("რედაქტირება")
                 editMenuItem.Tag = session.Id
                 contextMenu.Items.Add(editMenuItem)
@@ -245,7 +265,7 @@ Namespace Scheduler_v8_8a.Services
                 ' გამყოფი
                 contextMenu.Items.Add(New ToolStripSeparator())
 
-                ' ინფორმაციის ჩვენების პუნქტი
+                ' ინფორმაციის ჩვენების პუნქტი - ივენთ ჰენდლერის გარეშე, ეს უნდა იმართებოდეს UC_Calendar-დან
                 Dim showInfoMenuItem As New ToolStripMenuItem("ინფორმაციის ნახვა")
                 showInfoMenuItem.Tag = session.Id
                 contextMenu.Items.Add(showInfoMenuItem)

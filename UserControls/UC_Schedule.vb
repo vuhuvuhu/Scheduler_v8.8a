@@ -25,4 +25,10 @@ Public Class UC_Schedule
         ' როდესაც რეალურად დავიწყებთ მონაცემებთან მუშაობას,
         ' აქ შეგვიძლია დავამატოთ მონაცემების ჩატვირთვის ლოგიკა
     End Sub
+
+    Private Sub UC_Schedule_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        pnlFilter.BackColor = Color.FromArgb(200, Color.White)
+        GBSumInf.BackColor = Color.FromArgb(200, Color.White)
+        GBSumFin.BackColor = Color.FromArgb(200, Color.White)
+    End Sub
 End Class

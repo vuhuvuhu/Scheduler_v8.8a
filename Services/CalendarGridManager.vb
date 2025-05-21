@@ -1,7 +1,7 @@
 ﻿' ===========================================
 ' 📄 Services/CalendarGridManager.vb
 ' -------------------------------------------
-' კალენდრის გრიდის მართვის სერვისი
+' კალენდრის გრიდის მართვის სერვისი - შესწორებული ვერსია
 ' ===========================================
 Imports System.Drawing
 Imports System.Windows.Forms
@@ -37,6 +37,9 @@ Namespace Scheduler_v8_8a.Services
         Private therapistsHeaderPanel As Panel
         Private beneficiaryHeaderPanel As Panel
 
+        ' ხედვის ტიპი (გამოიყენება შესაბამისი ჰედერ პანელის მოსაძებნად)
+        Private viewType As String = "space" ' შესაძლო მნიშვნელობები: "space", "therapist", "beneficiary"
+
         ' მასშტაბის ფაქტორები
         Private hScale As Double
         Private vScale As Double
@@ -51,11 +54,24 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Public Sub New(calendarPanel As Panel, spaces As List(Of String), therapists As List(Of String), timeIntervals As List(Of DateTime), hScale As Double, vScale As Double)
             Me.calendarPanel = calendarPanel
-            Me.spaces = spaces
-            Me.therapists = therapists
-            Me.timeIntervals = timeIntervals
+
+            ' ნალის შემოწმება - ცარიელი სიების ინიციალიზაცია საჭიროების შემთხვევაში
+            Me.spaces = If(spaces, New List(Of String))
+            Me.therapists = If(therapists, New List(Of String))
+            Me.timeIntervals = If(timeIntervals, New List(Of DateTime))
+
+            ' ვაყენებთ ხედვის ტიპს spaces/therapists პარამეტრების მიხედვით
+            If therapists IsNot Nothing AndAlso therapists.Count > 0 Then
+                viewType = "therapist"
+            Else
+                viewType = "space"
+            End If
+
             Me.hScale = hScale
             Me.vScale = vScale
+
+            Debug.WriteLine($"CalendarGridManager კონსტრუქტორი: viewType={viewType}, " &
+                           $"spaces={If(spaces?.Count, 0)}, therapists={If(therapists?.Count, 0)}")
         End Sub
 
         ''' <summary>
@@ -149,18 +165,34 @@ Namespace Scheduler_v8_8a.Services
                 timeHeaderLabel.Font = New Font("Sylfaen", 10, FontStyle.Bold)
                 timeHeaderPanel.Controls.Add(timeHeaderLabel)
 
-                ' ======= 5. შევქმნათ სივრცეების სათაურების პანელი (ზემოთ) =======
-                spacesHeaderPanel = New Panel()
-                spacesHeaderPanel.Name = "spacesHeaderPanel"
-                spacesHeaderPanel.AutoScroll = False
-                ' ზომა დამოკიდებული იქნება მასშტაბზე!
-                Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
-                Dim totalSpacesWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
-                spacesHeaderPanel.Size = New Size(totalSpacesWidth, HEADER_HEIGHT)
-                spacesHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
-                spacesHeaderPanel.BackColor = Color.FromArgb(220, 220, 240)
-                spacesHeaderPanel.BorderStyle = BorderStyle.FixedSingle
-                calendarPanel.Controls.Add(spacesHeaderPanel)
+                ' ======= 5. შევქმნათ სათაურების პანელი ხედვის ტიპის მიხედვით =======
+                Dim COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
+                Dim itemsCount As Integer = 0
+
+                ' ვადგენთ რომელი ხედვის ტიპი უნდა ვაჩვენოთ
+                If viewType = "therapist" Then
+                    ' თერაპევტების პანელი
+                    therapistsHeaderPanel = New Panel()
+                    therapistsHeaderPanel.Name = "therapistsHeaderPanel"
+                    therapistsHeaderPanel.AutoScroll = False
+                    itemsCount = Math.Max(1, therapists.Count) ' სულ მცირე 1 სვეტი
+                    therapistsHeaderPanel.Size = New Size(COLUMN_WIDTH * itemsCount, HEADER_HEIGHT)
+                    therapistsHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
+                    therapistsHeaderPanel.BackColor = Color.FromArgb(220, 220, 240)
+                    therapistsHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+                    calendarPanel.Controls.Add(therapistsHeaderPanel)
+                Else
+                    ' სივრცეების პანელი
+                    spacesHeaderPanel = New Panel()
+                    spacesHeaderPanel.Name = "spacesHeaderPanel"
+                    spacesHeaderPanel.AutoScroll = False
+                    itemsCount = Math.Max(1, spaces.Count) ' სულ მცირე 1 სვეტი
+                    spacesHeaderPanel.Size = New Size(COLUMN_WIDTH * itemsCount, HEADER_HEIGHT)
+                    spacesHeaderPanel.Location = New Point(TIME_COLUMN_WIDTH + DATE_COLUMN_WIDTH, 0)
+                    spacesHeaderPanel.BackColor = Color.FromArgb(220, 220, 240)
+                    spacesHeaderPanel.BorderStyle = BorderStyle.FixedSingle
+                    calendarPanel.Controls.Add(spacesHeaderPanel)
+                End If
 
                 ' ======= 6. შევქმნათ მთავარი გრიდის პანელი =======
                 mainGridPanel = New Panel()
@@ -293,13 +325,18 @@ Namespace Scheduler_v8_8a.Services
                 Debug.WriteLine("FillSpacesHeaderPanel: დაიწყო სივრცეების სათაურების შევსება")
 
                 ' გავასუფთავოთ
+                If spacesHeaderPanel Is Nothing Then
+                    Debug.WriteLine("FillSpacesHeaderPanel: spacesHeaderPanel არის Nothing, პანელის შევსებას ვწყვეტთ")
+                    Return
+                End If
+
                 spacesHeaderPanel.Controls.Clear()
 
                 ' სივრცის სვეტის სიგანე (იმასშტაბირდება)
                 Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
 
                 ' გამოვთვალოთ სათაურების პანელის სრული სიგანე
-                Dim totalHeaderWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
+                Dim totalHeaderWidth As Integer = SPACE_COLUMN_WIDTH * Math.Max(1, spaces.Count)
 
                 ' შევცვალოთ პანელის სიგანე მასშტაბის მიხედვით
                 spacesHeaderPanel.Width = totalHeaderWidth
@@ -351,13 +388,18 @@ Namespace Scheduler_v8_8a.Services
                 Debug.WriteLine("FillTherapistsHeaderPanel: დაიწყო თერაპევტების სათაურების შევსება")
 
                 ' გავასუფთავოთ
+                If therapistsHeaderPanel Is Nothing Then
+                    Debug.WriteLine("FillTherapistsHeaderPanel: therapistsHeaderPanel არის Nothing, პანელის შევსებას ვწყვეტთ")
+                    Return
+                End If
+
                 therapistsHeaderPanel.Controls.Clear()
 
                 ' თერაპევტის სვეტის სიგანე (იმასშტაბირდება)
                 Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
 
                 ' გამოვთვალოთ სათაურების პანელის სრული სიგანე
-                Dim totalHeaderWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+                Dim totalHeaderWidth As Integer = THERAPIST_COLUMN_WIDTH * Math.Max(1, therapists.Count)
 
                 ' შევცვალოთ პანელის სიგანე მასშტაბის მიხედვით
                 therapistsHeaderPanel.Width = totalHeaderWidth
@@ -406,8 +448,8 @@ Namespace Scheduler_v8_8a.Services
                 Dim SPACE_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
                 Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
 
-                ' გრიდის სრული სიგანე
-                Dim gridWidth As Integer = SPACE_COLUMN_WIDTH * spaces.Count
+                ' გრიდის სრული სიგანე (სულ მცირე 1 სვეტი)
+                Dim gridWidth As Integer = SPACE_COLUMN_WIDTH * Math.Max(1, spaces.Count)
 
                 ' გრიდის სრული სიმაღლე
                 Dim gridHeight As Integer = ROW_HEIGHT * timeIntervals.Count
@@ -418,11 +460,13 @@ Namespace Scheduler_v8_8a.Services
                 Debug.WriteLine($"FillMainGridPanel: გრიდის ზომები - Width={gridWidth}, Height={gridHeight}, hScale={hScale}, vScale={vScale}")
 
                 ' უჯრედების მასივი
-                ReDim gridCells(spaces.Count - 1, timeIntervals.Count - 1)
+                Dim columnsCount As Integer = Math.Max(1, spaces.Count)
+                Dim rowsCount As Integer = timeIntervals.Count
+                ReDim gridCells(columnsCount - 1, rowsCount - 1)
 
                 ' უჯრედების შექმნა
-                For col As Integer = 0 To spaces.Count - 1
-                    For row As Integer = 0 To timeIntervals.Count - 1
+                For col As Integer = 0 To columnsCount - 1
+                    For row As Integer = 0 To rowsCount - 1
                         Dim cell As New Panel()
                         cell.Size = New Size(SPACE_COLUMN_WIDTH, ROW_HEIGHT)
                         cell.Location = New Point(col * SPACE_COLUMN_WIDTH, row * ROW_HEIGHT)
@@ -445,14 +489,12 @@ Namespace Scheduler_v8_8a.Services
                     Next
                 Next
 
-                Debug.WriteLine($"FillMainGridPanel: შეიქმნა {spaces.Count * timeIntervals.Count} უჯრედი")
+                Debug.WriteLine($"FillMainGridPanel: შეიქმნა {columnsCount * rowsCount} უჯრედი")
 
             Catch ex As Exception
                 Debug.WriteLine($"FillMainGridPanel: შეცდომა - {ex.Message}")
                 Debug.WriteLine($"FillMainGridPanel: StackTrace - {ex.StackTrace}")
             End Try
-            ' შევინახოთ შექმნილი უჯრედები ლოკალურად
-
         End Sub
 
         ''' <summary>
@@ -469,8 +511,8 @@ Namespace Scheduler_v8_8a.Services
                 Dim THERAPIST_COLUMN_WIDTH As Integer = CInt(BASE_SPACE_COLUMN_WIDTH * hScale)
                 Dim ROW_HEIGHT As Integer = CInt(BASE_ROW_HEIGHT * vScale)
 
-                ' გრიდის სრული სიგანე
-                Dim gridWidth As Integer = THERAPIST_COLUMN_WIDTH * therapists.Count
+                ' გრიდის სრული სიგანე (სულ მცირე 1 სვეტი)
+                Dim gridWidth As Integer = THERAPIST_COLUMN_WIDTH * Math.Max(1, therapists.Count)
 
                 ' გრიდის სრული სიმაღლე
                 Dim gridHeight As Integer = ROW_HEIGHT * timeIntervals.Count
@@ -481,11 +523,13 @@ Namespace Scheduler_v8_8a.Services
                 Debug.WriteLine($"FillMainGridPanelForTherapists: გრიდის ზომები - Width={gridWidth}, Height={gridHeight}, hScale={hScale}, vScale={vScale}")
 
                 ' უჯრედების მასივი
-                ReDim gridCells(therapists.Count - 1, timeIntervals.Count - 1)
+                Dim columnsCount As Integer = Math.Max(1, therapists.Count)
+                Dim rowsCount As Integer = timeIntervals.Count
+                ReDim gridCells(columnsCount - 1, rowsCount - 1)
 
                 ' უჯრედების შექმნა
-                For col As Integer = 0 To therapists.Count - 1
-                    For row As Integer = 0 To timeIntervals.Count - 1
+                For col As Integer = 0 To columnsCount - 1
+                    For row As Integer = 0 To rowsCount - 1
                         Dim cell As New Panel()
                         cell.Size = New Size(THERAPIST_COLUMN_WIDTH, ROW_HEIGHT)
                         cell.Location = New Point(col * THERAPIST_COLUMN_WIDTH, row * ROW_HEIGHT)
@@ -508,14 +552,12 @@ Namespace Scheduler_v8_8a.Services
                     Next
                 Next
 
-                Debug.WriteLine($"FillMainGridPanelForTherapists: შეიქმნა {therapists.Count * timeIntervals.Count} უჯრედი თერაპევტებისთვის")
+                Debug.WriteLine($"FillMainGridPanelForTherapists: შეიქმნა {columnsCount * rowsCount} უჯრედი თერაპევტებისთვის")
 
             Catch ex As Exception
                 Debug.WriteLine($"FillMainGridPanelForTherapists: შეცდომა - {ex.Message}")
                 Debug.WriteLine($"FillMainGridPanelForTherapists: StackTrace - {ex.StackTrace}")
             End Try
-            ' შევინახოთ შექმნილი უჯრედები ლოკალურად
-
         End Sub
 
         ''' <summary>
@@ -592,5 +634,19 @@ Namespace Scheduler_v8_8a.Services
         Public Function GetPanels() As (mainPanel As Panel, datePanel As Panel, timePanel As Panel)
             Return (mainGridPanel, dateColumnPanel, timeColumnPanel)
         End Function
+
+        ''' <summary>
+        ''' ხედვის ტიპის მიღება
+        ''' </summary>
+        Public Function GetViewType() As String
+            Return viewType
+        End Function
+
+        ''' <summary>
+        ''' ხედვის ტიპის დაყენება
+        ''' </summary>
+        Public Sub SetViewType(newViewType As String)
+            viewType = newViewType
+        End Sub
     End Class
 End Namespace

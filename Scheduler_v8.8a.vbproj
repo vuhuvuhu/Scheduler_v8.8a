@@ -223,6 +223,9 @@
     <EmbeddedResource Include="UserControls\UC_Home.resx">
       <DependentUpon>UC_Home.vb</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\UC_Schedule.aa-DJ.resx">
+      <DependentUpon>UC_Schedule.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UserControls\UC_Schedule.resx">
       <DependentUpon>UC_Schedule.vb</DependentUpon>
     </EmbeddedResource>
@@ -258,6 +261,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\AppImages\BtnMinus.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\AppImages\BtnPrint.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\AppImages\btnRefresh.png">
