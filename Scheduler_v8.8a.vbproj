@@ -98,6 +98,9 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\RotatedLabel.vb">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Forms\AddBeneForm.Designer.vb">
       <DependentUpon>AddBeneForm.vb</DependentUpon>
     </Compile>
@@ -140,6 +143,7 @@
     <Compile Include="Models\HomeViewModel.vb" />
     <Compile Include="Models\MainViewModel.vb" />
     <Compile Include="Models\SessionModel.vb" />
+    <Compile Include="Models\SessionStatusColors.vb" />
     <Compile Include="Models\TaskModel.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -156,11 +160,13 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Services\CalendarGridManager.vb" />
     <Compile Include="Services\GoogleOAuthService.vb" />
     <Compile Include="Services\GoogleServiceAccountClient.vb" />
     <Compile Include="Services\GoogleServiceAccountService.vb" />
     <Compile Include="Services\GoogleSheetsDataService.vb" />
     <Compile Include="Services\IDataService.vb" />
+    <Compile Include="Services\SessionCardFactory.vb" />
     <Compile Include="Services\SheetDataService.vb" />
     <Compile Include="Services\UserService.vb" />
     <Compile Include="UserControls\UC_Calendar.Designer.vb">
@@ -181,6 +187,7 @@
     <Compile Include="UserControls\UC_Schedule.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Utils\CalendarUtils.vb" />
     <Compile Include="Utils\MenuManager.vb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
