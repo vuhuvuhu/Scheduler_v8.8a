@@ -307,10 +307,10 @@ Public Class NewRecordForm
 
                 ' პარსინგის მცდელობა
                 If DateTime.TryParseExact(dateTimeStr, "dd.MM.yyyy HH:mm",
-                                  System.Globalization.CultureInfo.InvariantCulture,
-                                  System.Globalization.DateTimeStyles.None,
-                                  sessionDateTime) OrElse
-               DateTime.TryParse(dateTimeStr, sessionDateTime) Then
+                              System.Globalization.CultureInfo.InvariantCulture,
+                              System.Globalization.DateTimeStyles.None,
+                              sessionDateTime) OrElse
+           DateTime.TryParse(dateTimeStr, sessionDateTime) Then
 
                     ' დავაყენოთ თარიღი
                     DTP1.Value = sessionDateTime.Date
@@ -428,7 +428,7 @@ Public Class NewRecordForm
                 End If
             End If
 
-            ' M: სტატუსი
+            ' M: სტატუსი - მთავარი ცვლილება აქ არის
             If sessionRow.Count > 12 AndAlso sessionRow(12) IsNot Nothing Then
                 oldStatus = sessionRow(12).ToString().Trim()
                 Debug.WriteLine($"LoadSessionData: სესიის სტატუსი არის '{oldStatus}'")
@@ -454,29 +454,38 @@ Public Class NewRecordForm
                 Debug.WriteLine("LoadSessionData: კომენტარი დაყენებულია")
             End If
 
-            ' ახლა გავაკეთოთ რადიობუტონების ხილვადობის კონტროლი
+            ' ახლა გავაკეთოთ რადიობუტონების ხილვადობის კონტროლი და მათთვის სტატუსის მინიჭება
             If dateTimeLoaded Then
                 ' შევამოწმოთ არის თუ არა თარიღი წარსულში
                 Dim isPastDate As Boolean = sessionDateTime < DateTime.Now
                 Debug.WriteLine($"LoadSessionData: თარიღი არის წარსულში: {isPastDate}")
 
                 If isPastDate Then
-                    ' წარსული თარიღისთვის - გამოვაჩინოთ რადიობუტონები, მაგრამ არ მოვნიშნოთ
+                    ' წარსული თარიღისთვის - გამოვაჩინოთ რადიობუტონები
                     LPlan.Visible = False
 
-                    ' გავხადოთ ყველა რადიობუტონი ხილული მაგრამ არ მოვნიშნოთ არცერთი
+                    ' გავხადოთ ყველა რადიობუტონი ხილული
                     For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
                         If rb.Name.StartsWith("RB") Then
                             rb.Visible = True
-                            rb.Checked = False
+                            ' სტატუსის შესაბამისი რადიობუტონის მონიშვნა - ახალი ლოგიკა
+                            If String.Equals(rb.Text, oldStatus, StringComparison.OrdinalIgnoreCase) Then
+                                rb.Checked = True
+                                Debug.WriteLine($"LoadSessionData: მონიშნულია რადიობუტონი სტატუსით '{rb.Text}'")
+                            End If
                         End If
                     Next
 
-                    Debug.WriteLine("LoadSessionData: რადიობუტონები გამოჩნდა, ძველი სტატუსი იყო: " + oldStatus)
-
-                    ' შეტყობინება რომ აირჩიოს სტატუსი
-                    LWarning.Text = $"ძველი სტატუსი: '{oldStatus}'. გთხოვთ აირჩიოთ ახალი სტატუსი."
-                    LWarning.ForeColor = Color.DarkOrange
+                    ' თუ სტატუსი არ შეესაბამება არც ერთ რადიობუტონს, ან დაგეგმილი იყო
+                    If oldStatus.ToLower() = "დაგეგმილი" Then
+                        ' დაგეგმილი სტატუსის შემთხვევაში
+                        LWarning.Text = $"სესიის სტატუსი იყო 'დაგეგმილი'. აირჩიეთ რა მდგომარეობაშია ახლა."
+                        LWarning.ForeColor = Color.Blue
+                    Else
+                        ' შეტყობინება რომ სტატუსი არჩეულია
+                        LWarning.Text = $"სტატუსი: '{oldStatus}'. თუ გსურთ შეცვლა, აირჩიეთ ახალი სტატუსი."
+                        LWarning.ForeColor = Color.DarkOrange
+                    End If
                 Else
                     ' მომავალი თარიღისთვის
                     LPlan.Visible = True
@@ -486,6 +495,10 @@ Public Class NewRecordForm
                         rb.Visible = False
                         rb.Checked = False
                     Next
+
+                    ' შეტყობინება
+                    LWarning.Text = "სესია დაგეგმილია მომავალში, სტატუსი იქნება 'დაგეგმილი'"
+                    LWarning.ForeColor = Color.DarkGreen
 
                     Debug.WriteLine("LoadSessionData: მომავალი თარიღი, რადიობუტონები დამალულია")
                 End If
@@ -501,17 +514,23 @@ Public Class NewRecordForm
                         rb.Checked = False
                     Next
                 Else
-                    ' გამოვაჩინოთ რადიობუტონები და ვთხოვოთ მომხმარებელს არჩევა
+                    ' გამოვაჩინოთ რადიობუტონები და მონვნიშნოთ შესაბამისი სტატუსი
                     LPlan.Visible = False
+
+                    ' გამოვაჩინოთ ყველა რადიობუტონი
                     For Each rb As RadioButton In Me.Controls.OfType(Of RadioButton)()
                         If rb.Name.StartsWith("RB") Then
                             rb.Visible = True
-                            rb.Checked = False
+                            ' სტატუსის შესაბამისი რადიობუტონის მონიშვნა
+                            If String.Equals(rb.Text, oldStatus, StringComparison.OrdinalIgnoreCase) Then
+                                rb.Checked = True
+                                Debug.WriteLine($"LoadSessionData: მონიშნულია რადიობუტონი სტატუსით '{rb.Text}'")
+                            End If
                         End If
                     Next
 
-                    ' შეტყობინება რომ აირჩიოს სტატუსი
-                    LWarning.Text = $"ძველი სტატუსი: '{oldStatus}'. გთხოვთ აირჩიოთ ახალი სტატუსი."
+                    ' შეტყობინება რომ სტატუსი არჩეულია
+                    LWarning.Text = $"სტატუსი: '{oldStatus}'. თუ გსურთ შეცვლა, აირჩიეთ ახალი სტატუსი."
                     LWarning.ForeColor = Color.DarkOrange
                 End If
             End If
@@ -519,7 +538,7 @@ Public Class NewRecordForm
             ' BtnAdd ტექსტის შეცვლა
             BtnAdd.Text = ""
 
-            ' ვალიდაცია - შეგვიძლია გამოვიყენოთ ValidateFormInputs, თუ ის არ ბლოკავს შენახვას რადიობუტონების არ მონიშვნის გამო
+            ' ვალიდაცია
             ValidateFormInputs()
 
             Debug.WriteLine("LoadSessionData: სესიის მონაცემების ჩატვირთვა დასრულებულია")
@@ -529,6 +548,7 @@ Public Class NewRecordForm
             MessageBox.Show($"სესიის მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
     ''' <summary>
     ''' ფორმის დახურვისას მივხსნათ ივენთის მიბმები
     ''' </summary>

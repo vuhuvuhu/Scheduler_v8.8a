@@ -908,26 +908,16 @@ Public Class UC_Calendar
 
                         ' ინფორმაციის ნახვა მენიუს პუნქტი
                         Dim infoMenuItem = sessionCard.ContextMenuStrip.Items.Cast(Of ToolStripItem)().FirstOrDefault(Function(item) TypeOf item Is ToolStripMenuItem AndAlso item.Text = "ინფორმაციის ნახვა")
+                        ' კონტექსტური მენიუს ივენთების დამატებისას:
+                        ' ინფორმაციის ნახვა მენიუს პუნქტი განახლება
                         If infoMenuItem IsNot Nothing Then
                             AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
                                                                Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
                                                                Dim menuSessionId As Integer = CInt(menuItem.Tag)
-                                                               ' იგივე რაც SessionCard_Click
+                                                               ' ახალი მეთოდის გამოძახება
                                                                Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
                                                                If clickedSession IsNot Nothing Then
-                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
-                                                                   Dim sb As New System.Text.StringBuilder()
-                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
-                                                                   sb.AppendLine("----------------------------")
-                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
-                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
-                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
-                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
-                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
-                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
-                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
-
-                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                                   ShowSessionDetails(clickedSession)
                                                                End If
                                                            End Sub
                         End If
@@ -1073,22 +1063,10 @@ Public Class UC_Calendar
                             AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
                                                                Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
                                                                Dim menuSessionId As Integer = CInt(menuItem.Tag)
-                                                               ' იგივე რაც SessionCard_Click
+                                                               ' ახალი მეთოდის გამოძახება
                                                                Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
                                                                If clickedSession IsNot Nothing Then
-                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
-                                                                   Dim sb As New System.Text.StringBuilder()
-                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
-                                                                   sb.AppendLine("----------------------------")
-                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
-                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
-                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
-                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
-                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
-                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
-                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
-
-                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                                   ShowSessionDetails(clickedSession)
                                                                End If
                                                            End Sub
                         End If
@@ -1524,7 +1502,8 @@ Public Class UC_Calendar
     End Sub
 
     ''' <summary>
-    ''' სესიის ბარათზე დაჭერის ივენთი
+    ''' სესიის ბარათზე დაჭერის ივენთი - განახლებული ვერსია
+    ''' ახლა აჩვენებს თანხისა და დაფინანსების ინფორმაციასაც
     ''' </summary>
     Private Sub SessionCard_Click(sender As Object, e As EventArgs)
         Try
@@ -1538,25 +1517,185 @@ Public Class UC_Calendar
             Dim session = allSessions.FirstOrDefault(Function(s) s.Id = sessionId)
 
             If session IsNot Nothing Then
-                ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
-                Dim sb As New System.Text.StringBuilder()
-                sb.AppendLine($"სესიის ინფორმაცია (ID: {session.Id})")
-                sb.AppendLine("----------------------------")
-                sb.AppendLine($"ბენეფიციარი: {session.BeneficiaryName} {session.BeneficiarySurname}")
-                sb.AppendLine($"თარიღი: {session.FormattedDateTime}")
-                sb.AppendLine($"ხანგრძლივობა: {session.Duration} წუთი")
-                sb.AppendLine($"თერაპევტი: {session.TherapistName}")
-                sb.AppendLine($"თერაპია: {session.TherapyType}")
-                sb.AppendLine($"სივრცე: {session.Space}")
-                sb.AppendLine($"სტატუსი: {session.Status}")
-
-                MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში - გაფართოებული ვერსია
+                ShowSessionDetails(session)
             End If
         Catch ex As Exception
             Debug.WriteLine($"SessionCard_Click: შეცდომა - {ex.Message}")
         End Try
     End Sub
 
+    ''' <summary>
+    ''' გამოაჩენს სესიის დეტალურ ინფორმაციას MessageBox-ში
+    ''' ჩათვლით თანხისა და დაფინანსების მონაცემებისაც
+    ''' </summary>
+    ''' <param name="session">სესიის მოდელი</param>
+    Private Sub ShowSessionDetails(session As SessionModel)
+        Try
+            Debug.WriteLine($"ShowSessionDetails: ვაჩვენებ დეტალებს სესია ID={session.Id}")
+
+            ' დეტალური ინფორმაციის მომზადება
+            Dim sb As New System.Text.StringBuilder()
+
+            ' სათაური
+            sb.AppendLine($"🏥 სესიის ინფორმაცია (ID: {session.Id})")
+            sb.AppendLine("════════════════════════════════════")
+            sb.AppendLine()
+
+            ' ძირითადი ინფორმაცია
+            sb.AppendLine("👤 ბენეფიციარი:")
+            sb.AppendLine($"   {session.BeneficiaryName} {session.BeneficiarySurname}")
+            sb.AppendLine()
+
+            ' თარიღი და დრო - ფორმატირებული ვერსია
+            sb.AppendLine("📅 თარიღი და დრო:")
+            sb.AppendLine($"   {session.DateTime:dddd, dd MMMM yyyy}")
+            sb.AppendLine($"   🕐 {session.DateTime:HH:mm}")
+            sb.AppendLine()
+
+            ' ხანგრძლივობა - ფორმატირებული დრო
+            sb.AppendLine("⏱️ ხანგრძლივობა:")
+            Dim hours As Integer = session.Duration \ 60
+            Dim minutes As Integer = session.Duration Mod 60
+            If hours > 0 Then
+                sb.AppendLine($"   {hours} სთ {minutes} წთ ({session.Duration} წუთი)")
+            Else
+                sb.AppendLine($"   {session.Duration} წუთი")
+            End If
+            sb.AppendLine()
+
+            ' თერაპევტი
+            sb.AppendLine("👨‍⚕️ თერაპევტი:")
+            If Not String.IsNullOrEmpty(session.TherapistName.Trim()) Then
+                sb.AppendLine($"   {session.TherapistName}")
+            Else
+                sb.AppendLine("   [მითითებული არ არის]")
+            End If
+            sb.AppendLine()
+
+            ' თერაპიის ტიპი
+            sb.AppendLine("🔬 თერაპიის ტიპი:")
+            If Not String.IsNullOrEmpty(session.TherapyType.Trim()) Then
+                sb.AppendLine($"   {session.TherapyType}")
+            Else
+                sb.AppendLine("   [მითითებული არ არის]")
+            End If
+            sb.AppendLine()
+
+            ' სივრცე
+            sb.AppendLine("🏠 სივრცე:")
+            If Not String.IsNullOrEmpty(session.Space.Trim()) Then
+                sb.AppendLine($"   {session.Space}")
+            Else
+                sb.AppendLine("   [მითითებული არ არის]")
+            End If
+            sb.AppendLine()
+
+            ' ჯგუფური სესია
+            sb.AppendLine("👥 ნახვა:")
+            sb.AppendLine($"   {If(session.IsGroup, "ჯგუფური სესია", "ინდივიდუალური სესია")}")
+            sb.AppendLine()
+
+            ' თანხა - ახალი ანაზღაურების ინფორმაცია
+            sb.AppendLine("💰 ანაზღაურება:")
+            If session.Price > 0 Then
+                ' ფასის ფორმატირება ლარით
+                sb.AppendLine($"   {session.Price:F2} ლარი")
+
+                ' ჯგუფური სესიის შემთხვევაში ინფორმაცია
+                If session.IsGroup Then
+                    sb.AppendLine("   (ჯგუფური სესიის მიხედვით)")
+                End If
+            Else
+                sb.AppendLine("   უფასო სესია")
+            End If
+            sb.AppendLine()
+
+            ' დაფინანსება - ახალი დაფინანსების ინფორმაცია
+            sb.AppendLine("🏦 დაფინანსება:")
+            If Not String.IsNullOrEmpty(session.Funding.Trim()) Then
+                sb.AppendLine($"   {session.Funding}")
+
+                ' თუ დაფინანსება არის სახელმწიფო, დამატებითი ინფო
+                If session.Funding.ToLower().Contains("სახელმწიფო") OrElse
+               session.Funding.ToLower().Contains("უშპ") Then
+                    sb.AppendLine("   (სახელმწიფო პროგრამა)")
+                ElseIf session.Funding.ToLower().Contains("კერძო") Then
+                    sb.AppendLine("   (კერძო გადახდა)")
+                End If
+            Else
+                sb.AppendLine("   [მითითებული არ არის]")
+            End If
+            sb.AppendLine()
+
+            ' სტატუსი - ფერწერის შესაბამისი აღწერა
+            sb.AppendLine("📊 მდგომარეობა:")
+            sb.AppendLine($"   {session.Status}")
+
+            ' სტატუსის მიხედვით დამატებითი ინფორმაცია
+            Select Case session.Status.ToLower().Trim()
+                Case "დაგეგმილი"
+                    If session.DateTime > DateTime.Now Then
+                        sb.AppendLine("   ⏳ უახლოვეს მომავალში")
+                    Else
+                        sb.AppendLine("   ⚠️ ვადაგადაცილებული")
+                    End If
+                Case "შესრულებული"
+                    sb.AppendLine("   ✅ წარმატებით დასრულებული")
+                Case "გაუქმებული", "გაუქმება"
+                    sb.AppendLine("   ❌ გაუქმებული")
+                Case "გაცდენა საპატიო"
+                    sb.AppendLine("   😌 საპატიო მიზეზით გაცდენა")
+                Case "გაცდენა არასაპატიო"
+                    sb.AppendLine("   😞 გამოუცხადებლად გაცდენა")
+            End Select
+            sb.AppendLine()
+
+            ' კომენტარები (თუ არის)
+            If Not String.IsNullOrEmpty(session.Comments.Trim()) Then
+                sb.AppendLine("📝 კომენტარი:")
+                sb.AppendLine($"   {session.Comments}")
+                sb.AppendLine()
+            End If
+
+            ' დამატებითი სტატისტიკა
+            sb.AppendLine("📈 დამატებითი ინფო:")
+
+            ' ვადაგადაცილების შემოწმება
+            If session.IsOverdue Then
+                Dim overdueDays As Integer = CInt((DateTime.Now.Date - session.DateTime.Date).TotalDays)
+                If overdueDays = 0 Then
+                    sb.AppendLine("   📅 დღევანდელი ვადაგადაცილებული")
+                ElseIf overdueDays = 1 Then
+                    sb.AppendLine("   📅 გუშინიდან ვადაგადაცილებული")
+                Else
+                    sb.AppendLine($"   📅 {overdueDays} დღით ვადაგადაცილებული")
+                End If
+            ElseIf session.DateTime > DateTime.Now Then
+                Dim daysUntil As Integer = CInt((session.DateTime.Date - DateTime.Now.Date).TotalDays)
+                If daysUntil = 0 Then
+                    sb.AppendLine("   📅 დღევანდელი")
+                ElseIf daysUntil = 1 Then
+                    sb.AppendLine("   📅 ხვალ")
+                Else
+                    sb.AppendLine($"   📅 {daysUntil} დღეში")
+                End If
+            End If
+
+            ' გამოვაჩინოთ MessageBox სპეციალური ფორმატირებით
+            MessageBox.Show(sb.ToString(),
+                       "🏥 სესიის დეტალური ინფორმაცია",
+                       MessageBoxButtons.OK,
+                       MessageBoxIcon.Information)
+
+            Debug.WriteLine($"ShowSessionDetails: სესიის დეტალები გამოჩნდა ID={session.Id}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowSessionDetails: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სესიის დეტალების ჩვენებისას დაფიქსირდა შეცდომა: {ex.Message}",
+                       "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
     ''' <summary>
     ''' სესიის ბარათზე ორჯერ დაწკაპუნების ივენთი
     ''' </summary>
@@ -2978,22 +3117,10 @@ Public Class UC_Calendar
                             AddHandler infoMenuItem.Click, Sub(menuSender, menuE)
                                                                Dim menuItem = DirectCast(menuSender, ToolStripMenuItem)
                                                                Dim menuSessionId As Integer = CInt(menuItem.Tag)
-                                                               ' იგივე რაც SessionCard_Click
+                                                               ' ახალი მეთოდის გამოძახება
                                                                Dim clickedSession = allSessions.FirstOrDefault(Function(s) s.Id = menuSessionId)
                                                                If clickedSession IsNot Nothing Then
-                                                                   ' გამოვაჩინოთ სესიის დეტალები MessageBox-ში
-                                                                   Dim sb As New System.Text.StringBuilder()
-                                                                   sb.AppendLine($"სესიის ინფორმაცია (ID: {clickedSession.Id})")
-                                                                   sb.AppendLine("----------------------------")
-                                                                   sb.AppendLine($"ბენეფიციარი: {clickedSession.BeneficiaryName} {clickedSession.BeneficiarySurname}")
-                                                                   sb.AppendLine($"თარიღი: {clickedSession.FormattedDateTime}")
-                                                                   sb.AppendLine($"ხანგრძლივობა: {clickedSession.Duration} წუთი")
-                                                                   sb.AppendLine($"თერაპევტი: {clickedSession.TherapistName}")
-                                                                   sb.AppendLine($"თერაპია: {clickedSession.TherapyType}")
-                                                                   sb.AppendLine($"სივრცე: {clickedSession.Space}")
-                                                                   sb.AppendLine($"სტატუსი: {clickedSession.Status}")
-
-                                                                   MessageBox.Show(sb.ToString(), "სესიის დეტალები", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                                   ShowSessionDetails(clickedSession)
                                                                End If
                                                            End Sub
                         End If
