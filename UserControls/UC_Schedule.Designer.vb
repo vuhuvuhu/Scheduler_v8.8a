@@ -34,7 +34,6 @@ Partial Class UC_Schedule
         Me.LName = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
-        Me.ChBGroup = New System.Windows.Forms.CheckBox()
         Me.CBTer = New System.Windows.Forms.ComboBox()
         Me.CBPer = New System.Windows.Forms.ComboBox()
         Me.CBBeneSurname = New System.Windows.Forms.ComboBox()
@@ -151,6 +150,10 @@ Partial Class UC_Schedule
         Me.cbgs = New System.Windows.Forms.CheckBox()
         Me.cbga = New System.Windows.Forms.CheckBox()
         Me.cbs = New System.Windows.Forms.CheckBox()
+        Me.BtnNext = New System.Windows.Forms.Button()
+        Me.BtnPrev = New System.Windows.Forms.Button()
+        Me.LPage = New System.Windows.Forms.Label()
+        Me.Button1 = New System.Windows.Forms.Button()
         CType(Me.DgvSchedule, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -223,13 +226,6 @@ Partial Class UC_Schedule
         Me.Label2.BackColor = System.Drawing.Color.Transparent
         Me.Label2.Name = "Label2"
         '
-        'ChBGroup
-        '
-        resources.ApplyResources(Me.ChBGroup, "ChBGroup")
-        Me.ChBGroup.BackColor = System.Drawing.Color.Transparent
-        Me.ChBGroup.Name = "ChBGroup"
-        Me.ChBGroup.UseVisualStyleBackColor = False
-        '
         'CBTer
         '
         Me.CBTer.FormattingEnabled = True
@@ -273,6 +269,7 @@ Partial Class UC_Schedule
         'pnlFilter
         '
         resources.ApplyResources(Me.pnlFilter, "pnlFilter")
+        Me.pnlFilter.Controls.Add(Me.Button1)
         Me.pnlFilter.Controls.Add(Me.btbPrint)
         Me.pnlFilter.Controls.Add(Me.RB100)
         Me.pnlFilter.Controls.Add(Me.RB50)
@@ -301,7 +298,6 @@ Partial Class UC_Schedule
         Me.pnlFilter.Controls.Add(Me.CBTer)
         Me.pnlFilter.Controls.Add(Me.Label4)
         Me.pnlFilter.Controls.Add(Me.LName)
-        Me.pnlFilter.Controls.Add(Me.ChBGroup)
         Me.pnlFilter.Controls.Add(Me.Label3)
         Me.pnlFilter.Controls.Add(Me.Label2)
         Me.pnlFilter.Name = "pnlFilter"
@@ -1074,10 +1070,44 @@ Partial Class UC_Schedule
         Me.cbs.Name = "cbs"
         Me.cbs.UseVisualStyleBackColor = False
         '
+        'BtnNext
+        '
+        resources.ApplyResources(Me.BtnNext, "BtnNext")
+        Me.BtnNext.AutoEllipsis = True
+        Me.BtnNext.BackColor = System.Drawing.Color.Transparent
+        Me.BtnNext.Cursor = System.Windows.Forms.Cursors.Default
+        Me.BtnNext.FlatAppearance.BorderSize = 0
+        Me.BtnNext.Name = "BtnNext"
+        Me.BtnNext.UseVisualStyleBackColor = False
+        '
+        'BtnPrev
+        '
+        resources.ApplyResources(Me.BtnPrev, "BtnPrev")
+        Me.BtnPrev.AutoEllipsis = True
+        Me.BtnPrev.BackColor = System.Drawing.Color.Transparent
+        Me.BtnPrev.Cursor = System.Windows.Forms.Cursors.Default
+        Me.BtnPrev.FlatAppearance.BorderSize = 0
+        Me.BtnPrev.Name = "BtnPrev"
+        Me.BtnPrev.UseVisualStyleBackColor = False
+        '
+        'LPage
+        '
+        resources.ApplyResources(Me.LPage, "LPage")
+        Me.LPage.Name = "LPage"
+        '
+        'Button1
+        '
+        resources.ApplyResources(Me.Button1, "Button1")
+        Me.Button1.Name = "Button1"
+        Me.Button1.UseVisualStyleBackColor = True
+        '
         'UC_Schedule
         '
         resources.ApplyResources(Me, "$this")
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.LPage)
+        Me.Controls.Add(Me.BtnNext)
+        Me.Controls.Add(Me.BtnPrev)
         Me.Controls.Add(Me.GBSumFin)
         Me.Controls.Add(Me.GBSumInf)
         Me.Controls.Add(Me.pnlFilter)
@@ -1091,6 +1121,7 @@ Partial Class UC_Schedule
         Me.GBSumFin.ResumeLayout(False)
         Me.GBSumFin.PerformLayout()
         Me.ResumeLayout(False)
+        Me.PerformLayout()
 
     End Sub
 
@@ -1105,7 +1136,6 @@ Partial Class UC_Schedule
     Friend WithEvents LName As Label
     Friend WithEvents Label3 As Label
     Friend WithEvents Label2 As Label
-    Friend WithEvents ChBGroup As CheckBox
     Friend WithEvents CBTer As ComboBox
     Friend WithEvents CBPer As ComboBox
     Friend WithEvents CBBeneSurname As ComboBox
@@ -1222,4 +1252,8 @@ Partial Class UC_Schedule
     Friend WithEvents RB50 As RadioButton
     Friend WithEvents RB20 As RadioButton
     Friend WithEvents btbPrint As Button
+    Friend WithEvents BtnNext As Button
+    Friend WithEvents BtnPrev As Button
+    Friend WithEvents LPage As Label
+    Friend WithEvents Button1 As Button
 End Class

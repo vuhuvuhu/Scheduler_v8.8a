@@ -1,7 +1,7 @@
 ﻿' ===========================================
 ' 📄 Models/SessionModel.vb
 ' -------------------------------------------
-' სესიის მოდელი - შეიცავს სესიის ინფორმაციას
+' სესიის მოდელი - შეიცავს სესიის ინფორმაციას ავტორისა და რედაქტირების თარიღის ჩათვლით
 ' ===========================================
 Imports System.ComponentModel
 Imports System.Text
@@ -28,6 +28,8 @@ Namespace Scheduler_v8_8a.Models
         Private _status As String
         Private _funding As String
         Private _comments As String
+        Private _author As String
+        Private _lastEditDate As DateTime?
 
         ''' <summary>სესიის ID</summary>
         Public Property Id As Integer
@@ -215,6 +217,44 @@ Namespace Scheduler_v8_8a.Models
             End Set
         End Property
 
+        ''' <summary>ჩანაწერის ავტორი</summary>
+        Public Property Author As String
+            Get
+                Return _author
+            End Get
+            Set(value As String)
+                If _author <> value Then
+                    _author = value
+                    OnPropertyChanged(NameOf(Author))
+                End If
+            End Set
+        End Property
+
+        ''' <summary>ბოლო რედაქტირების თარიღი</summary>
+        Public Property LastEditDate As DateTime?
+            Get
+                Return _lastEditDate
+            End Get
+            Set(value As DateTime?)
+                If _lastEditDate <> value Then
+                    _lastEditDate = value
+                    OnPropertyChanged(NameOf(LastEditDate))
+                    OnPropertyChanged(NameOf(FormattedLastEditDate))
+                End If
+            End Set
+        End Property
+
+        ''' <summary>ფორმატირებული რედაქტირების თარიღი</summary>
+        Public ReadOnly Property FormattedLastEditDate As String
+            Get
+                If _lastEditDate.HasValue Then
+                    Return _lastEditDate.Value.ToString("dd.MM.yyyy HH:mm")
+                Else
+                    Return ""
+                End If
+            End Get
+        End Property
+
         ''' <inheritdoc/>
         Public Event PropertyChanged As PropertyChangedEventHandler _
             Implements INotifyPropertyChanged.PropertyChanged
@@ -243,15 +283,18 @@ Namespace Scheduler_v8_8a.Models
             _status = "დაგეგმილი" ' ნაგულისხმები სტატუსი
             _funding = "კერძო" ' ნაგულისხმები დაფინანსება
             _comments = String.Empty
+            _author = String.Empty ' ნაგულისხმები ავტორი
+            _lastEditDate = Nothing ' ნაგულისხმები რედაქტირების თარიღი
         End Sub
 
         ''' <summary>
-        ''' კონსტრუქტორი პარამეტრებით
+        ''' კონსტრუქტორი პარამეტრებით - განახლებული ავტორისა და რედაქტირების თარიღით
         ''' </summary>
         Public Sub New(id As Integer, beneficiaryName As String, beneficiarySurname As String,
                       dateTime As DateTime, duration As Integer, isGroup As Boolean,
                       therapistName As String, therapyType As String, space As String,
-                      price As Decimal, status As String, funding As String)
+                      price As Decimal, status As String, funding As String,
+                      Optional author As String = "", Optional lastEditDate As DateTime? = Nothing)
             Me.Id = id
             Me.BeneficiaryName = beneficiaryName
             Me.BeneficiarySurname = beneficiarySurname
@@ -265,6 +308,8 @@ Namespace Scheduler_v8_8a.Models
             Me.Status = status
             Me.Funding = funding
             Me.Comments = String.Empty
+            Me.Author = author
+            Me.LastEditDate = lastEditDate
         End Sub
 
         ''' <summary>
@@ -286,13 +331,41 @@ Namespace Scheduler_v8_8a.Models
                 Dim sessionId As Integer = 0
 
                 If Not String.IsNullOrWhiteSpace(idStr) AndAlso Integer.TryParse(idStr, sessionId) Then
-                    'Debug.WriteLine($"SessionModel.FromSheetRow: ID წარმატებით დაპარსილია: {sessionId}")
+                    ' ID წარმატებით დაპარსილია
                 Else
-                    'Debug.WriteLine($"SessionModel.FromSheetRow: ID-ის პარსინგის შეცდომა: '{idStr}', ვიყენებთ 0")
+                    ' ID-ის პარსინგის შეცდომა, ვიყენებთ 0
                     sessionId = 0
                 End If
 
                 session.Id = sessionId
+
+                ' ავტორი C სვეტიდან (ინდექსი 2)
+                session.Author = If(rowData.Count > 2, rowData(2).ToString().Trim(), String.Empty)
+
+                ' რედაქტირების თარიღი B სვეტიდან (ინდექსი 1)
+                Dim editDateStr = If(rowData.Count > 1, rowData(1).ToString().Trim(), String.Empty)
+                Try
+                    If Not String.IsNullOrWhiteSpace(editDateStr) Then
+                        ' ვცადოთ სხვადასხვა ფორმატები
+                        Dim editFormats As String() = {"dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm", "MM/dd/yyyy HH:mm"}
+
+                        Dim parsedEditDate As DateTime
+                        If DateTime.TryParseExact(editDateStr, editFormats,
+                                      System.Globalization.CultureInfo.InvariantCulture,
+                                      System.Globalization.DateTimeStyles.None,
+                                      parsedEditDate) Then
+                            session.LastEditDate = parsedEditDate
+                        ElseIf DateTime.TryParse(editDateStr, parsedEditDate) Then
+                            session.LastEditDate = parsedEditDate
+                        Else
+                            session.LastEditDate = Nothing
+                        End If
+                    Else
+                        session.LastEditDate = Nothing
+                    End If
+                Catch ex As Exception
+                    session.LastEditDate = Nothing
+                End Try
 
                 ' ბენეფიციარის სახელი და გვარი - D სვეტი (ინდექსი 3) და E სვეტი (ინდექსი 4)
                 session.BeneficiaryName = If(rowData.Count > 3, rowData(3).ToString(), String.Empty)
@@ -377,6 +450,7 @@ Namespace Scheduler_v8_8a.Models
                 Throw New Exception($"შეცდომა SessionModel-ის შექმნისას: {ex.Message}", ex)
             End Try
         End Function
+
         ''' <summary>
         ''' გარდაქმნის SessionModel-ს მწკრივად Google Sheets-ისთვის
         ''' </summary>
@@ -385,7 +459,8 @@ Namespace Scheduler_v8_8a.Models
             Dim rowData As New List(Of Object)
 
             rowData.Add(Id)
-            rowData.Add("") ' ცარიელი ადგილი რედაქტირების თარიღისთვის
+            rowData.Add(If(LastEditDate.HasValue, LastEditDate.Value.ToString("dd.MM.yyyy HH:mm"), "")) ' რედაქტირების თარიღი
+            rowData.Add(Author) ' ავტორი
             rowData.Add(BeneficiaryName)
             rowData.Add(BeneficiarySurname)
             rowData.Add(DateTime.ToString("dd.MM.yyyy HH:mm"))
@@ -401,6 +476,7 @@ Namespace Scheduler_v8_8a.Models
 
             Return rowData
         End Function
+
         ''' <summary>
         ''' არის თუ არა სესია ვადაგადაცილებული
         ''' </summary>
