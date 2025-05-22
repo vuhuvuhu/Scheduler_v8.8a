@@ -166,6 +166,10 @@
     <Compile Include="Services\GoogleServiceAccountService.vb" />
     <Compile Include="Services\GoogleSheetsDataService.vb" />
     <Compile Include="Services\IDataService.vb" />
+    <Compile Include="Services\ScheduleDataProcessor.vb" />
+    <Compile Include="Services\ScheduleFilterManager.vb" />
+    <Compile Include="Services\ScheduleStatisticsService.vb" />
+    <Compile Include="Services\ScheduleUIManager.vb" />
     <Compile Include="Services\SessionCardFactory.vb" />
     <Compile Include="Services\SheetDataService.vb" />
     <Compile Include="Services\UserService.vb" />
