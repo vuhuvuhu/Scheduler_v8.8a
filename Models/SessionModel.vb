@@ -344,6 +344,7 @@ Namespace Scheduler_v8_8a.Models
 
                 ' რედაქტირების თარიღი B სვეტიდან (ინდექსი 1)
                 Dim editDateStr = If(rowData.Count > 1, rowData(1).ToString().Trim(), String.Empty)
+
                 Try
                     If Not String.IsNullOrWhiteSpace(editDateStr) Then
                         ' ვცადოთ სხვადასხვა ფორმატები
