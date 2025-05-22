@@ -3,6 +3,7 @@
 ' -------------------------------------------
 ' განრიგის UserControl - აჩვენებს და მართავს სესიების განრიგს
 ' ფურცლების ნავიგაციით და ჩანაწერების რაოდენობის ფილტრაციით
+' შესწროება: რედაქტირების თარიღისა და კომენტარების სვეტის ნორმალური ჩვენება (დებაგის გარეშე)
 ' ===========================================
 Imports System.Windows.Forms
 Imports Scheduler_v8_8a.Services
@@ -35,7 +36,6 @@ Public Class UC_Schedule
     Public Sub SetDataService(service As IDataService, Optional email As String = "")
         dataService = service
         userEmail = email
-        Debug.WriteLine($"UC_Schedule.SetDataService: მონაცემთა სერვისი დაყენებულია, მომხმარებელი: {email}")
 
         ' თუ კონტროლი უკვე ჩატვირთულია, ვტვირთავთ მონაცემებს
         If Me.IsHandleCreated Then
@@ -48,8 +48,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub UC_Schedule_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
-            Debug.WriteLine("UC_Schedule_Load: კონტროლის ჩატვირთვა დაიწყო")
-
             ' ფონის ფერების დაყენება
             SetBackgroundColors()
 
@@ -70,10 +68,7 @@ Public Class UC_Schedule
                 LoadSessionsData()
             End If
 
-            Debug.WriteLine("UC_Schedule_Load: კონტროლის ჩატვირთვა დასრულდა")
-
         Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule_Load: შეცდომა - {ex.Message}")
             MessageBox.Show($"კონტროლის ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
                            MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -84,8 +79,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub SetBackgroundColors()
         Try
-            Debug.WriteLine("SetBackgroundColors: ფონის ფერების დაყენება")
-
             ' ღია გამჭვირვალე თეთრი ფერი
             Dim transparentWhite As Color = Color.FromArgb(200, Color.White)
 
@@ -94,10 +87,8 @@ Public Class UC_Schedule
             GBSumInf.BackColor = transparentWhite
             GBSumFin.BackColor = transparentWhite
 
-            Debug.WriteLine("SetBackgroundColors: ფონის ფერები დაყენებულია")
-
         Catch ex As Exception
-            Debug.WriteLine($"SetBackgroundColors: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -106,8 +97,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub InitializeDatePickers()
         Try
-            Debug.WriteLine("InitializeDatePickers: თარიღების ველების ინიციალიზაცია")
-
             ' მიმდინარე თარიღი
             Dim currentDate As DateTime = DateTime.Today
 
@@ -121,15 +110,12 @@ Public Class UC_Schedule
             DtpDan.Value = firstDayOfMonth
             DtpMde.Value = lastDayOfMonth
 
-            Debug.WriteLine($"InitializeDatePickers: საწყისი თარიღი: {firstDayOfMonth:dd.MM.yyyy}, " &
-                           $"ბოლო თარიღი: {lastDayOfMonth:dd.MM.yyyy}")
-
             ' თარიღების შეცვლის ივენთები
             AddHandler DtpDan.ValueChanged, AddressOf DatePickers_ValueChanged
             AddHandler DtpMde.ValueChanged, AddressOf DatePickers_ValueChanged
 
         Catch ex As Exception
-            Debug.WriteLine($"InitializeDatePickers: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -138,8 +124,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub InitializeRadioButtons()
         Try
-            Debug.WriteLine("InitializeRadioButtons: რადიობუტონების ინიციალიზაცია")
-
             ' RB20-ს ღირს ნაგულისხმევად
             RB20.Checked = True
             pageSize = 20
@@ -149,10 +133,8 @@ Public Class UC_Schedule
             AddHandler RB50.CheckedChanged, AddressOf RadioButton_CheckedChanged
             AddHandler RB100.CheckedChanged, AddressOf RadioButton_CheckedChanged
 
-            Debug.WriteLine("InitializeRadioButtons: რადიობუტონები ინიციალიზებულია")
-
         Catch ex As Exception
-            Debug.WriteLine($"InitializeRadioButtons: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -161,8 +143,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub ConfigureDataGridView()
         Try
-            Debug.WriteLine("ConfigureDataGridView: DataGridView-ის კონფიგურაცია")
-
             ' ძირითადი პარამეტრები
             DgvSchedule.AutoGenerateColumns = False
             DgvSchedule.AllowUserToAddRows = False
@@ -186,20 +166,17 @@ Public Class UC_Schedule
             ' სვეტების შექმნა
             CreateDataGridViewColumns()
 
-            Debug.WriteLine("ConfigureDataGridView: DataGridView კონფიგურაცია დასრულდა")
-
         Catch ex As Exception
-            Debug.WriteLine($"ConfigureDataGridView: შეცდომა - {ex.Message}")
+            MessageBox.Show($"DataGridView კონფიგურაციის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     ''' <summary>
-    ''' DataGridView-ის სვეტების შექმნა
+    ''' DataGridView-ის სვეტების შექმნა - გასწორებული ვერსია რედაქტირების თარიღისა და კომენტარების სვეტით
     ''' </summary>
     Private Sub CreateDataGridViewColumns()
         Try
-            Debug.WriteLine("CreateDataGridViewColumns: სვეტების შექმნა")
-
             ' გავასუფთავოთ არსებული სვეტები
             DgvSchedule.Columns.Clear()
 
@@ -221,7 +198,7 @@ Public Class UC_Schedule
             colDateTime.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
             DgvSchedule.Columns.Add(colDateTime)
 
-            ' ხანგრძლივობა (მესამე სვეტი)
+            ' ხანგრძლივობა
             Dim colDuration As New DataGridViewTextBoxColumn()
             colDuration.Name = "Duration"
             colDuration.HeaderText = "ხანგრძლივობა (წთ)"
@@ -289,6 +266,15 @@ Public Class UC_Schedule
             colFunding.Width = 100
             DgvSchedule.Columns.Add(colFunding)
 
+            ' ===== ახალი: კომენტარები სვეტი =====
+            Dim colComments As New DataGridViewTextBoxColumn()
+            colComments.Name = "Comments"
+            colComments.HeaderText = "კომენტარები"
+            colComments.DataPropertyName = "Comments"
+            colComments.Width = 120
+            colComments.DefaultCellStyle.WrapMode = DataGridViewTriState.True ' მრავალხაზიანი ტექსტისთვის
+            DgvSchedule.Columns.Add(colComments)
+
             ' ავტორი
             Dim colAuthor As New DataGridViewTextBoxColumn()
             colAuthor.Name = "Author"
@@ -297,13 +283,14 @@ Public Class UC_Schedule
             colAuthor.Width = 100
             DgvSchedule.Columns.Add(colAuthor)
 
-            ' რედაქტირების თარიღი
+            ' ===== შესწორებული: რედაქტირების თარიღი =====
             Dim colEditDate As New DataGridViewTextBoxColumn()
             colEditDate.Name = "EditDate"
             colEditDate.HeaderText = "რედაქტირების თარიღი"
             colEditDate.DataPropertyName = "FormattedLastEditDate"
             colEditDate.Width = 130
             colEditDate.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            colEditDate.DefaultCellStyle.NullValue = "-" ' ცარიელი ველებისთვის "-"
             DgvSchedule.Columns.Add(colEditDate)
 
             ' რედაქტირების ღილაკი
@@ -321,10 +308,38 @@ Public Class UC_Schedule
             ' რედაქტირების ღილაკის ივენთი
             AddHandler DgvSchedule.CellClick, AddressOf DgvSchedule_CellClick
 
-            Debug.WriteLine($"CreateDataGridViewColumns: შეიქმნა {DgvSchedule.Columns.Count} სვეტი")
+            ' CellFormatting ივენთი რედაქტირების თარიღისა და კომენტარების სვეტისთვის
+            AddHandler DgvSchedule.CellFormatting, AddressOf DgvSchedule_CellFormatting
 
         Catch ex As Exception
-            Debug.WriteLine($"CreateDataGridViewColumns: შეცდომა - {ex.Message}")
+            MessageBox.Show($"სვეტების შექმნის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' უჯრედების ფორმატირება - ცარიელი ველების სპეციალური დამუშავება
+    ''' </summary>
+    Private Sub DgvSchedule_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
+        Try
+            ' რედაქტირების თარიღის სვეტისთვის სპეციალური დამუშავება
+            If DgvSchedule.Columns(e.ColumnIndex).Name = "EditDate" Then
+                If e.Value Is Nothing OrElse String.IsNullOrWhiteSpace(e.Value.ToString()) Then
+                    e.Value = "-" ' ცარიელი ველებისთვის "-"
+                    e.FormattingApplied = True
+                End If
+            End If
+
+            ' კომენტარების სვეტისთვის სპეციალური დამუშავება
+            If DgvSchedule.Columns(e.ColumnIndex).Name = "Comments" Then
+                If e.Value IsNot Nothing AndAlso (e.Value.ToString() = "0" OrElse String.IsNullOrWhiteSpace(e.Value.ToString())) Then
+                    e.Value = "" ' ცარიელი სტრიქონი
+                    e.FormattingApplied = True
+                End If
+            End If
+
+        Catch ex As Exception
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -333,8 +348,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub InitializeNavigationButtons()
         Try
-            Debug.WriteLine("InitializeNavigationButtons: ნავიგაციის ღილაკების ინიციალიზაცია")
-
             ' ღილაკების სტილი
             BtnPrev.FlatStyle = FlatStyle.Flat
             BtnNext.FlatStyle = FlatStyle.Flat
@@ -354,10 +367,8 @@ Public Class UC_Schedule
             ' გვერდის ლეიბლის ინიციალიზაცია
             UpdatePageLabel()
 
-            Debug.WriteLine("InitializeNavigationButtons: ნავიგაციის ღილაკები ინიციალიზებულია")
-
         Catch ex As Exception
-            Debug.WriteLine($"InitializeNavigationButtons: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -366,23 +377,17 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub LoadSessionsData()
         Try
-            Debug.WriteLine("LoadSessionsData: სესიების მონაცემების ჩატვირთვა დაიწყო")
-
             If dataService Is Nothing Then
-                Debug.WriteLine("LoadSessionsData: მონაცემთა სერვისი არ არის დაყენებული")
                 Return
             End If
 
             ' ყველა სესიის მიღება
             allSessions = dataService.GetAllSessions()
 
-            Debug.WriteLine($"LoadSessionsData: ჩატვირთულია {If(allSessions Is Nothing, 0, allSessions.Count)} სესია")
-
             ' ფილტრაცია თარიღების მიხედვით
             ApplyDateFilter()
 
         Catch ex As Exception
-            Debug.WriteLine($"LoadSessionsData: შეცდომა - {ex.Message}")
             MessageBox.Show($"სესიების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
                            MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -393,8 +398,6 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub ApplyDateFilter()
         Try
-            Debug.WriteLine("ApplyDateFilter: თარიღების ფილტრაცია")
-
             If allSessions Is Nothing Then
                 filteredSessions = New List(Of SessionModel)()
             Else
@@ -403,9 +406,6 @@ Public Class UC_Schedule
                 Dim endDate As DateTime = DtpMde.Value.Date.AddDays(1).AddTicks(-1) ' დღის ბოლომდე
 
                 filteredSessions = allSessions.Where(Function(s) s.DateTime >= startDate AndAlso s.DateTime <= endDate).ToList()
-
-                Debug.WriteLine($"ApplyDateFilter: ფილტრაციის შემდეგ დარჩა {filteredSessions.Count} სესია " &
-                               $"({startDate:dd.MM.yyyy} - {DtpMde.Value:dd.MM.yyyy})")
             End If
 
             ' ფურცლების ნავიგაციის განახლება
@@ -419,7 +419,8 @@ Public Class UC_Schedule
             UpdateStatistics()
 
         Catch ex As Exception
-            Debug.WriteLine($"ApplyDateFilter: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ფილტრაციის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -433,11 +434,8 @@ Public Class UC_Schedule
             Else
                 totalPages = Math.Ceiling(filteredSessions.Count / pageSize)
             End If
-
-            Debug.WriteLine($"CalculateTotalPages: სულ გვერდები: {totalPages}, ჩანაწერები: {If(filteredSessions Is Nothing, 0, filteredSessions.Count)}, გვერდის ზომა: {pageSize}")
-
         Catch ex As Exception
-            Debug.WriteLine($"CalculateTotalPages: შეცდომა - {ex.Message}")
+            totalPages = 1
         End Try
     End Sub
 
@@ -446,11 +444,8 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub UpdateDataGridView()
         Try
-            Debug.WriteLine("UpdateDataGridView: DataGridView-ის განახლება")
-
             If filteredSessions Is Nothing OrElse filteredSessions.Count = 0 Then
                 DgvSchedule.DataSource = Nothing
-                Debug.WriteLine("UpdateDataGridView: მონაცემები ცარიელია")
                 Return
             End If
 
@@ -467,8 +462,6 @@ Public Class UC_Schedule
             ' სტატუსის ფერების დამატება
             ApplyStatusColors()
 
-            Debug.WriteLine($"UpdateDataGridView: DataGridView განახლდა {pageData.Count} ჩანაწერით (გვერდი {currentPage}/{totalPages})")
-
             ' გვერდის ლეიბლის განახლება
             UpdatePageLabel()
 
@@ -476,7 +469,8 @@ Public Class UC_Schedule
             UpdateNavigationButtons()
 
         Catch ex As Exception
-            Debug.WriteLine($"UpdateDataGridView: შეცდომა - {ex.Message}")
+            MessageBox.Show($"DataGridView განახლების შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -506,7 +500,7 @@ Public Class UC_Schedule
                 End If
             Next
         Catch ex As Exception
-            Debug.WriteLine($"ApplyStatusColors: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -515,10 +509,7 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub UpdateStatistics()
         Try
-            Debug.WriteLine("UpdateStatistics: სტატისტიკის განახლება")
-
             If filteredSessions Is Nothing OrElse filteredSessions.Count = 0 Then
-                ' ცარიელი სტატისტიკა
                 ClearStatistics()
                 Return
             End If
@@ -533,14 +524,8 @@ Public Class UC_Schedule
             Dim totalRevenue As Decimal = filteredSessions.Where(Function(s) s.Status = "შესრულებული").Sum(Function(s) s.Price)
             Dim potentialRevenue As Decimal = filteredSessions.Sum(Function(s) s.Price)
 
-            Debug.WriteLine($"UpdateStatistics: სულ={totalSessions}, შესრულებული={completedSessions}, " &
-                           $"გაუქმებული={cancelledSessions}, შემოსავალი={totalRevenue:F2}")
-
-            ' სტატისტიკის განახლება UI-ზე (ამ ეტაპზე მხოლოდ Debug)
-            Debug.WriteLine("UpdateStatistics: სტატისტიკა განახლებულია")
-
         Catch ex As Exception
-            Debug.WriteLine($"UpdateStatistics: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -549,10 +534,9 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub ClearStatistics()
         Try
-            Debug.WriteLine("ClearStatistics: სტატისტიკის გასუფთავება")
             ' თანდათან დავამატებთ UI ელემენტების გასუფთავებას
         Catch ex As Exception
-            Debug.WriteLine($"ClearStatistics: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -562,9 +546,8 @@ Public Class UC_Schedule
     Private Sub UpdatePageLabel()
         Try
             LPage.Text = $"{currentPage} / {totalPages}"
-            Debug.WriteLine($"UpdatePageLabel: {LPage.Text}")
         Catch ex As Exception
-            Debug.WriteLine($"UpdatePageLabel: შეცდომა - {ex.Message}")
+            LPage.Text = "1 / 1"
         End Try
     End Sub
 
@@ -579,10 +562,8 @@ Public Class UC_Schedule
             ' შემდეგი ღილაკი
             BtnNext.Enabled = (currentPage < totalPages)
 
-            Debug.WriteLine($"UpdateNavigationButtons: წინა={BtnPrev.Enabled}, შემდეგი={BtnNext.Enabled}")
-
         Catch ex As Exception
-            Debug.WriteLine($"UpdateNavigationButtons: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -595,8 +576,6 @@ Public Class UC_Schedule
 
             If Not radioButton.Checked Then Return
 
-            Debug.WriteLine($"RadioButton_CheckedChanged: {radioButton.Name} არჩეულია")
-
             ' გვერდის ზომის განახლება
             Select Case radioButton.Name
                 Case "RB20"
@@ -607,8 +586,6 @@ Public Class UC_Schedule
                     pageSize = 100
             End Select
 
-            Debug.WriteLine($"RadioButton_CheckedChanged: ახალი გვერდის ზომა: {pageSize}")
-
             ' გვერდების ხელახალი გამოთვლა
             currentPage = 1
             CalculateTotalPages()
@@ -617,7 +594,7 @@ Public Class UC_Schedule
             UpdateDataGridView()
 
         Catch ex As Exception
-            Debug.WriteLine($"RadioButton_CheckedChanged: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -626,15 +603,13 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub DatePickers_ValueChanged(sender As Object, e As EventArgs)
         Try
-            Debug.WriteLine($"DatePickers_ValueChanged: {DtpDan.Value:dd.MM.yyyy} - {DtpMde.Value:dd.MM.yyyy}")
-
             ' თუ მონაცემები ჩატვირთულია, ვიყენებთ ფილტრაციას
             If allSessions IsNot Nothing Then
                 ApplyDateFilter()
             End If
 
         Catch ex As Exception
-            Debug.WriteLine($"DatePickers_ValueChanged: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -643,15 +618,13 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub BtnPrev_Click(sender As Object, e As EventArgs)
         Try
-            Debug.WriteLine("BtnPrev_Click: წინა გვერდზე გადასვლა")
-
             If currentPage > 1 Then
                 currentPage -= 1
                 UpdateDataGridView()
             End If
 
         Catch ex As Exception
-            Debug.WriteLine($"BtnPrev_Click: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -660,15 +633,13 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub BtnNext_Click(sender As Object, e As EventArgs)
         Try
-            Debug.WriteLine("BtnNext_Click: შემდეგ გვერდზე გადასვლა")
-
             If currentPage < totalPages Then
                 currentPage += 1
                 UpdateDataGridView()
             End If
 
         Catch ex As Exception
-            Debug.WriteLine($"BtnNext_Click: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -682,15 +653,12 @@ Public Class UC_Schedule
                 ' მივიღოთ სესიის ID
                 Dim sessionId As Integer = CInt(DgvSchedule.Rows(e.RowIndex).Cells("Id").Value)
 
-                Debug.WriteLine($"DgvSchedule_CellClick: რედაქტირების ღილაკზე დაჭერა სესია ID={sessionId}")
-
                 ' NewRecordForm-ის გახსნა რედაქტირების რეჟიმში
                 Try
                     ' მოვძებნოთ მომხმარებლის email
                     Dim currentUserEmail As String = If(String.IsNullOrEmpty(userEmail), "user@example.com", userEmail)
 
                     ' NewRecordForm-ის შექმნა რედაქტირების რეჟიმში
-                    ' გამოვიყენოთ არსებული კონსტრუქტორი რედაქტირებისთვის
                     Using editForm As New NewRecordForm(dataService, "სესია", sessionId, currentUserEmail, "UC_Schedule")
 
                         ' ფორმის ჩვენება
@@ -698,20 +666,24 @@ Public Class UC_Schedule
 
                         ' თუ წარმატებით შეინახა, განვაახლოთ მონაცემები
                         If result = DialogResult.OK Then
+                            ' მონაცემების ხელახალი ჩატვირთვა
                             RefreshData()
-                            Debug.WriteLine($"DgvSchedule_CellClick: სესია {sessionId} წარმატებით განახლდა")
+
+                            ' შეტყობინება მომხმარებლისთვის
+                            MessageBox.Show($"სესია ID={sessionId} წარმატებით განახლდა", "წარმატება",
+                                          MessageBoxButtons.OK, MessageBoxIcon.Information)
                         End If
                     End Using
 
                 Catch formEx As Exception
-                    Debug.WriteLine($"DgvSchedule_CellClick: NewRecordForm-ის გახსნის შეცდომა - {formEx.Message}")
                     MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
                                    MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
             End If
 
         Catch ex As Exception
-            Debug.WriteLine($"DgvSchedule_CellClick: შეცდომა - {ex.Message}")
+            MessageBox.Show($"რედაქტირების შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -720,14 +692,19 @@ Public Class UC_Schedule
     ''' </summary>
     Public Sub RefreshData()
         Try
-            Debug.WriteLine("RefreshData: მონაცემების ხელახალი ჩატვირთვა")
-
             If dataService IsNot Nothing Then
+                ' ქეშის გასუფთავება თუ SheetDataService გვაქვს
+                If TypeOf dataService Is SheetDataService Then
+                    DirectCast(dataService, SheetDataService).InvalidateAllCache()
+                End If
+
+                ' ახლიდან ჩავტვირთოთ ყველა სესია
                 LoadSessionsData()
             End If
 
         Catch ex As Exception
-            Debug.WriteLine($"RefreshData: შეცდომა - {ex.Message}")
+            MessageBox.Show($"მონაცემების განახლების შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -740,10 +717,9 @@ Public Class UC_Schedule
             If pageNumber >= 1 AndAlso pageNumber <= totalPages Then
                 currentPage = pageNumber
                 UpdateDataGridView()
-                Debug.WriteLine($"GoToPage: გადავედი {pageNumber} გვერდზე")
             End If
         Catch ex As Exception
-            Debug.WriteLine($"GoToPage: შეცდომა - {ex.Message}")
+            ' უბრალოდ გავაგრძელოთ
         End Try
     End Sub
 
@@ -764,4 +740,20 @@ Public Class UC_Schedule
             Return totalPages
         End Get
     End Property
+
+    ''' <summary>
+    ''' კომენტარების ჩვენების განახლება
+    ''' </summary>
+    Public Sub RefreshCommentsDisplay()
+        Try
+            ' DataGridView-ის განახლება
+            If DgvSchedule.DataSource IsNot Nothing Then
+                DgvSchedule.Refresh()
+            End If
+
+        Catch ex As Exception
+            ' უბრალოდ გავაგრძელოთ
+        End Try
+    End Sub
+
 End Class

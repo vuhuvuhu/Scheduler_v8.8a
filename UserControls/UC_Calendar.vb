@@ -9,10 +9,10 @@ Imports Scheduler_v8._8a.Scheduler_v8_8a.Controls
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Utils
-Imports Scheduler_v8_8a.Controls
-Imports Scheduler_v8_8a.Models
-Imports Scheduler_v8_8a.Services
-Imports Scheduler_v8_8a.Utils
+'Imports Scheduler_v8_8a.Controls
+'Imports Scheduler_v8_8a.Models
+'Imports Scheduler_v8_8a.Services
+'Imports Scheduler_v8_8a.Utils
 
 Public Class UC_Calendar
     Inherits UserControl

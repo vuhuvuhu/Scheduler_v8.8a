@@ -2,6 +2,7 @@
 ' 📄 Models/SessionModel.vb
 ' -------------------------------------------
 ' სესიის მოდელი - შეიცავს სესიის ინფორმაციას ავტორისა და რედაქტირების თარიღის ჩათვლით
+' შესწორება: რედაქტირების თარიღისა და კომენტარების ნორმალური დამუშავება (დებაგის გარეშე)
 ' ===========================================
 Imports System.ComponentModel
 Imports System.Text
@@ -244,13 +245,13 @@ Namespace Scheduler_v8_8a.Models
             End Set
         End Property
 
-        ''' <summary>ფორმატირებული რედაქტირების თარიღი</summary>
+        ''' <summary>ფორმატირებული რედაქტირების თარიღი - შესწორებული ვერსია</summary>
         Public ReadOnly Property FormattedLastEditDate As String
             Get
                 If _lastEditDate.HasValue Then
                     Return _lastEditDate.Value.ToString("dd.MM.yyyy HH:mm")
                 Else
-                    Return ""
+                    Return "" ' ცარიელი სტრიქონი, რომელიც UC_Schedule-ში "-"-ად შეიცვლება
                 End If
             End Get
         End Property
@@ -314,6 +315,7 @@ Namespace Scheduler_v8_8a.Models
 
         ''' <summary>
         ''' შექმნის SessionModel-ს Google Sheets-დან მოცემული მწკრივიდან
+        ''' შესწორებული ვერსია რედაქტირების თარიღისა და კომენტარების სწორი დამუშავებისთვის (დებაგის გარეშე)
         ''' </summary>
         ''' <param name="rowData">მწკრივი Google Sheets-დან</param>
         ''' <returns>SessionModel შევსებული მონაცემებით</returns>
@@ -326,7 +328,7 @@ Namespace Scheduler_v8_8a.Models
             Try
                 Dim session As New SessionModel()
 
-                ' ID-ის პარსინგი A სვეტიდან (ინდექსი 0)
+                ' A სვეტი: ID-ის პარსინგი
                 Dim idStr = rowData(0).ToString().Trim()
                 Dim sessionId As Integer = 0
 
@@ -339,22 +341,40 @@ Namespace Scheduler_v8_8a.Models
 
                 session.Id = sessionId
 
-                ' ავტორი C სვეტიდან (ინდექსი 2)
+                ' C სვეტი: ავტორი
                 session.Author = If(rowData.Count > 2, rowData(2).ToString().Trim(), String.Empty)
 
-                ' რედაქტირების თარიღი B სვეტიდან (ინდექსი 1)
+                ' B სვეტი: რედაქტირების თარიღი - შესწორებული Google Sheets ფორმატებისთვის
                 Dim editDateStr = If(rowData.Count > 1, rowData(1).ToString().Trim(), String.Empty)
 
                 Try
                     If Not String.IsNullOrWhiteSpace(editDateStr) Then
-                        ' ვცადოთ სხვადასხვა ფორმატები
-                        Dim editFormats As String() = {"dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm", "MM/dd/yyyy HH:mm"}
+                        ' Google Sheets-ის ფორმატები: "21/5/2025 19:10:00", "21.05.25", "19:10"
+                        Dim editFormats As String() = {
+                            "dd.MM.yy, HH:mm", "d.MM.yy, HH:mm", "dd.M.yy, HH:mm", "d.M.yy, HH:mm",
+                            "dd.MM.yy, H:mm", "d.MM.yy, H:mm", "dd.M.yy, H:mm", "d.M.yy, H:mm",
+                            "dd.MM.yyyy, HH:mm", "d.MM.yyyy, HH:mm", "dd.M.yyyy, HH:mm", "d.M.yyyy, HH:mm",
+                            "dd.MM.yyyy, H:mm", "d.MM.yyyy, H:mm", "dd.M.yyyy, H:mm", "d.M.yyyy, H:mm",
+                            "d/M/yyyy H:mm:ss", "dd/M/yyyy H:mm:ss", "d/MM/yyyy H:mm:ss", "dd/MM/yyyy H:mm:ss",
+                            "d/M/yyyy HH:mm:ss", "dd/M/yyyy HH:mm:ss", "d/MM/yyyy HH:mm:ss", "dd/MM/yyyy HH:mm:ss",
+                            "d/M/yyyy H:mm", "dd/M/yyyy H:mm", "d/MM/yyyy H:mm", "dd/MM/yyyy H:mm",
+                            "d/M/yyyy HH:mm", "dd/M/yyyy HH:mm", "d/MM/yyyy HH:mm", "dd/MM/yyyy HH:mm",
+                            "dd.MM.yy", "d.MM.yy", "dd.M.yy", "d.M.yy",
+                            "dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm", "d/MM/yyyy HH:mm",
+                            "dd.MM.yyyy H:mm", "d.M.yyyy H:mm", "dd/MM/yyyy H:mm", "d/MM/yyyy H:mm",
+                            "MM/dd/yyyy HH:mm", "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy", "d.M.yyyy",
+                            "HH:mm", "H:mm"
+                        }
 
                         Dim parsedEditDate As DateTime
                         If DateTime.TryParseExact(editDateStr, editFormats,
                                       System.Globalization.CultureInfo.InvariantCulture,
                                       System.Globalization.DateTimeStyles.None,
                                       parsedEditDate) Then
+                            ' თუ მხოლოდ დრო იყო (HH:mm), დღევანდელ თარიღს ვუმატებთ
+                            If editDateStr.Contains(":") AndAlso Not editDateStr.Contains("/") AndAlso Not editDateStr.Contains(".") Then
+                                parsedEditDate = DateTime.Today.Add(parsedEditDate.TimeOfDay)
+                            End If
                             session.LastEditDate = parsedEditDate
                         ElseIf DateTime.TryParse(editDateStr, parsedEditDate) Then
                             session.LastEditDate = parsedEditDate
@@ -368,112 +388,177 @@ Namespace Scheduler_v8_8a.Models
                     session.LastEditDate = Nothing
                 End Try
 
-                ' ბენეფიციარის სახელი და გვარი - D სვეტი (ინდექსი 3) და E სვეტი (ინდექსი 4)
+                ' D და E სვეტები: ბენეფიციარის სახელი და გვარი
                 session.BeneficiaryName = If(rowData.Count > 3, rowData(3).ToString(), String.Empty)
                 session.BeneficiarySurname = If(rowData.Count > 4, rowData(4).ToString(), String.Empty)
 
-                ' თარიღი F სვეტიდან (ინდექსი 5)
+                ' F სვეტი: სესიის თარიღი - Google Sheets ფორმატებისთვის შესწორებული
                 Dim dateTimeStr = If(rowData.Count > 5, rowData(5).ToString().Trim(), String.Empty)
-                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სესიის ორიგინალი თარიღი='{dateTimeStr}'")
 
-                ' [განახლებული თარიღის დამუშავების კოდი]
+                ' თარიღის დამუშავების კოდი
                 Try
                     If Not String.IsNullOrWhiteSpace(dateTimeStr) Then
-                        ' ვცადოთ სხვადასხვა ფორმატები
-                        Dim formats As String() = {"dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm"}
+                        ' Google Sheets-ის ფორმატები: "21/5/2025 19:10:00", "21.05.25", "19:10"
+                        Dim sessionFormats As String() = {
+                            "dd.MM.yy, HH:mm", "d.MM.yy, HH:mm", "dd.M.yy, HH:mm", "d.M.yy, HH:mm",
+                            "dd.MM.yy, H:mm", "d.MM.yy, H:mm", "dd.M.yy, H:mm", "d.M.yy, H:mm",
+                            "dd.MM.yyyy, HH:mm", "d.MM.yyyy, HH:mm", "dd.M.yyyy, HH:mm", "d.M.yyyy, HH:mm",
+                            "dd.MM.yyyy, H:mm", "d.MM.yyyy, H:mm", "dd.M.yyyy, H:mm", "d.M.yyyy, H:mm",
+                            "d/M/yyyy H:mm:ss", "dd/M/yyyy H:mm:ss", "d/MM/yyyy H:mm:ss", "dd/MM/yyyy H:mm:ss",
+                            "d/M/yyyy HH:mm:ss", "dd/M/yyyy HH:mm:ss", "d/MM/yyyy HH:mm:ss", "dd/MM/yyyy HH:mm:ss",
+                            "d/M/yyyy H:mm", "dd/M/yyyy H:mm", "d/MM/yyyy H:mm", "dd/MM/yyyy H:mm",
+                            "d/M/yyyy HH:mm", "dd/M/yyyy HH:mm", "d/MM/yyyy HH:mm", "dd/MM/yyyy HH:mm",
+                            "dd.MM.yy", "d.MM.yy", "dd.M.yy", "d.M.yy",
+                            "dd.MM.yyyy HH:mm", "d.M.yyyy HH:mm", "dd/MM/yyyy HH:mm", "d/MM/yyyy HH:mm",
+                            "dd.MM.yyyy H:mm", "d.M.yyyy H:mm", "dd/MM/yyyy H:mm", "d/MM/yyyy H:mm",
+                            "MM/dd/yyyy HH:mm", "yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy", "d.M.yyyy",
+                            "HH:mm", "H:mm"
+                        }
 
                         Dim parsedDate As DateTime
                         Dim successfullyParsed As Boolean = False
 
-                        ' ვცადოთ მკაცრი ფორმატები
-                        If DateTime.TryParseExact(dateTimeStr, formats,
+                        ' ვცადოთ Google Sheets-ის ფორმატები
+                        If DateTime.TryParseExact(dateTimeStr, sessionFormats,
                                       System.Globalization.CultureInfo.InvariantCulture,
                                       System.Globalization.DateTimeStyles.None,
                                       parsedDate) Then
                             session.DateTime = parsedDate
                             successfullyParsed = True
-                            'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღი წარმატებით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
                         End If
 
-                        ' თუ მკაცრმა ფორმატმა ვერ გაართვა თავი, ვცადოთ საშუალო მიდგომა
+                        ' თუ ფორმატები ვერ გაართვეს თავი, ვცადოთ საშუალო მიდგომა
                         If Not successfullyParsed Then
                             If DateTime.TryParse(dateTimeStr, parsedDate) Then
                                 session.DateTime = parsedDate
                                 successfullyParsed = True
-                                'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღი საშუალო მეთოდით დაპარსილია: {session.DateTime:dd.MM.yyyy HH:mm}")
                             End If
                         End If
 
-                        ' თუ მაინც ვერ დავამუშავეთ, გამოვიყენოთ default თარიღი (არა მიმდინარე!)
+                        ' თუ მაინც ვერ დავამუშავეთ, გამოვიყენოთ default თარიღი
                         If Not successfullyParsed Then
-                            session.DateTime = New DateTime(1900, 1, 1) ' ძალიან ძველი თარიღი, რომელიც აშკარად არ არის დღევანდელი
-                            'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის პარსინგის შეცდომა: '{dateTimeStr}', ვიყენებთ default: 1900.01.01")
+                            session.DateTime = New DateTime(1900, 1, 1) ' ძალიან ძველი თარიღი
                         End If
                     Else
                         ' თარიღის სტრიქონი ცარიელია
                         session.DateTime = New DateTime(1900, 1, 1)
-                        'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის სტრიქონი ცარიელია, ვიყენებთ default: 1900.01.01")
                     End If
                 Catch ex As Exception
                     ' თარიღის დამუშავების შეცდომა
                     session.DateTime = New DateTime(1900, 1, 1)
-                    'Debug.WriteLine($"SessionModel.FromSheetRow [ID={session.Id}]: თარიღის დამუშავების შეცდომა: {ex.Message}, ვიყენებთ default: 1900.01.01")
                 End Try
 
-                ' დარჩენილი მონაცემების ინიციალიზაცია
+                ' G სვეტი: ხანგრძლივობა
                 session.Duration = If(rowData.Count > 6 AndAlso Integer.TryParse(rowData(6).ToString(), Nothing), Integer.Parse(rowData(6).ToString()), 60)
 
-                ' თერაპევტი (I სვეტი - ინდექსი 8)
+                ' H სვეტი: ჯგუფური
+                If rowData.Count > 7 Then
+                    Dim groupStr = rowData(7).ToString().Trim().ToLower()
+                    session.IsGroup = (groupStr = "true" OrElse groupStr = "1")
+                Else
+                    session.IsGroup = False
+                End If
+
+                ' I სვეტი: თერაპევტი
                 session.TherapistName = If(rowData.Count > 8, rowData(8).ToString(), String.Empty)
 
-                ' თერაპია (J სვეტი - ინდექსი 9)
+                ' J სვეტი: თერაპიის ტიპი
                 session.TherapyType = If(rowData.Count > 9, rowData(9).ToString(), String.Empty)
 
-                ' სივრცე (K სვეტი - ინდექსი 10)
+                ' K სვეტი: სივრცე
                 session.Space = If(rowData.Count > 10, rowData(10).ToString(), String.Empty)
 
-                ' price
-                session.Price = If(rowData.Count > 11 AndAlso Decimal.TryParse(rowData(11).ToString(), Nothing), Decimal.Parse(rowData(11).ToString()), 0)
+                ' L სვეტი: ფასი
+                If rowData.Count > 11 Then
+                    Dim priceStr = rowData(11).ToString().Replace(",", ".")
+                    Dim price As Decimal = 0
+                    If Decimal.TryParse(priceStr, Globalization.NumberStyles.Any, Globalization.CultureInfo.InvariantCulture, price) Then
+                        session.Price = price
+                    Else
+                        session.Price = 0
+                    End If
+                Else
+                    session.Price = 0
+                End If
 
-                ' სტატუსი M სვეტიდან (ინდექსი 12)
+                ' M სვეტი: სტატუსი
                 session.Status = If(rowData.Count > 12, rowData(12).ToString().Trim(), "დაგეგმილი")
-                'Debug.WriteLine($"SessionModel.FromSheetRow: ID={session.Id}, სტატუსი='{session.Status}'")
 
-                ' დაფინანსება (N სვეტი - ინდექსი 13)
+                ' N სვეტი: დაფინანსება
                 session.Funding = If(rowData.Count > 13, rowData(13).ToString(), String.Empty)
 
-                ' კომენტარი უკანასკნელი სვეტიდან (ინდექსი 14)
-                session.Comments = If(rowData.Count > 14, rowData(14).ToString(), String.Empty)
+                ' O სვეტი: კომენტარი - შესწორებული დამუშავება
+                If rowData.Count > 14 Then
+                    Dim commentStr = rowData(14).ToString().Trim()
+                    ' თუ კომენტარი არის "0" ან ცარიელი, ვუყენებთ ცარიელ სტრიქონს
+                    If commentStr = "0" OrElse String.IsNullOrWhiteSpace(commentStr) Then
+                        session.Comments = String.Empty
+                    Else
+                        session.Comments = commentStr
+                    End If
+                Else
+                    session.Comments = String.Empty
+                End If
 
                 Return session
+
             Catch ex As Exception
-                'Debug.WriteLine($"SessionModel.FromSheetRow: ზოგადი შეცდომა - {ex.Message}")
                 Throw New Exception($"შეცდომა SessionModel-ის შექმნისას: {ex.Message}", ex)
             End Try
         End Function
 
         ''' <summary>
         ''' გარდაქმნის SessionModel-ს მწკრივად Google Sheets-ისთვის
+        ''' შესწორებული ვერსია რედაქტირების თარიღისა და კომენტარების სწორი ჩაწერისთვის
         ''' </summary>
         ''' <returns>ობიექტების სია, რომელიც შეიძლება გადაეცეს Sheets API-ს</returns>
         Public Function ToSheetRow() As List(Of Object)
             Dim rowData As New List(Of Object)
 
+            ' A სვეტი: ID
             rowData.Add(Id)
-            rowData.Add(If(LastEditDate.HasValue, LastEditDate.Value.ToString("dd.MM.yyyy HH:mm"), "")) ' რედაქტირების თარიღი
-            rowData.Add(Author) ' ავტორი
+
+            ' B სვეტი: რედაქტირების თარიღი - ახლა ვაყენებთ მიმდინარე თარიღს
+            rowData.Add(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+
+            ' C სვეტი: ავტორი
+            rowData.Add(Author)
+
+            ' D სვეტი: ბენეფიციარის სახელი
             rowData.Add(BeneficiaryName)
+
+            ' E სვეტი: ბენეფიციარის გვარი
             rowData.Add(BeneficiarySurname)
+
+            ' F სვეტი: სესიის თარიღი
             rowData.Add(DateTime.ToString("dd.MM.yyyy HH:mm"))
+
+            ' G სვეტი: ხანგრძლივობა
             rowData.Add(Duration)
+
+            ' H სვეტი: ჯგუფური
             rowData.Add(IsGroup)
+
+            ' I სვეტი: თერაპევტი
             rowData.Add(TherapistName)
+
+            ' J სვეტი: თერაპიის ტიპი
             rowData.Add(TherapyType)
+
+            ' K სვეტი: სივრცე
             rowData.Add(Space)
+
+            ' L სვეტი: ფასი
             rowData.Add(Price)
+
+            ' M სვეტი: სტატუსი
             rowData.Add(Status)
+
+            ' N სვეტი: დაფინანსება
             rowData.Add(Funding)
-            rowData.Add(Comments)
+
+            ' O სვეტი: კომენტარი
+            rowData.Add(If(String.IsNullOrWhiteSpace(Comments), "", Comments))
 
             Return rowData
         End Function
@@ -504,11 +589,6 @@ Namespace Scheduler_v8_8a.Models
                 ' 1. სტატუსი არის "დაგეგმილი" და
                 ' 2. ან სესიის თარიღი უკვე გასულია, ან დღევანდელი სესიის დრო გასულია
                 Dim result = isPlanned AndAlso (isPastDate OrElse isTodayPastTime)
-
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სტატუსი='{Me.Status}', isPlanned={isPlanned}")
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: სესიის თარიღი={Me.DateTime:dd.MM.yyyy HH:mm}, დღეს={currentDateTime:dd.MM.yyyy HH:mm}")
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: isPastDate={isPastDate}, isTodayPastTime={isTodayPastTime}")
-                'Debug.WriteLine($"SessionModel.IsOverdue [{Id}]: შედეგი = {result}")
 
                 Return result
             End Get
