@@ -42,6 +42,7 @@ Partial Class UC_Schedule
         Me.DtpDan = New System.Windows.Forms.DateTimePicker()
         Me.DgvSchedule = New System.Windows.Forms.DataGridView()
         Me.pnlFilter = New System.Windows.Forms.Panel()
+        Me.btnToPDF = New System.Windows.Forms.Button()
         Me.btbPrint = New System.Windows.Forms.Button()
         Me.RB100 = New System.Windows.Forms.RadioButton()
         Me.RB50 = New System.Windows.Forms.RadioButton()
@@ -153,7 +154,6 @@ Partial Class UC_Schedule
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.BtnPrev = New System.Windows.Forms.Button()
         Me.LPage = New System.Windows.Forms.Label()
-        Me.Button1 = New System.Windows.Forms.Button()
         CType(Me.DgvSchedule, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -269,7 +269,7 @@ Partial Class UC_Schedule
         'pnlFilter
         '
         resources.ApplyResources(Me.pnlFilter, "pnlFilter")
-        Me.pnlFilter.Controls.Add(Me.Button1)
+        Me.pnlFilter.Controls.Add(Me.btnToPDF)
         Me.pnlFilter.Controls.Add(Me.btbPrint)
         Me.pnlFilter.Controls.Add(Me.RB100)
         Me.pnlFilter.Controls.Add(Me.RB50)
@@ -301,6 +301,12 @@ Partial Class UC_Schedule
         Me.pnlFilter.Controls.Add(Me.Label3)
         Me.pnlFilter.Controls.Add(Me.Label2)
         Me.pnlFilter.Name = "pnlFilter"
+        '
+        'btnToPDF
+        '
+        resources.ApplyResources(Me.btnToPDF, "btnToPDF")
+        Me.btnToPDF.Name = "btnToPDF"
+        Me.btnToPDF.UseVisualStyleBackColor = True
         '
         'btbPrint
         '
@@ -1095,12 +1101,6 @@ Partial Class UC_Schedule
         resources.ApplyResources(Me.LPage, "LPage")
         Me.LPage.Name = "LPage"
         '
-        'Button1
-        '
-        resources.ApplyResources(Me.Button1, "Button1")
-        Me.Button1.Name = "Button1"
-        Me.Button1.UseVisualStyleBackColor = True
-        '
         'UC_Schedule
         '
         resources.ApplyResources(Me, "$this")
@@ -1255,5 +1255,5 @@ Partial Class UC_Schedule
     Friend WithEvents BtnNext As Button
     Friend WithEvents BtnPrev As Button
     Friend WithEvents LPage As Label
-    Friend WithEvents Button1 As Button
+    Friend WithEvents btnToPDF As Button
 End Class
