@@ -331,7 +331,7 @@ Namespace Scheduler_v8_8a.Services
         Public Sub UpdatePageLabel(currentPage As Integer, totalPages As Integer)
             Try
                 If lblPage IsNot Nothing Then
-                    lblPage.Text = $"გვერდი {currentPage} / {totalPages}"
+                    lblPage.Text = $"{currentPage} / {totalPages}"
                 End If
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleUIManager: UpdatePageLabel შეცდომა: {ex.Message}")
@@ -369,7 +369,7 @@ Namespace Scheduler_v8_8a.Services
                     btnPrev.FlatStyle = FlatStyle.Flat
                     btnPrev.BackColor = headerColor
                     btnPrev.ForeColor = Color.White
-                    btnPrev.Text = "<<"
+                    btnPrev.Text = ""
                 End If
 
                 ' შემდეგი ღილაკის სტილი
@@ -377,7 +377,7 @@ Namespace Scheduler_v8_8a.Services
                     btnNext.FlatStyle = FlatStyle.Flat
                     btnNext.BackColor = headerColor
                     btnNext.ForeColor = Color.White
-                    btnNext.Text = ">>"
+                    btnNext.Text = ""
                 End If
 
                 Debug.WriteLine("ScheduleUIManager: ნავიგაციის ღილაკები კონფიგურირებულია")
