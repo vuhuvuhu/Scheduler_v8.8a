@@ -154,6 +154,7 @@ Partial Class UC_Schedule
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.BtnPrev = New System.Windows.Forms.Button()
         Me.LPage = New System.Windows.Forms.Label()
+        Me.Label22 = New System.Windows.Forms.Label()
         CType(Me.DgvSchedule, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -1101,10 +1102,16 @@ Partial Class UC_Schedule
         resources.ApplyResources(Me.LPage, "LPage")
         Me.LPage.Name = "LPage"
         '
+        'Label22
+        '
+        resources.ApplyResources(Me.Label22, "Label22")
+        Me.Label22.Name = "Label22"
+        '
         'UC_Schedule
         '
         resources.ApplyResources(Me, "$this")
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.Label22)
         Me.Controls.Add(Me.LPage)
         Me.Controls.Add(Me.BtnNext)
         Me.Controls.Add(Me.BtnPrev)
@@ -1256,4 +1263,5 @@ Partial Class UC_Schedule
     Friend WithEvents BtnPrev As Button
     Friend WithEvents LPage As Label
     Friend WithEvents btnToPDF As Button
+    Friend WithEvents Label22 As Label
 End Class
