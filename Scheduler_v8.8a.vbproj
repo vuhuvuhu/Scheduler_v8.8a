@@ -303,6 +303,7 @@
     <Content Include="Resources\AppImages\tea-x1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="ToDoList.txt" />
     <Content Include="versionkeeper.txt" />
     <Content Include="Utils\client_secret_v8_7.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
