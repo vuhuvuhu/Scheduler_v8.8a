@@ -385,23 +385,38 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' უნიკალური მნიშვნელობების მიღება კონკრეტული სვეტისთვის ფილტრების ComboBox-ების შესავსებად
+        ''' უნიკალური მნიშვნელობების მიღება კონკრეტული პერიოდისთვის
         ''' </summary>
-        ''' <param name="columnIndex">სვეტის ინდექსი</param>
+        ''' <param name="fieldType">ველის ტიპი</param>
+        ''' <param name="dateFrom">საწყისი თარიღი</param>
+        ''' <param name="dateTo">საბოლოო თარიღი</param>
         ''' <returns>უნიკალური მნიშვნელობების სია</returns>
-        Public Function GetUniqueColumnValues(columnIndex As Integer) As List(Of String)
+        Public Function GetUniqueValuesForPeriod(fieldType As String, dateFrom As Date, dateTo As Date) As List(Of String)
             Try
                 Dim uniqueValues As New HashSet(Of String)()
                 Dim allRows As IList(Of IList(Of Object)) = dataService.GetData("DB-Schedule!A2:O")
 
                 If allRows IsNot Nothing Then
                     For Each row In allRows
-                        If row.Count > columnIndex AndAlso row(columnIndex) IsNot Nothing Then
-                            Dim value = row(columnIndex).ToString().Trim()
+                        Try
+                            ' ძირითადი ვალიდაცია
+                            If row.Count < 7 Then Continue For
+                            If String.IsNullOrWhiteSpace(row(0).ToString()) Then Continue For
+                            If String.IsNullOrWhiteSpace(row(5).ToString()) Then Continue For
+
+                            ' თარიღის შემოწმება
+                            If Not IsRowInDateRange(row, dateFrom, dateTo) Then Continue For
+
+                            ' ველის ტიპის მიხედვით მნიშვნელობის მიღება
+                            Dim value As String = GetFieldValue(row, fieldType)
                             If Not String.IsNullOrWhiteSpace(value) Then
                                 uniqueValues.Add(value)
                             End If
-                        End If
+
+                        Catch ex As Exception
+                            Debug.WriteLine($"ScheduleDataProcessor: GetUniqueValuesForPeriod მწკრივის დამუშავების შეცდომა: {ex.Message}")
+                            Continue For
+                        End Try
                     Next
                 End If
 
@@ -409,69 +424,115 @@ Namespace Scheduler_v8_8a.Services
                 result.Sort()
                 result.Insert(0, "ყველა") ' პირველ ადგილას "ყველა" ვარიანტი
 
-                Debug.WriteLine($"ScheduleDataProcessor: სვეტი {columnIndex}-ისთვის ნაპოვნია {result.Count - 1} უნიკალური მნიშვნელობა")
+                Debug.WriteLine($"ScheduleDataProcessor: {fieldType} ველისთვის პერიოდში {dateFrom:dd.MM.yyyy}-{dateTo:dd.MM.yyyy} ნაპოვნია {result.Count - 1} უნიკალური მნიშვნელობა")
                 Return result
 
             Catch ex As Exception
-                Debug.WriteLine($"ScheduleDataProcessor: GetUniqueColumnValues შეცდომა: {ex.Message}")
+                Debug.WriteLine($"ScheduleDataProcessor: GetUniqueValuesForPeriod შეცდომა: {ex.Message}")
                 Return New List(Of String) From {"ყველა"}
             End Try
         End Function
 
         ''' <summary>
-        ''' ყველა ხელმისაწვდომი სტატუსის მიღება
+        ''' კონკრეტული სახელის შესაბამისი გვარების მიღება მოცემულ პერიოდში
         ''' </summary>
-        ''' <returns>სტატუსების სია</returns>
-        Public Function GetAllStatuses() As List(Of String)
-            Return GetUniqueColumnValues(12) ' M სვეტი - სტატუსი
+        ''' <param name="selectedName">არჩეული სახელი</param>
+        ''' <param name="dateFrom">საწყისი თარიღი</param>
+        ''' <param name="dateTo">საბოლოო თარიღი</param>
+        ''' <returns>შესაბამისი გვარების სია</returns>
+        Public Function GetSurnamesForNameInPeriod(selectedName As String, dateFrom As Date, dateTo As Date) As List(Of String)
+            Try
+                Dim uniqueSurnames As New HashSet(Of String)()
+                Dim allRows As IList(Of IList(Of Object)) = dataService.GetData("DB-Schedule!A2:O")
+
+                If allRows IsNot Nothing Then
+                    For Each row In allRows
+                        Try
+                            ' ძირითადი ვალიდაცია
+                            If row.Count < 7 Then Continue For
+                            If String.IsNullOrWhiteSpace(row(0).ToString()) Then Continue For
+                            If String.IsNullOrWhiteSpace(row(5).ToString()) Then Continue For
+
+                            ' თარიღის შემოწმება
+                            If Not IsRowInDateRange(row, dateFrom, dateTo) Then Continue For
+
+                            ' სახელის შემოწმება
+                            Dim rowName As String = If(row.Count > 3, row(3).ToString().Trim(), "")
+                            If Not String.Equals(rowName, selectedName, StringComparison.OrdinalIgnoreCase) Then Continue For
+
+                            ' გვარის მიღება
+                            Dim surname As String = If(row.Count > 4, row(4).ToString().Trim(), "")
+                            If Not String.IsNullOrWhiteSpace(surname) Then
+                                uniqueSurnames.Add(surname)
+                            End If
+
+                        Catch ex As Exception
+                            Debug.WriteLine($"ScheduleDataProcessor: GetSurnamesForNameInPeriod მწკრივის დამუშავების შეცდომა: {ex.Message}")
+                            Continue For
+                        End Try
+                    Next
+                End If
+
+                Dim result = uniqueSurnames.ToList()
+                result.Sort()
+                result.Insert(0, "ყველა")
+
+                Debug.WriteLine($"ScheduleDataProcessor: სახელი '{selectedName}'-ისთვის პერიოდში ნაპოვნია {result.Count - 1} გვარი")
+                Return result
+
+            Catch ex As Exception
+                Debug.WriteLine($"ScheduleDataProcessor: GetSurnamesForNameInPeriod შეცდომა: {ex.Message}")
+                Return New List(Of String) From {"ყველა"}
+            End Try
         End Function
 
         ''' <summary>
-        ''' ყველა ბენეფიციარის სახელის მიღება
+        ''' ჩანაწერის თარიღის დიაპაზონში მოქცევის შემოწმება
         ''' </summary>
-        ''' <returns>სახელების სია</returns>
-        Public Function GetAllBeneficiaryNames() As List(Of String)
-            Return GetUniqueColumnValues(3) ' D სვეტი - სახელი
+        Private Function IsRowInDateRange(row As IList(Of Object), dateFrom As Date, dateTo As Date) As Boolean
+            Try
+                Dim sessionDate As DateTime
+                Dim formats As String() = {"dd.MM.yyyy HH:mm", "dd.MM.yyyy", "dd.MM.yy HH:mm", "d.M.yyyy HH:mm", "d/M/yyyy H:mm:ss"}
+
+                If Not DateTime.TryParseExact(row(5).ToString().Trim(), formats, CultureInfo.InvariantCulture, DateTimeStyles.None, sessionDate) Then
+                    If Not DateTime.TryParse(row(5).ToString().Trim(), sessionDate) Then
+                        Return False
+                    End If
+                End If
+
+                Return sessionDate.Date >= dateFrom.Date AndAlso sessionDate.Date <= dateTo.Date
+            Catch
+                Return False
+            End Try
         End Function
 
         ''' <summary>
-        ''' ყველა ბენეფიციარის გვარის მიღება
+        ''' ველის მნიშვნელობის მიღება ტიპის მიხედვით
         ''' </summary>
-        ''' <returns>გვარების სია</returns>
-        Public Function GetAllBeneficiarySurnames() As List(Of String)
-            Return GetUniqueColumnValues(4) ' E სვეტი - გვარი
+        Private Function GetFieldValue(row As IList(Of Object), fieldType As String) As String
+            Try
+                Select Case fieldType.ToUpper()
+                    Case "BENEFICIARYNAME"
+                        Return If(row.Count > 3, row(3).ToString().Trim(), "")
+                    Case "BENEFICIARYSURNAME"
+                        Return If(row.Count > 4, row(4).ToString().Trim(), "")
+                    Case "THERAPIST"
+                        Return If(row.Count > 8, row(8).ToString().Trim(), "")
+                    Case "THERAPYTYPE"
+                        Return If(row.Count > 9, row(9).ToString().Trim(), "")
+                    Case "SPACE"
+                        Return If(row.Count > 10, row(10).ToString().Trim(), "")
+                    Case "FUNDING"
+                        Return If(row.Count > 13, row(13).ToString().Trim(), "")
+                    Case "STATUS"
+                        Return If(row.Count > 12, row(12).ToString().Trim(), "")
+                    Case Else
+                        Return ""
+                End Select
+            Catch
+                Return ""
+            End Try
         End Function
 
-        ''' <summary>
-        ''' ყველა თერაპევტის სახელის მიღება
-        ''' </summary>
-        ''' <returns>თერაპევტების სია</returns>
-        Public Function GetAllTherapists() As List(Of String)
-            Return GetUniqueColumnValues(8) ' I სვეტი - თერაპევტი
-        End Function
-
-        ''' <summary>
-        ''' ყველა თერაპიის ტიპის მიღება
-        ''' </summary>
-        ''' <returns>თერაპიის ტიპების სია</returns>
-        Public Function GetAllTherapyTypes() As List(Of String)
-            Return GetUniqueColumnValues(9) ' J სვეტი - თერაპია
-        End Function
-
-        ''' <summary>
-        ''' ყველა სივრცის მიღება
-        ''' </summary>
-        ''' <returns>სივრცეების სია</returns>
-        Public Function GetAllSpaces() As List(Of String)
-            Return GetUniqueColumnValues(10) ' K სვეტი - სივრცე
-        End Function
-
-        ''' <summary>
-        ''' ყველა დაფინანსების ტიპის მიღება
-        ''' </summary>
-        ''' <returns>დაფინანსების ტიპების სია</returns>
-        Public Function GetAllFundingTypes() As List(Of String)
-            Return GetUniqueColumnValues(13) ' N სვეტი - დაფინანსება
-        End Function
     End Class
 End Namespace
