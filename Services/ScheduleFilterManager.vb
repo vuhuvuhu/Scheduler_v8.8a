@@ -2,8 +2,7 @@
 ' 📄 Services/ScheduleFilterManager.vb
 ' -------------------------------------------
 ' განრიგის ფილტრების მართვის სერვისი - გაუმჯობესებული ვერსია
-' UC_Schedule-დან გატანილი ფილტრების ლოგიკა
-' დინამიური ფილტრაცია: მხოლოდ შერჩეულ პერიოდში არსებული მნიშვნელობები
+' DateTimePicker ციკლური ივენთების თავიდან აცილება
 ' ===========================================
 Imports System.Windows.Forms
 
@@ -34,8 +33,13 @@ Namespace Scheduler_v8_8a.Services
         ' სტატუსის CheckBox-ები
         Private ReadOnly statusCheckBoxes As List(Of CheckBox)
 
-        ' მონაცემების დამუშავების სერვისი - ცუცავს ლინკი დინამიური განახლებისთვის
+        ' მონაცემების დამუშავების სერვისი
         Private dataProcessor As ScheduleDataProcessor = Nothing
+
+        ' 🔧 ციკლური განახლებების თავიდან აცილება
+        Private isUpdatingComboBoxes As Boolean = False
+        Private lastDateFromValue As DateTime = DateTime.MinValue
+        Private lastDateToValue As DateTime = DateTime.MinValue
 
         ' ღირებულების დელეგატები
         Public Delegate Sub FilterChangedEventHandler()
@@ -50,15 +54,6 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' კონსტრუქტორი
         ''' </summary>
-        ''' <param name="dateFrom">საწყისი თარიღის DatePicker</param>
-        ''' <param name="dateTo">საბოლოო თარიღის DatePicker</param>
-        ''' <param name="beneficiaryName">ბენეფიციარის სახელის ComboBox</param>
-        ''' <param name="beneficiarySurname">ბენეფიციარის გვარის ComboBox</param>
-        ''' <param name="therapist">თერაპევტის ComboBox</param>
-        ''' <param name="therapyType">თერაპიის ტიპის ComboBox</param>
-        ''' <param name="space">სივრცის ComboBox</param>
-        ''' <param name="funding">დაფინანსების ComboBox</param>
-        ''' <param name="pageSizeButtons">გვერდის ზომის რადიობუტონები</param>
         Public Sub New(dateFrom As DateTimePicker,
                       dateTo As DateTimePicker,
                       beneficiaryName As ComboBox,
@@ -97,8 +92,8 @@ Namespace Scheduler_v8_8a.Services
                 ' რადიობუტონების ინიციალიზაცია
                 InitializeRadioButtons()
 
-                ' ივენთების მიბმა
-                BindEvents()
+                ' 🔧 ივენთების მიბმა გაუმჯობესებული ლოგიკით
+                BindEventsWithSafetyChecks()
 
                 Debug.WriteLine("ScheduleFilterManager: ფილტრების ინიციალიზაცია დასრულდა")
 
@@ -112,7 +107,6 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Private Sub InitializeComboBoxes()
             Try
-                ' ყველა ComboBox-ის გასუფთავება და "ყველა" ვარიანტის დამატება
                 Dim comboBoxes As ComboBox() = {cbBeneName, cbBeneSurname, cbTherapist, cbTherapyType, cbSpace, cbFunding}
 
                 For Each cb In comboBoxes
@@ -126,10 +120,7 @@ Namespace Scheduler_v8_8a.Services
                 ' ბენეფიციარის გვარის ComboBox-ის დახურვა საწყისად
                 If cbBeneSurname IsNot Nothing Then
                     cbBeneSurname.Enabled = False
-                    Debug.WriteLine("ScheduleFilterManager: ბენეფიციარის გვარის ComboBox დახურულია საწყისად")
                 End If
-
-                Debug.WriteLine("ScheduleFilterManager: ComboBox-ები ინიციალიზებულია")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ComboBox-ების ინიციალიზაციის შეცდომა: {ex.Message}")
@@ -141,20 +132,18 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Private Sub InitializeDatePickers()
             Try
-                ' მიმდინარე თარიღი
                 Dim currentDate As DateTime = DateTime.Today
-
-                ' მიმდინარე თვის პირველი და ბოლო დღე
                 Dim firstDayOfMonth As DateTime = New DateTime(currentDate.Year, currentDate.Month, 1)
                 Dim lastDayOfMonth As DateTime = firstDayOfMonth.AddMonths(1).AddDays(-1)
 
-                ' DatePicker-ების დაყენება
                 If dtpFrom IsNot Nothing Then
                     dtpFrom.Value = firstDayOfMonth
+                    lastDateFromValue = firstDayOfMonth ' 🔧 საწყისი მნიშვნელობის ჩაფიქსირება
                 End If
 
                 If dtpTo IsNot Nothing Then
                     dtpTo.Value = lastDayOfMonth
+                    lastDateToValue = lastDayOfMonth ' 🔧 საწყისი მნიშვნელობის ჩაფიქსირება
                 End If
 
                 Debug.WriteLine($"ScheduleFilterManager: თარიღები დაყენებულია {firstDayOfMonth:dd.MM.yyyy} - {lastDayOfMonth:dd.MM.yyyy}")
@@ -165,17 +154,21 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' ივენთების მიბმა
+        ''' 🔧 გაუმჯობესებული ივენთების მიბმა - ციკლური განახლებების თავიდან აცილებით
         ''' </summary>
-        Private Sub BindEvents()
+        Private Sub BindEventsWithSafetyChecks()
             Try
-                ' თარიღის DatePicker-ების ივენთები
+                ' 🔧 DateTimePicker-ების ივენთები - CloseUp და Leave ივენთები ValueChanged-ის ნაცვლად
                 If dtpFrom IsNot Nothing Then
-                    AddHandler dtpFrom.ValueChanged, AddressOf DatePicker_ValueChanged
+                    ' CloseUp - კალენდრის დახურვისას
+                    AddHandler dtpFrom.CloseUp, AddressOf DatePicker_UserChanged
+                    ' Leave - ფოკუსის დატოვებისას (manual typing)
+                    AddHandler dtpFrom.Leave, AddressOf DatePicker_UserChanged
                 End If
 
                 If dtpTo IsNot Nothing Then
-                    AddHandler dtpTo.ValueChanged, AddressOf DatePicker_ValueChanged
+                    AddHandler dtpTo.CloseUp, AddressOf DatePicker_UserChanged
+                    AddHandler dtpTo.Leave, AddressOf DatePicker_UserChanged
                 End If
 
                 ' ბენეფიციარის სახელის ComboBox - სპეციალური ხელი
@@ -197,7 +190,7 @@ Namespace Scheduler_v8_8a.Services
                     End If
                 Next
 
-                Debug.WriteLine("ScheduleFilterManager: ივენთები მიბმულია")
+                Debug.WriteLine("ScheduleFilterManager: ივენთები მიბმულია (გაუმჯობესებული ლოგიკით)")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ივენთების მიბმის შეცდომა: {ex.Message}")
@@ -209,12 +202,9 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Private Sub InitializeRadioButtons()
             Try
-                ' პირველი რადიობუტონის მონიშვნა (ნაგულისხმევად)
                 If rbPageSizes.Count > 0 AndAlso rbPageSizes(0) IsNot Nothing Then
                     rbPageSizes(0).Checked = True
                 End If
-
-                Debug.WriteLine($"ScheduleFilterManager: {rbPageSizes.Count} რადიობუტონი ინიციალიზებულია")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: რადიობუტონების ინიციალიზაციის შეცდომა: {ex.Message}")
@@ -224,7 +214,6 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' სტატუსის CheckBox-ების დამატება და ინიციალიზაცია
         ''' </summary>
-        ''' <param name="checkBoxes">CheckBox-ების სია</param>
         Public Sub InitializeStatusCheckBoxes(ParamArray checkBoxes As CheckBox())
             Try
                 statusCheckBoxes.Clear()
@@ -232,9 +221,8 @@ Namespace Scheduler_v8_8a.Services
 
                 ' ყველა CheckBox-ის მონიშვნა და ივენთების მიბმა
                 For Each checkBox In statusCheckBoxes
-                    checkBox.Checked = True ' ყველა მონიშნული ჩატვირთვისას
+                    checkBox.Checked = True
                     AddHandler checkBox.CheckedChanged, AddressOf StatusCheckBox_CheckedChanged
-                    Debug.WriteLine($"ScheduleFilterManager: CheckBox '{checkBox.Text}' ინიციალიზებული")
                 Next
 
                 Debug.WriteLine($"ScheduleFilterManager: {statusCheckBoxes.Count} სტატუსის CheckBox ინიციალიზებული")
@@ -245,42 +233,53 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' ComboBox-ების შევსება დინამიური ფილტრაციით - მთავარი მეთოდი
-        ''' მხოლოდ მოცემულ პერიოდში მონაწილე მნიშვნელობები ComboBox-ებში
+        ''' ComboBox-ების შევსება დინამიური ფილტრაციით
         ''' </summary>
-        ''' <param name="processor">მონაცემების დამუშავების სერვისი</param>
         Public Sub PopulateFilterComboBoxes(processor As ScheduleDataProcessor)
             Try
                 Debug.WriteLine("ScheduleFilterManager: დინამიური ComboBox-ების შევსება დაიწყო")
 
-                ' შევინახოთ მონაცემების პროცესორი შემდგომი გამოყენებისთვის
-                dataProcessor = processor
-
-                If dataProcessor Is Nothing Then
-                    Debug.WriteLine("ScheduleFilterManager: dataProcessor არის Nothing, ComboBox-ების შევსება შეუძლებელია")
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                If isUpdatingComboBoxes Then
+                    Debug.WriteLine("ScheduleFilterManager: ComboBox-ები უკვე განახლების პროცესშია - შეწყვეტა")
                     Return
                 End If
 
-                ' მიმდინარე თარიღის პერიოდის მიღება
-                Dim dateFrom = If(dtpFrom?.Value.Date, DateTime.Today.AddDays(-30))
-                Dim dateTo = If(dtpTo?.Value.Date, DateTime.Today)
+                isUpdatingComboBoxes = True
 
-                Debug.WriteLine($"ScheduleFilterManager: ComboBox-ების შევსება პერიოდისთვის {dateFrom:dd.MM.yyyy} - {dateTo:dd.MM.yyyy}")
+                Try
+                    dataProcessor = processor
 
-                ' ყველა ComboBox-ის შევსება (გვარის გარდა)
-                PopulateBeneficiaryNamesComboBox(dateFrom, dateTo)
-                PopulateTherapistComboBox(dateFrom, dateTo)
-                PopulateTherapyTypeComboBox(dateFrom, dateTo)
-                PopulateSpaceComboBox(dateFrom, dateTo)
-                PopulateFundingComboBox(dateFrom, dateTo)
+                    If dataProcessor Is Nothing Then
+                        Debug.WriteLine("ScheduleFilterManager: dataProcessor არის Nothing")
+                        Return
+                    End If
 
-                ' ბენეფიციარის გვარის ComboBox-ის საწყისი მდგომარეობა
-                ResetBeneficiarySurnameComboBox()
+                    ' მიმდინარე თარიღის პერიოდის მიღება
+                    Dim dateFrom = If(dtpFrom?.Value.Date, DateTime.Today.AddDays(-30))
+                    Dim dateTo = If(dtpTo?.Value.Date, DateTime.Today)
+
+                    Debug.WriteLine($"ScheduleFilterManager: ComboBox-ების შევსება პერიოდისთვის {dateFrom:dd.MM.yyyy} - {dateTo:dd.MM.yyyy}")
+
+                    ' ყველა ComboBox-ის შევსება (გვარის გარდა)
+                    PopulateBeneficiaryNamesComboBox(dateFrom, dateTo)
+                    PopulateTherapistComboBox(dateFrom, dateTo)
+                    PopulateTherapyTypeComboBox(dateFrom, dateTo)
+                    PopulateSpaceComboBox(dateFrom, dateTo)
+                    PopulateFundingComboBox(dateFrom, dateTo)
+
+                    ' ბენეფიციარის გვარის ComboBox-ის საწყისი მდგომარეობა
+                    ResetBeneficiarySurnameComboBox()
+
+                Finally
+                    isUpdatingComboBoxes = False
+                End Try
 
                 Debug.WriteLine("ScheduleFilterManager: დინამიური ComboBox-ები შევსებულია")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ComboBox-ების შევსების შეცდომა: {ex.Message}")
+                isUpdatingComboBoxes = False
             End Try
         End Sub
 
@@ -291,22 +290,12 @@ Namespace Scheduler_v8_8a.Services
             Try
                 If cbBeneName Is Nothing OrElse dataProcessor Is Nothing Then Return
 
-                ' მიმდინარე არჩეული მნიშვნელობის შენახვა
                 Dim selectedValue = GetComboBoxSelectedValue(cbBeneName)
-
-                ' ComboBox-ის გასუფთავება
                 cbBeneName.Items.Clear()
 
-                ' უნიკალური სახელების მიღება მოცემული პერიოდისთვის
                 Dim names = dataProcessor.GetUniqueValuesForPeriod("BeneficiaryName", dateFrom, dateTo)
-
-                ' ComboBox-ის შევსება
                 cbBeneName.Items.AddRange(names.ToArray())
-
-                ' არჩეული მნიშვნელობის აღდგენა ან "ყველა"-ს დაყენება
                 SetComboBoxSelectedValue(cbBeneName, selectedValue)
-
-                Debug.WriteLine($"ScheduleFilterManager: ბენეფიციარის სახელების ComboBox შევსებულია - {names.Count} ელემენტი")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ბენეფიციარის სახელების ComboBox-ის შევსების შეცდომა: {ex.Message}")
@@ -325,10 +314,7 @@ Namespace Scheduler_v8_8a.Services
 
                 Dim therapists = dataProcessor.GetUniqueValuesForPeriod("Therapist", dateFrom, dateTo)
                 cbTherapist.Items.AddRange(therapists.ToArray())
-
                 SetComboBoxSelectedValue(cbTherapist, selectedValue)
-
-                Debug.WriteLine($"ScheduleFilterManager: თერაპევტის ComboBox შევსებულია - {therapists.Count} ელემენტი")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: თერაპევტის ComboBox-ის შევსების შეცდომა: {ex.Message}")
@@ -347,10 +333,7 @@ Namespace Scheduler_v8_8a.Services
 
                 Dim therapyTypes = dataProcessor.GetUniqueValuesForPeriod("TherapyType", dateFrom, dateTo)
                 cbTherapyType.Items.AddRange(therapyTypes.ToArray())
-
                 SetComboBoxSelectedValue(cbTherapyType, selectedValue)
-
-                Debug.WriteLine($"ScheduleFilterManager: თერაპიის ტიპის ComboBox შევსებულია - {therapyTypes.Count} ელემენტი")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: თერაპიის ტიპის ComboBox-ის შევსების შეცდომა: {ex.Message}")
@@ -369,10 +352,7 @@ Namespace Scheduler_v8_8a.Services
 
                 Dim spaces = dataProcessor.GetUniqueValuesForPeriod("Space", dateFrom, dateTo)
                 cbSpace.Items.AddRange(spaces.ToArray())
-
                 SetComboBoxSelectedValue(cbSpace, selectedValue)
-
-                Debug.WriteLine($"ScheduleFilterManager: სივრცის ComboBox შევსებულია - {spaces.Count} ელემენტი")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: სივრცის ComboBox-ის შევსების შეცდომა: {ex.Message}")
@@ -391,10 +371,7 @@ Namespace Scheduler_v8_8a.Services
 
                 Dim fundingTypes = dataProcessor.GetUniqueValuesForPeriod("Funding", dateFrom, dateTo)
                 cbFunding.Items.AddRange(fundingTypes.ToArray())
-
                 SetComboBoxSelectedValue(cbFunding, selectedValue)
-
-                Debug.WriteLine($"ScheduleFilterManager: დაფინანსების ComboBox შევსებულია - {fundingTypes.Count} ელემენტი")
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: დაფინანსების ComboBox-ის შევსების შეცდომა: {ex.Message}")
@@ -402,7 +379,7 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' ბენეფიციარის გვარების ComboBox-ის რესეტი - დახურული მდგომარეობაში
+        ''' ბენეფიციარის გვარების ComboBox-ის რესეტი
         ''' </summary>
         Private Sub ResetBeneficiarySurnameComboBox()
             Try
@@ -413,47 +390,58 @@ Namespace Scheduler_v8_8a.Services
                 cbBeneSurname.SelectedIndex = 0
                 cbBeneSurname.Enabled = False
 
-                Debug.WriteLine("ScheduleFilterManager: ბენეფიციარის გვარის ComboBox დარესეტებულია და დახურულია")
-
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ბენეფიციარის გვარის ComboBox-ის რესეტის შეცდომა: {ex.Message}")
             End Try
         End Sub
 
         ''' <summary>
-        ''' ბენეფიციარის გვარების ComboBox-ის განახლება არჩეული სახელის მიხედვით
+        ''' ბენეფიციარის გვარების ComboBox-ის განახლება
         ''' </summary>
-        ''' <param name="selectedName">არჩეული სახელი</param>
         Public Sub UpdateBeneficiarySurnames(selectedName As String)
             Try
                 If cbBeneSurname Is Nothing OrElse dataProcessor Is Nothing Then Return
 
-                Debug.WriteLine($"ScheduleFilterManager: ბენეფიციარის გვარების განახლება სახელისთვის: '{selectedName}'")
-
                 cbBeneSurname.Items.Clear()
 
                 If String.IsNullOrWhiteSpace(selectedName) OrElse selectedName = "ყველა" Then
-                    ' თუ სახელი არ არის არჩეული, გვარების ComboBox დახურული
                     cbBeneSurname.Items.Add("ყველა")
                     cbBeneSurname.SelectedIndex = 0
                     cbBeneSurname.Enabled = False
-                    Debug.WriteLine("ScheduleFilterManager: გვარების ComboBox დახურულია - სახელი არ არის არჩეული")
                 Else
-                    ' მიმდინარე თარიღის პერიოდის მიღება
                     Dim dateFrom = If(dtpFrom?.Value.Date, DateTime.Today.AddDays(-30))
                     Dim dateTo = If(dtpTo?.Value.Date, DateTime.Today)
 
-                    ' კონკრეტული სახელის შესაბამისი გვარების მიღება
                     Dim surnames = dataProcessor.GetSurnamesForNameInPeriod(selectedName, dateFrom, dateTo)
                     cbBeneSurname.Items.AddRange(surnames.ToArray())
                     cbBeneSurname.SelectedIndex = 0
                     cbBeneSurname.Enabled = True
-
-                    Debug.WriteLine($"ScheduleFilterManager: სახელი '{selectedName}'-ისთვის ნაპოვნია {surnames.Count - 1} გვარი, ComboBox გააქტიურებულია")
                 End If
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: UpdateBeneficiarySurnames შეცდომა: {ex.Message}")
+            End Try
+        End Sub
+
+        ''' <summary>
+        ''' 🔧 ყველა ComboBox-ის განახლება - ციკლის თავიდან აცილებით
+        ''' </summary>
+        Public Sub RefreshAllComboBoxes()
+            Try
+                Debug.WriteLine("ScheduleFilterManager: ყველა ComboBox-ის განახლება")
+
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                If isUpdatingComboBoxes Then
+                    Debug.WriteLine("ScheduleFilterManager: ComboBox-ები უკვე განახლების პროცესშია - შეწყვეტა")
+                    Return
+                End If
+
+                If dataProcessor IsNot Nothing Then
+                    PopulateFilterComboBoxes(dataProcessor)
+                End If
+
+            Catch ex As Exception
+                Debug.WriteLine($"ScheduleFilterManager: RefreshAllComboBoxes შეცდომა: {ex.Message}")
             End Try
         End Sub
 
@@ -478,7 +466,6 @@ Namespace Scheduler_v8_8a.Services
             Try
                 If comboBox Is Nothing OrElse String.IsNullOrEmpty(value) Then Return
 
-                ' ვეცდებით იპოვნოთ მნიშვნელობა ComboBox-ში
                 For i As Integer = 0 To comboBox.Items.Count - 1
                     If String.Equals(comboBox.Items(i).ToString(), value, StringComparison.OrdinalIgnoreCase) Then
                         comboBox.SelectedIndex = i
@@ -498,27 +485,8 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' ყველა ComboBox-ის განახლება თარიღის შეცვლის შემდეგ
+        ''' ფილტრის კრიტერიუმების მიღება
         ''' </summary>
-        Public Sub RefreshAllComboBoxes()
-            Try
-                Debug.WriteLine("ScheduleFilterManager: ყველა ComboBox-ის განახლება თარიღის შეცვლის შემდეგ")
-
-                If dataProcessor IsNot Nothing Then
-                    PopulateFilterComboBoxes(dataProcessor)
-                Else
-                    Debug.WriteLine("ScheduleFilterManager: dataProcessor არის Nothing - ComboBox-ების განახლება შეუძლებელია")
-                End If
-
-            Catch ex As Exception
-                Debug.WriteLine($"ScheduleFilterManager: RefreshAllComboBoxes შეცდომა: {ex.Message}")
-            End Try
-        End Sub
-
-        ''' <summary>
-        ''' ფილტრის კრიტერიუმების მიღება მომხმარებლის ჩანაწერებიდან
-        ''' </summary>
-        ''' <returns>ფილტრის კრიტერიუმები</returns>
         Public Function GetFilterCriteria() As ScheduleDataProcessor.FilterCriteria
             Try
                 Dim criteria As New ScheduleDataProcessor.FilterCriteria()
@@ -538,9 +506,6 @@ Namespace Scheduler_v8_8a.Services
                 criteria.Space = GetComboBoxFilterValue(cbSpace)
                 criteria.Funding = GetComboBoxFilterValue(cbFunding)
 
-                Debug.WriteLine($"ScheduleFilterManager: ფილტრის კრიტერიუმები - თარიღები: {criteria.DateFrom:dd.MM.yyyy}-{criteria.DateTo:dd.MM.yyyy}, " &
-                               $"სტატუსები: {criteria.SelectedStatuses.Count}, სახელი: '{criteria.BeneficiaryName}', გვარი: '{criteria.BeneficiarySurname}'")
-
                 Return criteria
 
             Catch ex As Exception
@@ -550,7 +515,7 @@ Namespace Scheduler_v8_8a.Services
         End Function
 
         ''' <summary>
-        ''' ComboBox-ის ფილტრის მნიშვნელობის მიღება ("ყველა" = ცარიელი სტრიქონი)
+        ''' ComboBox-ის ფილტრის მნიშვნელობის მიღება
         ''' </summary>
         Private Function GetComboBoxFilterValue(comboBox As ComboBox) As String
             Try
@@ -580,8 +545,6 @@ Namespace Scheduler_v8_8a.Services
                     End If
                 Next
 
-                Debug.WriteLine($"ScheduleFilterManager: მონიშნული სტატუსები: {String.Join(", ", selectedStatuses)}")
-
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: GetSelectedStatuses შეცდომა: {ex.Message}")
             End Try
@@ -590,14 +553,12 @@ Namespace Scheduler_v8_8a.Services
         End Function
 
         ''' <summary>
-        ''' გვერდის ზომის მიღება მონიშნული რადიობუტონიდან
+        ''' გვერდის ზომის მიღება
         ''' </summary>
-        ''' <returns>გვერდის ზომა (ნაგულისხმევად 20)</returns>
         Public Function GetPageSize() As Integer
             Try
                 For Each rb In rbPageSizes
                     If rb IsNot Nothing AndAlso rb.Checked Then
-                        ' რადიობუტონის სახელიდან ზომის განსაზღვრა
                         Select Case rb.Name.ToUpper()
                             Case "RB20"
                                 Return 20
@@ -606,7 +567,6 @@ Namespace Scheduler_v8_8a.Services
                             Case "RB100"
                                 Return 100
                             Case Else
-                                ' ტექსტიდან რიცხვის მოძებნის მცდელობა
                                 Dim numberText = System.Text.RegularExpressions.Regex.Match(rb.Text, "\d+").Value
                                 If Not String.IsNullOrEmpty(numberText) Then
                                     Dim size As Integer
@@ -618,7 +578,7 @@ Namespace Scheduler_v8_8a.Services
                     End If
                 Next
 
-                Return 20 ' ნაგულისხმევი ზომა
+                Return 20
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: GetPageSize შეცდომა: {ex.Message}")
@@ -629,11 +589,8 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' ყველა სტატუსის CheckBox-ის მონიშვნა/განიშვნა
         ''' </summary>
-        ''' <param name="checkAll">True - ყველას მონიშვნა, False - ყველას განიშვნა</param>
         Public Sub SetAllStatusCheckBoxes(checkAll As Boolean)
             Try
-                Debug.WriteLine($"ScheduleFilterManager: ყველა CheckBox-ის დაყენება: {checkAll}")
-
                 For Each checkBox In statusCheckBoxes
                     If checkBox IsNot Nothing Then
                         checkBox.Checked = checkAll
@@ -648,15 +605,12 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' კონკრეტული სტატუსის CheckBox-ის მონიშვნა/განიშვნა
         ''' </summary>
-        ''' <param name="statusText">სტატუსის ტექსტი</param>
-        ''' <param name="isChecked">მონიშნული თუ არა</param>
         Public Sub SetStatusCheckBox(statusText As String, isChecked As Boolean)
             Try
                 For Each checkBox In statusCheckBoxes
                     If checkBox IsNot Nothing AndAlso
                        String.Equals(checkBox.Text.Trim(), statusText.Trim(), StringComparison.OrdinalIgnoreCase) Then
                         checkBox.Checked = isChecked
-                        Debug.WriteLine($"ScheduleFilterManager: CheckBox '{statusText}' დაყენებული: {isChecked}")
                         Exit For
                     End If
                 Next
@@ -669,7 +623,6 @@ Namespace Scheduler_v8_8a.Services
         ''' <summary>
         ''' მონიშნული სტატუსების რაოდენობის მიღება
         ''' </summary>
-        ''' <returns>მონიშნული CheckBox-ების რაოდენობა</returns>
         Public ReadOnly Property SelectedStatusCount As Integer
             Get
                 Try
@@ -681,35 +634,43 @@ Namespace Scheduler_v8_8a.Services
         End Property
 
         ''' <summary>
-        ''' ფილტრების რესეტი - ყველაფრის საწყის მდგომარეობაში დაბრუნება
+        ''' ფილტრების რესეტი
         ''' </summary>
         Public Sub ResetFilters()
             Try
                 Debug.WriteLine("ScheduleFilterManager: ფილტრების რესეტი")
 
-                ' თარიღების რესეტი
-                InitializeDatePickers()
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                isUpdatingComboBoxes = True
 
-                ' ComboBox-ების რესეტი - ყველა "ყველა"-ზე დაყენება
-                Dim comboBoxes As ComboBox() = {cbBeneName, cbBeneSurname, cbTherapist, cbTherapyType, cbSpace, cbFunding}
-                For Each cb In comboBoxes
-                    If cb IsNot Nothing AndAlso cb.Items.Count > 0 Then
-                        cb.SelectedIndex = 0 ' "ყველა"
+                Try
+                    ' თარიღების რესეტი
+                    InitializeDatePickers()
+
+                    ' ComboBox-ების რესეტი
+                    Dim comboBoxes As ComboBox() = {cbBeneName, cbBeneSurname, cbTherapist, cbTherapyType, cbSpace, cbFunding}
+                    For Each cb In comboBoxes
+                        If cb IsNot Nothing AndAlso cb.Items.Count > 0 Then
+                            cb.SelectedIndex = 0
+                        End If
+                    Next
+
+                    ' ბენეფიციარის გვარის ComboBox-ის დახურვა
+                    ResetBeneficiarySurnameComboBox()
+
+                    ' ყველა სტატუსის მონიშვნა
+                    SetAllStatusCheckBoxes(True)
+
+                    ' პირველი რადიობუტონის მონიშვნა
+                    If rbPageSizes.Count > 0 AndAlso rbPageSizes(0) IsNot Nothing Then
+                        rbPageSizes(0).Checked = True
                     End If
-                Next
 
-                ' ბენეფიციარის გვარის ComboBox-ის დახურვა
-                ResetBeneficiarySurnameComboBox()
+                Finally
+                    isUpdatingComboBoxes = False
+                End Try
 
-                ' ყველა სტატუსის მონიშვნა
-                SetAllStatusCheckBoxes(True)
-
-                ' პირველი რადიობუტონის მონიშვნა
-                If rbPageSizes.Count > 0 AndAlso rbPageSizes(0) IsNot Nothing Then
-                    rbPageSizes(0).Checked = True
-                End If
-
-                ' ComboBox-ების განახლება თუ dataProcessor ხელმისაწვდომია
+                ' ComboBox-ების განახლება
                 If dataProcessor IsNot Nothing Then
                     PopulateFilterComboBoxes(dataProcessor)
                 End If
@@ -718,17 +679,38 @@ Namespace Scheduler_v8_8a.Services
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleFilterManager: ResetFilters შეცდომა: {ex.Message}")
+                isUpdatingComboBoxes = False
             End Try
         End Sub
 
-#Region "ივენთ ჰენდლერები"
+#Region "🔧 გაუმჯობესებული ივენთ ჰენდლერები"
 
         ''' <summary>
-        ''' თარიღის DatePicker-ის შეცვლის ივენთი
+        ''' 🔧 თარიღის შეცვლის ივენთი - მხოლოდ მომხმარებლის რეალური ქმედებისას
+        ''' გამოიყენება CloseUp და Leave ივენთები ValueChanged-ის ნაცვლად
         ''' </summary>
-        Private Sub DatePicker_ValueChanged(sender As Object, e As EventArgs)
+        Private Sub DatePicker_UserChanged(sender As Object, e As EventArgs)
             Try
-                Debug.WriteLine("ScheduleFilterManager: თარიღის ფილტრი შეიცვალა - ComboBox-ების განახლება")
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                If isUpdatingComboBoxes Then
+                    Debug.WriteLine("ScheduleFilterManager: ComboBox-ები განახლების პროცესშია - DatePicker ივენთი იგნორირებულია")
+                    Return
+                End If
+
+                ' 🔧 შევამოწმოთ მართლაც შეიცვალა თუ არა თარიღები
+                Dim currentDateFrom = If(dtpFrom?.Value.Date, DateTime.MinValue)
+                Dim currentDateTo = If(dtpTo?.Value.Date, DateTime.MinValue)
+
+                If currentDateFrom = lastDateFromValue AndAlso currentDateTo = lastDateToValue Then
+                    Debug.WriteLine("ScheduleFilterManager: თარიღები არ შეცვლილა - ივენთი იგნორირებულია")
+                    Return
+                End If
+
+                ' 🔧 ახალი მნიშვნელობების ჩაფიქსირება
+                lastDateFromValue = currentDateFrom
+                lastDateToValue = currentDateTo
+
+                Debug.WriteLine($"ScheduleFilterManager: თარიღის ფილტრი შეიცვალა - {currentDateFrom:dd.MM.yyyy} / {currentDateTo:dd.MM.yyyy}")
 
                 ' ComboBox-ების განახლება ახალი თარიღის პერიოდისთვის
                 RefreshAllComboBoxes()
@@ -737,7 +719,7 @@ Namespace Scheduler_v8_8a.Services
                 RaiseEvent FilterChanged()
 
             Catch ex As Exception
-                Debug.WriteLine($"ScheduleFilterManager: DatePicker_ValueChanged შეცდომა: {ex.Message}")
+                Debug.WriteLine($"ScheduleFilterManager: DatePicker_UserChanged შეცდომა: {ex.Message}")
             End Try
         End Sub
 
@@ -746,11 +728,12 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Private Sub BeneficiaryName_SelectedIndexChanged(sender As Object, e As EventArgs)
             Try
-                Dim selectedName = GetComboBoxFilterValue(cbBeneName)
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                If isUpdatingComboBoxes Then
+                    Return
+                End If
 
-                ' "ყველა" = ცარიელი სტრიქონი, ასე რომ ვიყენებთ ზუსტ მნიშვნელობას
                 Dim actualSelectedName = If(cbBeneName?.SelectedItem?.ToString(), "ყველა")
-
                 Debug.WriteLine($"ScheduleFilterManager: ბენეფიციარის სახელი შეიცვალა: '{actualSelectedName}'")
 
                 ' ბენეფიციარის გვარების ComboBox-ის განახლება
@@ -769,6 +752,11 @@ Namespace Scheduler_v8_8a.Services
         ''' </summary>
         Private Sub ComboBox_SelectedIndexChanged(sender As Object, e As EventArgs)
             Try
+                ' 🔧 ციკლური განახლებების თავიდან აცილება
+                If isUpdatingComboBoxes Then
+                    Return
+                End If
+
                 Debug.WriteLine("ScheduleFilterManager: ComboBox ფილტრი შეიცვალა")
                 RaiseEvent FilterChanged()
             Catch ex As Exception

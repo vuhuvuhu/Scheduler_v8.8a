@@ -937,7 +937,8 @@ Public Class Form1
     End Sub
 
     ''' <summary>
-    ''' განრიგის გვერდის ჩვენება
+    ''' განრიგის გვერდის ჩვენება - გაუმჯობესებული ვერსია
+    ''' მომხმარებლის ინფორმაციის სწორი გადაცემით
     ''' </summary>
     Private Sub ShowSchedule()
         Try
@@ -950,18 +951,36 @@ Public Class Form1
             Dim scheduleControl As New UC_Schedule()
             scheduleControl.Dock = DockStyle.Fill
 
-            ' მონაცემთა სერვისის მითითება
+            ' 🔧 ჯერ მონაცემთა სერვისი
             If dataService IsNot Nothing Then
                 scheduleControl.SetDataService(dataService)
+                Debug.WriteLine("ShowSchedule: მონაცემთა სერვისი გადაცემულია")
+            Else
+                Debug.WriteLine("ShowSchedule: ❌ dataService არის Nothing")
             End If
 
-            ' დავამატოთ კონტროლი პანელზე
+            ' 🔧 შემდეგ მომხმარებლის ინფორმაცია
+            If viewModel IsNot Nothing Then
+                Dim userEmail As String = If(String.IsNullOrEmpty(viewModel.Email), "user@example.com", viewModel.Email)
+                Dim userRole As String = If(String.IsNullOrEmpty(viewModel.Role), "6", viewModel.Role)
+
+                scheduleControl.SetUserInfo(userEmail, userRole)
+                Debug.WriteLine($"ShowSchedule: მომხმარებლის ინფორმაცია გადაცემულია - ელფოსტა: '{userEmail}', როლი: '{userRole}'")
+            Else
+                Debug.WriteLine("ShowSchedule: ❌ viewModel არის Nothing")
+                ' ნაგულისხმევი მნიშვნელობები
+                scheduleControl.SetUserInfo("user@example.com", "6")
+            End If
+
+            ' კონტროლის დამატება პანელზე
             pnlMain.Controls.Add(scheduleControl)
 
             Debug.WriteLine("ShowSchedule: განრიგის გვერდი წარმატებით გამოჩნდა")
+
         Catch ex As Exception
             Debug.WriteLine($"ShowSchedule: შეცდომა - {ex.Message}")
-            MessageBox.Show($"განრიგის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"განრიგის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
