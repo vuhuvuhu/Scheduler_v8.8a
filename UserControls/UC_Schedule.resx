@@ -564,7 +564,7 @@
   <data name="btnToPDF.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAAKkAAACpCAYAAABQ1R0vAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAL
-        DgAACw4BQL7hQQAAOppJREFUeF7t3UmzLHd553G1HR1eeOGNN34D7Lz0trf9IgjbAVwU4CEMAoNBZkaA
+        DQAACw0B7QfALAAAOppJREFUeF7t3UmzLHd553G1HR1eeOGNN34D7Lz0trf9IgjbAVwU4CEMAoNBZkaA
         QAwGJCExGCEmM9hMzWhACBDIwvNAgG3aYGhAELaAZmzk6vrmvd9zfvWc55+VVafOHcTNiN+tOllz5uc8
         /yHz1L1mtVpdzSXMT//fT3/uJz/5yX/nsrv9albXtCuvZnXNgw8++N9+/OMf/8IPf/jDX/re9773sP/4
         j//4n/fff/91X/va1+78yle+8okvf/nL92b+7d/+7W8zX/rSl75guP0b3/jGMx544IFf4/kAyfN3r9mt
@@ -850,7 +850,7 @@
   <data name="btbPrint.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAAKkAAACpCAYAAABQ1R0vAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAL
-        DgAACw4BQL7hQQAAPNlJREFUeF7tnVm3JFWZ/unu9V990Rd90zf9Bbzzsm/71g/BUhdQsMBhqWijgoCK
+        DQAACw0B7QfALAAAPNlJREFUeF7tnVm3JFWZ/unu9V990Rd90zf9Bbzzsm/71g/BUhdQsMBhqWijgoCK
         qIXIJJNMylQgkzLIrAgiiKgMiiAKAgUylVBFMYlg/uMX5zx5nnjz3Tsi8uQZiqpY6zkRuTMiM3LHL5/3
         3UPG2W8ymezTBurdf7z7r++8887/Y509v0+T/dLCfZrs99577/3L3//+939/6623/nP37t0feOWVVz70
         0ksvHf7cc89d/Mwzz9z59NNP3+d66qmnHnI9+eSTf5R4/oUXXjh2586d/8PrASSvn71nVr63Ky3c2wQY

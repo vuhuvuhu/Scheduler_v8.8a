@@ -514,50 +514,88 @@ Public Class UC_Schedule
     ''' ახალი ჩანაწერის დამატების ღილაკი
     ''' </summary>
     Private Sub BtnAddSchedule_Click(sender As Object, e As EventArgs) Handles BtnAddSchedule.Click
-        Debug.WriteLine("BtnAddSchedule_Click: ახალი ჩანაწერის დამატების მოთხოვნა")
-
         Try
-            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
-            For Each frm As Form In Application.OpenForms
-                If TypeOf frm Is NewRecordForm Then
-                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
-                    Debug.WriteLine("BtnAddSchedule_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
-                    frm.Focus()
-                    Return
-                End If
-            Next
+            Debug.WriteLine("UC_Schedule: ახალი სესიის დამატება")
 
-            ' შევამოწმოთ გვაქვს თუ არა dataService
-            If dataService Is Nothing Then
-                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Debug.WriteLine("BtnAddSchedule_Click: dataService არ არის ინიციალიზებული")
+            ' 🔧 მომხმარებლის ელფოსტის სწორი გადაცემა
+            Using addForm As New NewRecordForm(dataService, "სესია", 0, userEmail, "UC_Schedule")
+                Dim result As DialogResult = addForm.ShowDialog()
+
+                If result = DialogResult.OK Then
+                    RefreshData()
+                    MessageBox.Show("ახალი სესია წარმატებით დაემატა", "წარმატება",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: BtnAddSchedule_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"ახალი ჩანაწერის შექმნის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🖨️ ბეჭდვის ღილაკი - DgvSchedule-ის მონაცემების ბეჭდვა
+    ''' გაუმჯობესებული ვერსია: სვეტების მონიშვნა + პრინტერის არჩევა + ლანდშაფტი
+    ''' </summary>
+    Private Sub BtbPrint_Click(sender As Object, e As EventArgs) Handles btbPrint.Click
+        Try
+            Debug.WriteLine("UC_Schedule: გაუმჯობესებული ბეჭდვის ღილაკზე დაჭერა")
+
+            ' შევამოწმოთ არის თუ არა მონაცემები ბეჭდვისთვის
+            If DgvSchedule Is Nothing OrElse DgvSchedule.Rows.Count = 0 Then
+                MessageBox.Show("ბეჭდვისთვის მონაცემები არ არის ხელმისაწვდომი", "ინფორმაცია",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
 
-            ' ნაგულისხმევად "სესია" ტიპი
-            Dim recordType As String = "სესია"
+            ' მომხმარებელს ავარჩევინოთ ბეჭდვის ტიპი
+            Dim printTypeResult As DialogResult = MessageBox.Show(
+                "რომელი ტიპის ბეჭდვა გსურთ?" & Environment.NewLine & Environment.NewLine &
+                "დიახ - გაუმჯობესებული ბეჭდვა (სვეტების მონიშვნა + ლანდშაფტი)" & Environment.NewLine &
+                "არა - ჩვეულებრივი ბეჭდვა" & Environment.NewLine &
+                "გაუქმება - ოპერაციის შეწყვეტა",
+                "ბეჭდვის ტიპის არჩევა",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question)
 
-            ' NewRecordForm-ის გახსნა Add რეჟიმში
-            Dim newRecordForm As New NewRecordForm(dataService, recordType, userEmail, "UC_Calendar")
-            Dim result = newRecordForm.ShowDialog()
+            Select Case printTypeResult
+                Case DialogResult.Yes
+                    ' 🔧 გაუმჯობესებული ბეჭდვა - სვეტების მონიშვნით და ლანდშაფტით
+                    Using advancedPrintService As New AdvancedDataGridViewPrintService(DgvSchedule)
+                        advancedPrintService.ShowFullPrintDialog()
+                    End Using
 
-            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
-            If result = DialogResult.OK Then
-                Debug.WriteLine("BtnAddSchedule_Click: სესია წარმატებით დაემატა")
+                Case DialogResult.No
+                    ' ჩვეულებრივი ბეჭდვა (ძველი ვერსია)
+                    Using simplePrintService As New DataGridViewPrintService(DgvSchedule)
+                        Dim result As DialogResult = MessageBox.Show(
+                            "გსურთ ჯერ ნახოთ ბეჭდვის პრევიუ?",
+                            "ბეჭდვის პრევიუ",
+                            MessageBoxButtons.YesNoCancel,
+                            MessageBoxIcon.Question)
 
-                ' ჩავტვირთოთ სესიები თავიდან
-                RefreshData()
+                        Select Case result
+                            Case DialogResult.Yes
+                                simplePrintService.ShowPrintPreview()
+                            Case DialogResult.No
+                                simplePrintService.Print()
+                            Case DialogResult.Cancel
+                                Debug.WriteLine("UC_Schedule: ჩვეულებრივი ბეჭდვა გაუქმებულია")
+                        End Select
+                    End Using
 
-            End If
+                Case DialogResult.Cancel
+                    Debug.WriteLine("UC_Schedule: ბეჭდვა გაუქმებულია მომხმარებლის მიერ")
+
+            End Select
 
         Catch ex As Exception
-            Debug.WriteLine($"BtnAddSchedule_Click: შეცდომა - {ex.Message}")
-            MessageBox.Show($"ახალი ჩანაწერის ფორმის გახსნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"UC_Schedule: BtbPrint_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"ბეჭდვის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-
-
-
-
     End Sub
 
 #End Region

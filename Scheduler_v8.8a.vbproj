@@ -125,6 +125,12 @@
     <Compile Include="Forms\AddTerForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\ColumnSelectionForm.Designer.vb">
+      <DependentUpon>ColumnSelectionForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ColumnSelectionForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\Form1.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -160,7 +166,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Services\AdvancedDataGridViewPrintService.vb" />
     <Compile Include="Services\CalendarGridManager.vb" />
+    <Compile Include="Services\DataGridViewPrintService.vb" />
     <Compile Include="Services\GoogleOAuthService.vb" />
     <Compile Include="Services\GoogleServiceAccountClient.vb" />
     <Compile Include="Services\GoogleServiceAccountService.vb" />
@@ -210,6 +218,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\AddTerForm.resx">
       <DependentUpon>AddTerForm.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ColumnSelectionForm.resx">
+      <DependentUpon>ColumnSelectionForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\Form1.resx">
       <DependentUpon>Form1.vb</DependentUpon>
