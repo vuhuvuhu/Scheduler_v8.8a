@@ -598,9 +598,14 @@ Public Class UC_Schedule
         End Try
     End Sub
 
+    ' ========================================
+    ' 🔧 დაამატეთ ეს მეთოდები UC_Schedule.vb ფაილში
+    ' არსებული btnToPDF_Click მეთოდის ჩანაცვლებად
+    ' ========================================
+
     ''' <summary>
-    ''' 📄 PDF ექსპორტის ღილაკი - პირდაპირ PDF ფაილად ჩაწერა
-    ''' გამოიყენება System.Drawing.Printing და Microsoft Print to PDF
+    ''' 📄 PDF ექსპორტის ღილაკი - სვეტების მონიშვნით ბეჭდვის მსგავსად
+    ''' გაუმჯობესებული ვერსია: მუშაობს ზუსტად როგორც btbPrint
     ''' </summary>
     Private Sub btnToPDF_Click(sender As Object, e As EventArgs) Handles btnToPDF.Click
         Try
@@ -609,27 +614,293 @@ Public Class UC_Schedule
             ' შევამოწმოთ არის თუ არა მონაცემები ექსპორტისთვის
             If DgvSchedule Is Nothing OrElse DgvSchedule.Rows.Count = 0 Then
                 MessageBox.Show("PDF ექსპორტისთვის მონაცემები არ არის ხელმისაწვდომი", "ინფორმაცია",
-                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
 
-            ' PDF ფაილის შენახვის ადგილის არჩევა
+            ' 🔧 მომხმარებელს ავარჩევინოთ PDF ექსპორტის ტიპი (btbPrint-ის ანალოგიურად)
+            Dim pdfTypeResult As DialogResult = MessageBox.Show(
+            "რომელი ტიპის PDF ექსპორტი გსურთ?" & Environment.NewLine & Environment.NewLine &
+            "დიახ - გაუმჯობესებული PDF ექსპორტი (სვეტების მონიშვნით)" & Environment.NewLine &
+            "არა - მარტივი PDF ექსპორტი (ყველა ხილული სვეტით)" & Environment.NewLine &
+            "გაუქმება - ოპერაციის შეწყვეტა",
+            "PDF ექსპორტის ტიპის არჩევა",
+            MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Question)
+
+            Select Case pdfTypeResult
+                Case DialogResult.Yes
+                    ' 🔧 გაუმჯობესებული PDF ექსპორტი - სვეტების მონიშვნით (btbPrint-ის ანალოგიური)
+                    ExportAdvancedPDFWithColumnSelection()
+
+                Case DialogResult.No
+                    ' მარტივი PDF ექსპორტი - HTML ალტერნატივით (ძველი ვერსია)
+                    ExportSimplePDFAlternative()
+
+                Case DialogResult.Cancel
+                    Debug.WriteLine("UC_Schedule: PDF ექსპორტი გაუქმებულია მომხმარებლის მიერ")
+
+            End Select
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: btnToPDF_Click შეცდომა: {ex.Message}")
+            MessageBox.Show($"PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 გაუმჯობესებული PDF ექსპორტი სვეტების მონიშვნით - btbPrint-ის ანალოგია
+    ''' იყენებს ColumnSelectionForm-ს ზუსტად როგორც AdvancedDataGridViewPrintService
+    ''' </summary>
+    Private Sub ExportAdvancedPDFWithColumnSelection()
+        Try
+            Debug.WriteLine("UC_Schedule: გაუმჯობესებული PDF ექსპორტი სვეტების მონიშვნით")
+
+            ' 1. სვეტების მონიშვნის დიალოგის ჩვენება - btbPrint-ის ანალოგიურად
+            Dim selectedColumns As List(Of DataGridViewColumn) = Nothing
+
+            Using columnDialog As New ColumnSelectionForm(DgvSchedule)
+                Dim selectionResult As DialogResult = columnDialog.ShowDialog()
+
+                If selectionResult <> DialogResult.OK Then
+                    Debug.WriteLine("UC_Schedule: სვეტების მონიშვნა გაუქმებულია")
+                    Return
+                End If
+
+                selectedColumns = columnDialog.GetSelectedColumns()
+                Debug.WriteLine($"UC_Schedule: მონიშნულია {selectedColumns.Count} სვეტი PDF ექსპორტისთვის")
+            End Using
+
+            If selectedColumns Is Nothing OrElse selectedColumns.Count = 0 Then
+                MessageBox.Show("გთხოვთ მონიშნოთ მინიმუმ ერთი სვეტი PDF ექსპორტისთვის", "ინფორმაცია",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            ' 2. PDF ფაილის შენახვის ადგილის არჩევა
             Using saveDialog As New SaveFileDialog()
                 saveDialog.Filter = "PDF ფაილები (*.pdf)|*.pdf"
                 saveDialog.Title = "PDF ფაილის შენახვა"
                 saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
 
                 If saveDialog.ShowDialog() = DialogResult.OK Then
-                    CreatePDFDirect(saveDialog.FileName)
+                    ' 3. PDF-ის შექმნა მონიშნული სვეტებით
+                    CreateAdvancedPDF(saveDialog.FileName, selectedColumns)
+                Else
+                    Debug.WriteLine("UC_Schedule: ფაილის შენახვის დიალოგი გაუქმებულია")
                 End If
             End Using
 
         Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: btnToPDF_Click შეცდომა: {ex.Message}")
-            MessageBox.Show($"PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
-                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"UC_Schedule: ExportAdvancedPDFWithColumnSelection შეცდომა: {ex.Message}")
+            MessageBox.Show($"გაუმჯობესებული PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+
+    ''' <summary>
+    ''' 🔧 მონიშნული სვეტებით PDF-ის შექმნა - btbPrint ლოგიკის ანალოგია
+    ''' </summary>
+    ''' <param name="filePath">ფაილის მისამართი</param>
+    ''' <param name="selectedColumns">მონიშნული სვეტების სია</param>
+    Private Sub CreateAdvancedPDF(filePath As String, selectedColumns As List(Of DataGridViewColumn))
+        Try
+            Debug.WriteLine($"UC_Schedule: CreateAdvancedPDF - {filePath}, სვეტები: {selectedColumns.Count}")
+
+            ' 🔧 ვიყენებთ HTML ალტერნატივა მონიშნული სვეტებით
+            ' რადგანაც PDF ბიბლიოთეკა შეიძლება არ იყოს ხელმისაწვდომი
+            CreateAdvancedHTMLForPDFExport(filePath.Replace(".pdf", ".html"), selectedColumns)
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: CreateAdvancedPDF შეცდომა: {ex.Message}")
+            ' შეცდომის შემთხვევაში HTML ალტერნატივა
+            MessageBox.Show("PDF შექმნის შეცდომა. შეიქმნება HTML ფაილი ბრაუზერში PDF-ად ბეჭდვისთვის.",
+                       "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            CreateAdvancedHTMLForPDFExport(filePath.Replace(".pdf", ".html"), selectedColumns)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 HTML ფაილის შექმნა PDF-ისთვის მონიშნული სვეტებით
+    ''' იყენებს ზუსტად იმ ლოგიკას რაც btbPrint-ში
+    ''' </summary>
+    ''' <param name="filePath">ფაილის მისამართი</param>
+    ''' <param name="selectedColumns">მონიშნული სვეტების სია</param>
+    Private Sub CreateAdvancedHTMLForPDFExport(filePath As String, selectedColumns As List(Of DataGridViewColumn))
+        Try
+            Debug.WriteLine($"UC_Schedule: CreateAdvancedHTMLForPDFExport - სვეტები: {selectedColumns.Count}")
+
+            Dim html As New System.Text.StringBuilder()
+
+            ' HTML დოკუმენტის დასაწყისი - PDF-ისთვის ოპტიმიზირებული
+            html.AppendLine("<!DOCTYPE html>")
+            html.AppendLine("<html lang=""ka"">")
+            html.AppendLine("<head>")
+            html.AppendLine("    <meta charset=""UTF-8"">")
+            html.AppendLine("    <title>განრიგის მონაცემები - PDF ექსპორტი</title>")
+            html.AppendLine("    <style>")
+            html.AppendLine("        @page { size: A4 landscape; margin: 15mm; }")
+            html.AppendLine("        @media print { ")
+            html.AppendLine("            body { margin: 0; font-size: 10px; }")
+            html.AppendLine("            .no-print { display: none; }")
+            html.AppendLine("            table { page-break-inside: avoid; }")
+            html.AppendLine("            h1 { font-size: 16px; margin: 5px 0; }")
+            html.AppendLine("        }")
+            html.AppendLine("        body { font-family: 'Sylfaen', Arial, sans-serif; font-size: 11px; }")
+            html.AppendLine("        h1 { text-align: center; font-size: 18px; margin: 10px 0; color: #333; }")
+            html.AppendLine("        table { width: 100%; border-collapse: collapse; font-size: 9px; }")
+            html.AppendLine("        th, td { padding: 3px 2px; border: 1px solid #333; text-align: left; vertical-align: top; }")
+            html.AppendLine("        th { background-color: #ddd; font-weight: bold; text-align: center; }")
+            html.AppendLine("        tr:nth-child(even) { background-color: #f9f9f9; }")
+            html.AppendLine("        .info { text-align: center; margin: 8px 0; font-size: 10px; color: #666; }")
+            html.AppendLine("        .button-container { text-align: center; margin: 20px 0; }")
+            html.AppendLine("        .pdf-button { padding: 15px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }")
+            html.AppendLine("        .instructions { margin: 10px 0; color: #666; }")
+            html.AppendLine("    </style>")
+            html.AppendLine("</head>")
+            html.AppendLine("<body>")
+
+            ' სათაური
+            html.AppendLine("    <h1>განრიგის მონაცემები - PDF ექსპორტი</h1>")
+
+            ' ინფორმაცია
+            html.AppendLine("    <div class=""info"">")
+            html.AppendLine($"        თარიღი: {DateTime.Now:dd.MM.yyyy HH:mm} | ჩანაწერები: {DgvSchedule.Rows.Count} | მონიშნული სვეტები: {selectedColumns.Count}")
+            html.AppendLine("    </div>")
+
+            ' PDF ღილაკი და ინსტრუქციები
+            html.AppendLine("    <div class=""no-print button-container"">")
+            html.AppendLine("        <button class=""pdf-button"" onclick=""window.print(); setTimeout(() => window.close(), 1000);"">")
+            html.AppendLine("            🖨️ PDF-ად ექსპორტი</button>")
+            html.AppendLine("        <div class=""instructions"">")
+            html.AppendLine("            <p><strong>ინსტრუქცია:</strong></p>")
+            html.AppendLine("            <p>1. დააჭირეთ ღილაკს ⬆️</p>")
+            html.AppendLine("            <p>2. აირჩიეთ პრინტერად ""Microsoft Print to PDF""</p>")
+            html.AppendLine("            <p>3. დააჭირეთ ""Print"" ღილაკს</p>")
+            html.AppendLine("            <p>4. აირჩიეთ PDF ფაილის შენახვის ადგილი</p>")
+            html.AppendLine("        </div>")
+            html.AppendLine("    </div>")
+
+            ' ცხრილი - მხოლოდ მონიშნული სვეტებით
+            html.AppendLine("    <table>")
+            html.AppendLine("        <thead><tr>")
+
+            ' სათაურები - მხოლოდ მონიშნული სვეტები
+            For Each column In selectedColumns
+                html.AppendLine($"            <th>{EscapeHtmlText(column.HeaderText)}</th>")
+            Next
+
+            html.AppendLine("        </tr></thead>")
+            html.AppendLine("        <tbody>")
+
+            ' მონაცემები - მხოლოდ მონიშნული სვეტები
+            For rowIndex As Integer = 0 To DgvSchedule.Rows.Count - 1
+                html.AppendLine("            <tr>")
+                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
+
+                For Each column In selectedColumns
+                    Dim cellValue As String = ""
+                    Try
+                        If row.Cells(column.Name).Value IsNot Nothing Then
+                            cellValue = row.Cells(column.Name).Value.ToString()
+                        End If
+                    Catch
+                        cellValue = ""
+                    End Try
+
+                    html.AppendLine($"                <td>{EscapeHtmlText(cellValue)}</td>")
+                Next
+
+                html.AppendLine("            </tr>")
+            Next
+
+            html.AppendLine("        </tbody>")
+            html.AppendLine("    </table>")
+
+            ' ქვედა ინფორმაცია
+            html.AppendLine("    <div class=""info"">")
+            html.AppendLine($"        შექმნილია: {DateTime.Now:dd.MM.yyyy HH:mm} | Scheduler v8.8a | მონიშნული სვეტები: {selectedColumns.Count}")
+            html.AppendLine("    </div>")
+
+            html.AppendLine("</body>")
+            html.AppendLine("</html>")
+
+            ' ფაილის ჩაწერა
+            System.IO.File.WriteAllText(filePath, html.ToString(), System.Text.Encoding.UTF8)
+
+            Debug.WriteLine("UC_Schedule: PDF ექსპორტისთვის HTML ფაილი შეიქმნა")
+            MessageBox.Show($"შეიქმნა PDF ექსპორტისთვის ფაილი:{Environment.NewLine}{filePath}" & Environment.NewLine & Environment.NewLine &
+                       "ფაილი იხსნება ბრაუზერში. დააჭირეთ 'PDF-ად ექსპორტი' ღილაკს და" & Environment.NewLine &
+                       "აირჩიეთ პრინტერად 'Microsoft Print to PDF'",
+                       "PDF ექსპორტი", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            ' ფაილის გახსნა ბრაუზერში
+            System.Diagnostics.Process.Start(filePath)
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: CreateAdvancedHTMLForPDFExport შეცდომა: {ex.Message}")
+            Throw
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 მარტივი PDF ექსპორტი - ყველა ხილული სვეტით (ძველი ვერსია)
+    ''' </summary>
+    Private Sub ExportSimplePDFAlternative()
+        Try
+            Debug.WriteLine("UC_Schedule: მარტივი PDF ექსპორტი")
+
+            ' PDF ფაილის შენახვის ადგილის არჩევა
+            Using saveDialog As New SaveFileDialog()
+                saveDialog.Filter = "PDF ფაილები (*.pdf)|*.pdf|HTML ფაილები (*.html)|*.html"
+                saveDialog.Title = "ფაილის შენახვა"
+                saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
+
+                If saveDialog.ShowDialog() = DialogResult.OK Then
+                    If saveDialog.FileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) Then
+                        ' HTML ფორმატით შენახვა
+                        CreateSimpleHTMLFile(saveDialog.FileName)
+                    Else
+                        ' PDF ალტერნატივა - HTML ფაილით
+                        CreateHTMLForPrinting(saveDialog.FileName.Replace(".pdf", ".html"))
+                    End If
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: ExportSimplePDFAlternative შეცდომა: {ex.Message}")
+            Throw
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 HTML ტექსტის escape - გაუმჯობესებული ვერსია
+    ''' </summary>
+    Private Function EscapeHtmlText(text As String) As String
+        Try
+            If String.IsNullOrEmpty(text) Then
+                Return ""
+            End If
+
+            ' ძირითადი HTML სიმბოლოების escape
+            text = text.Replace("&", "&amp;")  ' ყველაზე პირველ ადგილას!
+            text = text.Replace("<", "&lt;")
+            text = text.Replace(">", "&gt;")
+            text = text.Replace("""", "&quot;")
+            text = text.Replace("'", "&#39;")
+
+            ' დამატებითი სიმბოლოები
+            text = text.Replace(vbCrLf, "<br>")
+            text = text.Replace(vbLf, "<br>")
+            text = text.Replace(vbCr, "<br>")
+
+            Return text
+        Catch ex As Exception
+            Debug.WriteLine($"UC_Schedule: EscapeHtmlText შეცდომა: {ex.Message}")
+            Return If(text, "")
+        End Try
+    End Function
 
     ''' <summary>
     ''' პირდაპირ PDF ფაილის შექმნა System.Drawing-ით
@@ -1211,27 +1482,6 @@ Public Class UC_Schedule
             Throw
         End Try
     End Sub
-
-    ''' <summary>
-    ''' HTML ტექსტის escape
-    ''' </summary>
-    Private Function EscapeHtmlText(text As String) As String
-        Try
-            If String.IsNullOrEmpty(text) Then
-                Return ""
-            End If
-
-            text = text.Replace("&", "&amp;")
-            text = text.Replace("<", "&lt;")
-            text = text.Replace(">", "&gt;")
-            text = text.Replace("""", "&quot;")
-            text = text.Replace("'", "&#39;")
-
-            Return text
-        Catch
-            Return text
-        End Try
-    End Function
 
     ''' <summary>
     ''' CSV ტექსტის escape
