@@ -51,6 +51,9 @@
     <ApplicationIcon>Resources\AppImages\scheduler logo3.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
     <Reference Include="Google.Apis, Version=1.69.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>packages\Google.Apis.1.69.0\lib\net462\Google.Apis.dll</HintPath>
     </Reference>
@@ -66,8 +69,17 @@
     <Reference Include="Google.Apis.Sheets.v4, Version=1.69.0.3757, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>packages\Google.Apis.Sheets.v4.1.69.0.3757\lib\net462\Google.Apis.Sheets.v4.dll</HintPath>
     </Reference>
+    <Reference Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PdfSharp, Version=1.50.5147.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb, processorArchitecture=MSIL">
+      <HintPath>packages\PDFsharp.1.50.5147\lib\net20\PdfSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="PdfSharp.Charting, Version=1.50.5147.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb, processorArchitecture=MSIL">
+      <HintPath>packages\PDFsharp.1.50.5147\lib\net20\PdfSharp.Charting.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.CodeDom, Version=9.0.0.4, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -168,6 +180,8 @@
     </Compile>
     <Compile Include="Services\AdvancedDataGridViewPrintService.vb" />
     <Compile Include="Services\CalendarGridManager.vb" />
+    <Compile Include="Services\DataGridViewPDFExportService.vb" />
+    <Compile Include="Services\DataGridViewPDFLikePrintService.vb" />
     <Compile Include="Services\DataGridViewPrintService.vb" />
     <Compile Include="Services\GoogleOAuthService.vb" />
     <Compile Include="Services\GoogleServiceAccountClient.vb" />
@@ -182,6 +196,7 @@
     <Compile Include="Services\ScheduleUIManager.vb" />
     <Compile Include="Services\SessionCardFactory.vb" />
     <Compile Include="Services\SheetDataService.vb" />
+    <Compile Include="Services\SimplePDFExportService.vb" />
     <Compile Include="Services\UserService.vb" />
     <Compile Include="UserControls\UC_Calendar.Designer.vb">
       <DependentUpon>UC_Calendar.vb</DependentUpon>
