@@ -75,9 +75,6 @@ Public Class UC_Schedule
 
             Debug.WriteLine($"UC_Schedule: საბოლოო userRoleID: {userRoleID}, userEmail: '{userEmail}'")
 
-            ' ლეიბლების განახლება
-            UpdateUserInfoLabels()
-
             ' ფინანსური პანელის ხილულობის განახლება
             If financialAnalysisService IsNot Nothing Then
                 financialAnalysisService.SetVisibilityByUserRole(userRoleID)
@@ -123,14 +120,18 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' კონკრეტულ გვერდზე გადასვლა
+    ''' კონკრეტულ გვერდზე გადასვლა - შესწორებული ვერსია
     ''' </summary>
     Public Sub GoToPage(pageNumber As Integer)
         Try
-            If pageNumber >= 1 Then
-                currentPage = pageNumber
-                LoadFilteredSchedule()
+            Debug.WriteLine($"UC_Schedule: GoToPage - მოთხოვნილი გვერდი: {pageNumber}, მიმდინარე: {currentPage}")
+
+            If pageNumber >= 1 AndAlso pageNumber <> currentPage Then
+                currentPage = pageNumber ' 🔧 ჯერ currentPage-ს ვაყენებთ
+                Debug.WriteLine($"UC_Schedule: გვერდის შეცვლა: {currentPage}")
+                LoadFilteredSchedule() ' 🔧 შემდეგ ვტვირთავთ
             End If
+
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: GoToPage შეცდომა: {ex.Message}")
         End Try
@@ -158,30 +159,6 @@ Public Class UC_Schedule
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: Load შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' მომხმარებლის ინფორმაციის ლეიბლების განახლება
-    ''' </summary>
-    Private Sub UpdateUserInfoLabels()
-        Try
-            ' Label22 - მომხმარებლის როლი
-            If Label22 IsNot Nothing Then
-                Label22.Text = $"როლი: {userRoleID}"
-                Label22.ForeColor = If(userRoleID = 1, Color.Green, If(userRoleID = 2, Color.Blue, Color.Red))
-            End If
-
-            ' Label23 - მომხმარებლის ელფოსტა
-            If Label23 IsNot Nothing Then
-                Label23.Text = $"ელფოსტა: {userEmail}"
-                Label23.ForeColor = Color.Black
-            End If
-
-            Debug.WriteLine($"UC_Schedule: ლეიბლები განახლდა - როლი: {userRoleID}, ელფოსტა: '{userEmail}'")
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: UpdateUserInfoLabels შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -336,7 +313,8 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' განრიგის მონაცემების ჩატვირთვა
+    ''' განრიგის მონაცემების ჩატვირთვა - შესწორებული ვერსია
+    ''' currentPage-ის ორმაგი განახლების თავიდან აცილებით
     ''' </summary>
     Private Sub LoadFilteredSchedule()
         Try
@@ -345,31 +323,36 @@ Public Class UC_Schedule
                 Return
             End If
 
-            Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule - გვერდი {currentPage}")
+            Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule - მოთხოვნილი გვერდი: {currentPage}")
 
             ' ფილტრის კრიტერიუმების მიღება
             Dim criteria = filterManager.GetFilterCriteria()
             Dim pageSize = filterManager.GetPageSize()
 
-            ' მონაცემების მიღება
+            ' მონაცემების მიღება - currentPage-ს არ ვცვლით აქ
             Dim result = dataProcessor.GetFilteredSchedule(criteria, currentPage, pageSize)
+
+            ' 🔧 მხოლოდ მაშინ განვაახლოთ currentPage, თუ dataProcessor-მა შეცვალა
+            ' (მაგალითად, თუ ძალიან დიდი გვერდის ნომერი იყო მოთხოვნილი)
+            If result.CurrentPage <> currentPage Then
+                Debug.WriteLine($"UC_Schedule: dataProcessor-მა შეცვალა გვერდი {currentPage} -> {result.CurrentPage}")
+                currentPage = result.CurrentPage
+            End If
 
             ' UI-ს განახლება
             uiManager.LoadDataToGrid(result.Data, userRoleID)
             uiManager.UpdatePageLabel(result.CurrentPage, result.TotalPages)
             uiManager.UpdateNavigationButtons(result.CurrentPage, result.TotalPages)
 
-            currentPage = result.CurrentPage
-
             ' სტატისტიკისა და ფინანსური ანალიზის განახლება
             System.Threading.Tasks.Task.Run(Sub() UpdateStatisticsAsync(criteria))
 
-            Debug.WriteLine($"UC_Schedule: ჩატვირთულია {result.Data.Count} ჩანაწერი")
+            Debug.WriteLine($"UC_Schedule: ჩატვირთულია {result.Data.Count} ჩანაწერი, გვერდი: {result.CurrentPage}/{result.TotalPages}")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule შეცდომა: {ex.Message}")
             MessageBox.Show($"მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
-                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -410,11 +393,12 @@ Public Class UC_Schedule
 #Region "ივენთ ჰენდლერები"
 
     ''' <summary>
-    ''' ფილტრის შეცვლის ივენთი
+    ''' ფილტრის შეცვლის ივენთი - შესწორებული ვერსია
     ''' </summary>
     Private Sub OnFilterChanged()
         Try
-            currentPage = 1
+            Debug.WriteLine("UC_Schedule: OnFilterChanged - ფილტრი შეიცვალა, პირველ გვერდზე გადასვლა")
+            currentPage = 1 ' 🔧 ფილტრის შეცვლისას ყოველთვის პირველ გვერდზე
             LoadFilteredSchedule()
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnFilterChanged შეცდომა: {ex.Message}")
@@ -422,11 +406,12 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' გვერდის ზომის შეცვლის ივენთი
+    ''' გვერდის ზომის შეცვლის ივენთი - შესწორებული ვერსია
     ''' </summary>
     Private Sub OnPageSizeChanged()
         Try
-            currentPage = 1
+            Debug.WriteLine("UC_Schedule: OnPageSizeChanged - გვერდის ზომა შეიცვალა, პირველ გვერდზე გადასვლა")
+            currentPage = 1 ' 🔧 გვერდის ზომის შეცვლისას ყოველთვის პირველ გვერდზე
             LoadFilteredSchedule()
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnPageSizeChanged შეცდომა: {ex.Message}")
@@ -471,29 +456,46 @@ Public Class UC_Schedule
         End Try
     End Sub
 
+    ' ========================================
+    ' 🔧 UC_Schedule.vb-ში შეცვალეთ ეს მეთოდები:
+    ' ========================================
+
     ''' <summary>
-    ''' წინა გვერდის ღილაკი
+    ''' წინა გვერდის ღილაკი - შესწორებული ვერსია
     ''' </summary>
     Private Sub OnPreviousPageClick(sender As Object, e As EventArgs)
         Try
+            Debug.WriteLine($"UC_Schedule: OnPreviousPageClick - მიმდინარე გვერდი: {currentPage}")
+
             If currentPage > 1 Then
-                currentPage -= 1
-                LoadFilteredSchedule()
+                currentPage -= 1 ' 🔧 ჯერ currentPage-ს ვამცირებთ
+                Debug.WriteLine($"UC_Schedule: წინა გვერდზე გადასვლა - ახალი გვერდი: {currentPage}")
+                LoadFilteredSchedule() ' 🔧 შემდეგ ვტვირთავთ
+            Else
+                Debug.WriteLine("UC_Schedule: წინა გვერდის ღილაკი - უკვე პირველ გვერდზე ვართ")
             End If
+
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnPreviousPageClick შეცდომა: {ex.Message}")
         End Try
     End Sub
 
     ''' <summary>
-    ''' შემდეგი გვერდის ღილაკი
+    ''' შემდეგი გვერდის ღილაკი - შესწორებული ვერსია
     ''' </summary>
     Private Sub OnNextPageClick(sender As Object, e As EventArgs)
         Try
+            Debug.WriteLine($"UC_Schedule: OnNextPageClick - მიმდინარე გვერდი: {currentPage}")
+
+            ' 🔧 შევამოწმოთ შეიძლება თუ არა შემდეგ გვერდზე გადასვლა
             If BtnNext.Enabled Then
-                currentPage += 1
-                LoadFilteredSchedule()
+                currentPage += 1 ' 🔧 ჯერ currentPage-ს ვზრდით
+                Debug.WriteLine($"UC_Schedule: შემდეგ გვერდზე გადასვლა - ახალი გვერდი: {currentPage}")
+                LoadFilteredSchedule() ' 🔧 შემდეგ ვტვირთავთ
+            Else
+                Debug.WriteLine("UC_Schedule: შემდეგი გვერდის ღილაკი - უკანასკნელ გვერდზე ვართ")
             End If
+
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnNextPageClick შეცდომა: {ex.Message}")
         End Try
@@ -514,25 +516,47 @@ Public Class UC_Schedule
     ''' ახალი ჩანაწერის დამატების ღილაკი
     ''' </summary>
     Private Sub BtnAddSchedule_Click(sender As Object, e As EventArgs) Handles BtnAddSchedule.Click
+        Debug.WriteLine("BtnAddSchedule_Click: ახალი ჩანაწერის დამატების მოთხოვნა")
+
         Try
-            Debug.WriteLine("UC_Schedule: ახალი სესიის დამატება")
-
-            ' 🔧 მომხმარებლის ელფოსტის სწორი გადაცემა
-            Using addForm As New NewRecordForm(dataService, "სესია", 0, userEmail, "UC_Schedule")
-                Dim result As DialogResult = addForm.ShowDialog()
-
-                If result = DialogResult.OK Then
-                    RefreshData()
-                    MessageBox.Show("ახალი სესია წარმატებით დაემატა", "წარმატება",
-                                  MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
+            For Each frm As Form In Application.OpenForms
+                If TypeOf frm Is NewRecordForm Then
+                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
+                    Debug.WriteLine("BtnAddSchedule_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
+                    frm.Focus()
+                    Return
                 End If
-            End Using
+            Next
+
+            ' შევამოწმოთ გვაქვს თუ არა dataService
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Debug.WriteLine("BtnAddSchedule_Click: dataService არ არის ინიციალიზებული")
+                Return
+            End If
+
+            ' ნაგულისხმევად "სესია" ტიპი
+            Dim recordType As String = "სესია"
+
+            ' NewRecordForm-ის გახსნა Add რეჟიმში
+            Dim newRecordForm As New NewRecordForm(dataService, recordType, userEmail, "UC_Calendar")
+            Dim result = newRecordForm.ShowDialog()
+
+            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
+            If result = DialogResult.OK Then
+                Debug.WriteLine("BtnAddSchedule_Click: სესია წარმატებით დაემატა")
+
+                ' ჩავტვირთოთ სესიები თავიდან
+                RefreshData()
+
+            End If
 
         Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: BtnAddSchedule_Click შეცდომა: {ex.Message}")
-            MessageBox.Show($"ახალი ჩანაწერის შექმნის შეცდომა: {ex.Message}", "შეცდომა",
-                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Debug.WriteLine($"BtnAddSchedule_Click: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ახალი ჩანაწერის ფორმის გახსნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+
     End Sub
 
     ''' <summary>

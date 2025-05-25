@@ -553,10 +553,199 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;DgvSchedule.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>6</value>
   </data>
   <data name="pnlFilter.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Left, Right</value>
+  </data>
+  <data name="&gt;&gt;btnToPDF.Name" xml:space="preserve">
+    <value>btnToPDF</value>
+  </data>
+  <data name="&gt;&gt;btnToPDF.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;btnToPDF.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;btnToPDF.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;btbPrint.Name" xml:space="preserve">
+    <value>btbPrint</value>
+  </data>
+  <data name="&gt;&gt;btbPrint.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;btbPrint.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;btbPrint.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;RB100.Name" xml:space="preserve">
+    <value>RB100</value>
+  </data>
+  <data name="&gt;&gt;RB100.Type" xml:space="preserve">
+    <value>System.Windows.Forms.RadioButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RB100.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;RB100.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;RB50.Name" xml:space="preserve">
+    <value>RB50</value>
+  </data>
+  <data name="&gt;&gt;RB50.Type" xml:space="preserve">
+    <value>System.Windows.Forms.RadioButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RB50.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;RB50.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;RB20.Name" xml:space="preserve">
+    <value>RB20</value>
+  </data>
+  <data name="&gt;&gt;RB20.Type" xml:space="preserve">
+    <value>System.Windows.Forms.RadioButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;RB20.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;RB20.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;CheckBox5.Name" xml:space="preserve">
+    <value>CheckBox5</value>
+  </data>
+  <data name="&gt;&gt;CheckBox5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox5.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox5.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="&gt;&gt;CheckBox7.Name" xml:space="preserve">
+    <value>CheckBox7</value>
+  </data>
+  <data name="&gt;&gt;CheckBox7.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox7.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox7.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="&gt;&gt;CheckBox6.Name" xml:space="preserve">
+    <value>CheckBox6</value>
+  </data>
+  <data name="&gt;&gt;CheckBox6.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox6.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox6.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;CheckBox1.Name" xml:space="preserve">
+    <value>CheckBox1</value>
+  </data>
+  <data name="&gt;&gt;CheckBox1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox1.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox1.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;CheckBox4.Name" xml:space="preserve">
+    <value>CheckBox4</value>
+  </data>
+  <data name="&gt;&gt;CheckBox4.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox4.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox4.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;BtnAddSchedule.Name" xml:space="preserve">
+    <value>BtnAddSchedule</value>
+  </data>
+  <data name="&gt;&gt;BtnAddSchedule.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;BtnAddSchedule.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;BtnAddSchedule.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="&gt;&gt;CheckBox2.Name" xml:space="preserve">
+    <value>CheckBox2</value>
+  </data>
+  <data name="&gt;&gt;CheckBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox2.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox2.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="&gt;&gt;CheckBox3.Name" xml:space="preserve">
+    <value>CheckBox3</value>
+  </data>
+  <data name="&gt;&gt;CheckBox3.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CheckBox3.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;CheckBox3.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="&gt;&gt;BtnRef.Name" xml:space="preserve">
+    <value>BtnRef</value>
+  </data>
+  <data name="&gt;&gt;BtnRef.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;BtnRef.Parent" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;BtnRef.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="pnlFilter.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="pnlFilter.Size" type="System.Drawing.Size, System.Drawing">
+    <value>1473, 79</value>
+  </data>
+  <data name="pnlFilter.TabIndex" type="System.Int32, mscorlib">
+    <value>56</value>
+  </data>
+  <data name="&gt;&gt;pnlFilter.Name" xml:space="preserve">
+    <value>pnlFilter</value>
+  </data>
+  <data name="&gt;&gt;pnlFilter.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pnlFilter.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;pnlFilter.ZOrder" xml:space="preserve">
+    <value>5</value>
   </data>
   <data name="btnToPDF.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
@@ -2395,29 +2584,668 @@
   <data name="&gt;&gt;BtnRef.ZOrder" xml:space="preserve">
     <value>13</value>
   </data>
-  <data name="pnlFilter.Location" type="System.Drawing.Point, System.Drawing">
-    <value>3, 3</value>
-  </data>
-  <data name="pnlFilter.Size" type="System.Drawing.Size, System.Drawing">
-    <value>1473, 79</value>
-  </data>
-  <data name="pnlFilter.TabIndex" type="System.Int32, mscorlib">
-    <value>56</value>
-  </data>
-  <data name="&gt;&gt;pnlFilter.Name" xml:space="preserve">
-    <value>pnlFilter</value>
-  </data>
-  <data name="&gt;&gt;pnlFilter.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;pnlFilter.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;pnlFilter.ZOrder" xml:space="preserve">
-    <value>7</value>
-  </data>
   <data name="GBSumInf.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
+  </data>
+  <data name="&gt;&gt;lpers.Name" xml:space="preserve">
+    <value>lpers</value>
+  </data>
+  <data name="&gt;&gt;lpers.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpers.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lpers.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;lbenes.Name" xml:space="preserve">
+    <value>lbenes</value>
+  </data>
+  <data name="&gt;&gt;lbenes.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lbenes.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lbenes.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;Label59.Name" xml:space="preserve">
+    <value>Label59</value>
+  </data>
+  <data name="&gt;&gt;Label59.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label59.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label59.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;Label58.Name" xml:space="preserve">
+    <value>Label58</value>
+  </data>
+  <data name="&gt;&gt;Label58.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label58.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label58.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;ldv60.Name" xml:space="preserve">
+    <value>ldv60</value>
+  </data>
+  <data name="&gt;&gt;ldv60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldv60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ldv60.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;ldv30.Name" xml:space="preserve">
+    <value>ldv30</value>
+  </data>
+  <data name="&gt;&gt;ldv30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldv30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ldv30.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="&gt;&gt;ldvm.Name" xml:space="preserve">
+    <value>ldvm</value>
+  </data>
+  <data name="&gt;&gt;ldvm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldvm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ldvm.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="&gt;&gt;ldvs.Name" xml:space="preserve">
+    <value>ldvs</value>
+  </data>
+  <data name="&gt;&gt;ldvs.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldvs.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ldvs.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;ld60.Name" xml:space="preserve">
+    <value>ld60</value>
+  </data>
+  <data name="&gt;&gt;ld60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ld60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ld60.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;ld30.Name" xml:space="preserve">
+    <value>ld30</value>
+  </data>
+  <data name="&gt;&gt;ld30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ld30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ld30.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;ldm.Name" xml:space="preserve">
+    <value>ldm</value>
+  </data>
+  <data name="&gt;&gt;ldm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ldm.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="&gt;&gt;lds.Name" xml:space="preserve">
+    <value>lds</value>
+  </data>
+  <data name="&gt;&gt;lds.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lds.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lds.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="&gt;&gt;lg60.Name" xml:space="preserve">
+    <value>lg60</value>
+  </data>
+  <data name="&gt;&gt;lg60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lg60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lg60.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="&gt;&gt;lg30.Name" xml:space="preserve">
+    <value>lg30</value>
+  </data>
+  <data name="&gt;&gt;lg30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lg30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lg30.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="&gt;&gt;lgm.Name" xml:space="preserve">
+    <value>lgm</value>
+  </data>
+  <data name="&gt;&gt;lgm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgm.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="&gt;&gt;lgs.Name" xml:space="preserve">
+    <value>lgs</value>
+  </data>
+  <data name="&gt;&gt;lgs.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgs.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgs.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="&gt;&gt;lpg60.Name" xml:space="preserve">
+    <value>lpg60</value>
+  </data>
+  <data name="&gt;&gt;lpg60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpg60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lpg60.ZOrder" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="&gt;&gt;lpg30.Name" xml:space="preserve">
+    <value>lpg30</value>
+  </data>
+  <data name="&gt;&gt;lpg30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpg30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lpg30.ZOrder" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="&gt;&gt;lpgm.Name" xml:space="preserve">
+    <value>lpgm</value>
+  </data>
+  <data name="&gt;&gt;lpgm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpgm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lpgm.ZOrder" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="&gt;&gt;lpgs.Name" xml:space="preserve">
+    <value>lpgs</value>
+  </data>
+  <data name="&gt;&gt;lpgs.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpgs.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lpgs.ZOrder" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="&gt;&gt;la60.Name" xml:space="preserve">
+    <value>la60</value>
+  </data>
+  <data name="&gt;&gt;la60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;la60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;la60.ZOrder" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="&gt;&gt;la30.Name" xml:space="preserve">
+    <value>la30</value>
+  </data>
+  <data name="&gt;&gt;la30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;la30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;la30.ZOrder" xml:space="preserve">
+    <value>21</value>
+  </data>
+  <data name="&gt;&gt;lam.Name" xml:space="preserve">
+    <value>lam</value>
+  </data>
+  <data name="&gt;&gt;lam.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lam.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lam.ZOrder" xml:space="preserve">
+    <value>22</value>
+  </data>
+  <data name="&gt;&gt;las.Name" xml:space="preserve">
+    <value>las</value>
+  </data>
+  <data name="&gt;&gt;las.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;las.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;las.ZOrder" xml:space="preserve">
+    <value>23</value>
+  </data>
+  <data name="&gt;&gt;lgs60.Name" xml:space="preserve">
+    <value>lgs60</value>
+  </data>
+  <data name="&gt;&gt;lgs60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgs60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgs60.ZOrder" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="&gt;&gt;lgs30.Name" xml:space="preserve">
+    <value>lgs30</value>
+  </data>
+  <data name="&gt;&gt;lgs30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgs30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgs30.ZOrder" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="&gt;&gt;lgsm.Name" xml:space="preserve">
+    <value>lgsm</value>
+  </data>
+  <data name="&gt;&gt;lgsm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgsm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgsm.ZOrder" xml:space="preserve">
+    <value>26</value>
+  </data>
+  <data name="&gt;&gt;lgss.Name" xml:space="preserve">
+    <value>lgss</value>
+  </data>
+  <data name="&gt;&gt;lgss.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgss.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgss.ZOrder" xml:space="preserve">
+    <value>27</value>
+  </data>
+  <data name="&gt;&gt;lga60.Name" xml:space="preserve">
+    <value>lga60</value>
+  </data>
+  <data name="&gt;&gt;lga60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lga60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lga60.ZOrder" xml:space="preserve">
+    <value>28</value>
+  </data>
+  <data name="&gt;&gt;lga30.Name" xml:space="preserve">
+    <value>lga30</value>
+  </data>
+  <data name="&gt;&gt;lga30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lga30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lga30.ZOrder" xml:space="preserve">
+    <value>29</value>
+  </data>
+  <data name="&gt;&gt;lgam.Name" xml:space="preserve">
+    <value>lgam</value>
+  </data>
+  <data name="&gt;&gt;lgam.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgam.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgam.ZOrder" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="&gt;&gt;lgas.Name" xml:space="preserve">
+    <value>lgas</value>
+  </data>
+  <data name="&gt;&gt;lgas.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgas.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lgas.ZOrder" xml:space="preserve">
+    <value>31</value>
+  </data>
+  <data name="&gt;&gt;lshes60.Name" xml:space="preserve">
+    <value>lshes60</value>
+  </data>
+  <data name="&gt;&gt;lshes60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lshes60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lshes60.ZOrder" xml:space="preserve">
+    <value>32</value>
+  </data>
+  <data name="&gt;&gt;lshes30.Name" xml:space="preserve">
+    <value>lshes30</value>
+  </data>
+  <data name="&gt;&gt;lshes30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lshes30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lshes30.ZOrder" xml:space="preserve">
+    <value>33</value>
+  </data>
+  <data name="&gt;&gt;lshesm.Name" xml:space="preserve">
+    <value>lshesm</value>
+  </data>
+  <data name="&gt;&gt;lshesm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lshesm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lshesm.ZOrder" xml:space="preserve">
+    <value>34</value>
+  </data>
+  <data name="&gt;&gt;lshess.Name" xml:space="preserve">
+    <value>lshess</value>
+  </data>
+  <data name="&gt;&gt;lshess.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lshess.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lshess.ZOrder" xml:space="preserve">
+    <value>35</value>
+  </data>
+  <data name="&gt;&gt;ls60.Name" xml:space="preserve">
+    <value>ls60</value>
+  </data>
+  <data name="&gt;&gt;ls60.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ls60.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ls60.ZOrder" xml:space="preserve">
+    <value>36</value>
+  </data>
+  <data name="&gt;&gt;ls30.Name" xml:space="preserve">
+    <value>ls30</value>
+  </data>
+  <data name="&gt;&gt;ls30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ls30.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;ls30.ZOrder" xml:space="preserve">
+    <value>37</value>
+  </data>
+  <data name="&gt;&gt;lsm.Name" xml:space="preserve">
+    <value>lsm</value>
+  </data>
+  <data name="&gt;&gt;lsm.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsm.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lsm.ZOrder" xml:space="preserve">
+    <value>38</value>
+  </data>
+  <data name="&gt;&gt;lsr.Name" xml:space="preserve">
+    <value>lsr</value>
+  </data>
+  <data name="&gt;&gt;lsr.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsr.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;lsr.ZOrder" xml:space="preserve">
+    <value>39</value>
+  </data>
+  <data name="&gt;&gt;Label21.Name" xml:space="preserve">
+    <value>Label21</value>
+  </data>
+  <data name="&gt;&gt;Label21.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label21.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label21.ZOrder" xml:space="preserve">
+    <value>40</value>
+  </data>
+  <data name="&gt;&gt;Label20.Name" xml:space="preserve">
+    <value>Label20</value>
+  </data>
+  <data name="&gt;&gt;Label20.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label20.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label20.ZOrder" xml:space="preserve">
+    <value>41</value>
+  </data>
+  <data name="&gt;&gt;Label19.Name" xml:space="preserve">
+    <value>Label19</value>
+  </data>
+  <data name="&gt;&gt;Label19.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label19.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label19.ZOrder" xml:space="preserve">
+    <value>42</value>
+  </data>
+  <data name="&gt;&gt;Label18.Name" xml:space="preserve">
+    <value>Label18</value>
+  </data>
+  <data name="&gt;&gt;Label18.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label18.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label18.ZOrder" xml:space="preserve">
+    <value>43</value>
+  </data>
+  <data name="&gt;&gt;Label17.Name" xml:space="preserve">
+    <value>Label17</value>
+  </data>
+  <data name="&gt;&gt;Label17.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label17.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label17.ZOrder" xml:space="preserve">
+    <value>44</value>
+  </data>
+  <data name="&gt;&gt;Label16.Name" xml:space="preserve">
+    <value>Label16</value>
+  </data>
+  <data name="&gt;&gt;Label16.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label16.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label16.ZOrder" xml:space="preserve">
+    <value>45</value>
+  </data>
+  <data name="&gt;&gt;Label15.Name" xml:space="preserve">
+    <value>Label15</value>
+  </data>
+  <data name="&gt;&gt;Label15.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label15.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label15.ZOrder" xml:space="preserve">
+    <value>46</value>
+  </data>
+  <data name="&gt;&gt;Label14.Name" xml:space="preserve">
+    <value>Label14</value>
+  </data>
+  <data name="&gt;&gt;Label14.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label14.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label14.ZOrder" xml:space="preserve">
+    <value>47</value>
+  </data>
+  <data name="&gt;&gt;Label13.Name" xml:space="preserve">
+    <value>Label13</value>
+  </data>
+  <data name="&gt;&gt;Label13.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label13.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label13.ZOrder" xml:space="preserve">
+    <value>48</value>
+  </data>
+  <data name="&gt;&gt;Label12.Name" xml:space="preserve">
+    <value>Label12</value>
+  </data>
+  <data name="&gt;&gt;Label12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label12.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label12.ZOrder" xml:space="preserve">
+    <value>49</value>
+  </data>
+  <data name="&gt;&gt;Label11.Name" xml:space="preserve">
+    <value>Label11</value>
+  </data>
+  <data name="&gt;&gt;Label11.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label11.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label11.ZOrder" xml:space="preserve">
+    <value>50</value>
+  </data>
+  <data name="&gt;&gt;Label10.Name" xml:space="preserve">
+    <value>Label10</value>
+  </data>
+  <data name="&gt;&gt;Label10.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label10.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label10.ZOrder" xml:space="preserve">
+    <value>51</value>
+  </data>
+  <data name="&gt;&gt;Label1.Name" xml:space="preserve">
+    <value>Label1</value>
+  </data>
+  <data name="&gt;&gt;Label1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label1.Parent" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;Label1.ZOrder" xml:space="preserve">
+    <value>52</value>
+  </data>
+  <data name="GBSumInf.Location" type="System.Drawing.Point, System.Drawing">
+    <value>1107, 88</value>
+  </data>
+  <data name="GBSumInf.Size" type="System.Drawing.Size, System.Drawing">
+    <value>369, 217</value>
+  </data>
+  <data name="GBSumInf.TabIndex" type="System.Int32, mscorlib">
+    <value>106</value>
+  </data>
+  <data name="GBSumInf.Text" xml:space="preserve">
+    <value>ინფო სეანსებზე</value>
+  </data>
+  <data name="&gt;&gt;GBSumInf.Name" xml:space="preserve">
+    <value>GBSumInf</value>
+  </data>
+  <data name="&gt;&gt;GBSumInf.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;GBSumInf.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;GBSumInf.ZOrder" xml:space="preserve">
+    <value>4</value>
   </data>
   <data name="lpers.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -4006,32 +4834,512 @@
   <data name="&gt;&gt;Label1.ZOrder" xml:space="preserve">
     <value>52</value>
   </data>
-  <data name="GBSumInf.Location" type="System.Drawing.Point, System.Drawing">
-    <value>1107, 88</value>
-  </data>
-  <data name="GBSumInf.Size" type="System.Drawing.Size, System.Drawing">
-    <value>369, 217</value>
-  </data>
-  <data name="GBSumInf.TabIndex" type="System.Int32, mscorlib">
-    <value>106</value>
-  </data>
-  <data name="GBSumInf.Text" xml:space="preserve">
-    <value>ინფო სეანსებზე</value>
-  </data>
-  <data name="&gt;&gt;GBSumInf.Name" xml:space="preserve">
-    <value>GBSumInf</value>
-  </data>
-  <data name="&gt;&gt;GBSumInf.Type" xml:space="preserve">
-    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;GBSumInf.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;GBSumInf.ZOrder" xml:space="preserve">
-    <value>6</value>
-  </data>
   <data name="GBSumFin.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Right</value>
+  </data>
+  <data name="&gt;&gt;lsumsum.Name" xml:space="preserve">
+    <value>lsumsum</value>
+  </data>
+  <data name="&gt;&gt;lsumsum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsumsum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lsumsum.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;lsuma.Name" xml:space="preserve">
+    <value>lsuma</value>
+  </data>
+  <data name="&gt;&gt;lsuma.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsuma.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lsuma.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;Label92.Name" xml:space="preserve">
+    <value>Label92</value>
+  </data>
+  <data name="&gt;&gt;Label92.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label92.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;Label92.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;Label91.Name" xml:space="preserve">
+    <value>Label91</value>
+  </data>
+  <data name="&gt;&gt;Label91.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label91.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;Label91.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;Label90.Name" xml:space="preserve">
+    <value>Label90</value>
+  </data>
+  <data name="&gt;&gt;Label90.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label90.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;Label90.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;Label89.Name" xml:space="preserve">
+    <value>Label89</value>
+  </data>
+  <data name="&gt;&gt;Label89.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label89.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;Label89.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="&gt;&gt;Label87.Name" xml:space="preserve">
+    <value>Label87</value>
+  </data>
+  <data name="&gt;&gt;Label87.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;Label87.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;Label87.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="&gt;&gt;lsumk.Name" xml:space="preserve">
+    <value>lsumk</value>
+  </data>
+  <data name="&gt;&gt;lsumk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsumk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lsumk.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;ldvsum.Name" xml:space="preserve">
+    <value>ldvsum</value>
+  </data>
+  <data name="&gt;&gt;ldvsum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldvsum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;ldvsum.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="&gt;&gt;ldva.Name" xml:space="preserve">
+    <value>ldva</value>
+  </data>
+  <data name="&gt;&gt;ldva.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldva.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;ldva.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="&gt;&gt;ldvk.Name" xml:space="preserve">
+    <value>ldvk</value>
+  </data>
+  <data name="&gt;&gt;ldvk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldvk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;ldvk.ZOrder" xml:space="preserve">
+    <value>10</value>
+  </data>
+  <data name="&gt;&gt;ldsum.Name" xml:space="preserve">
+    <value>ldsum</value>
+  </data>
+  <data name="&gt;&gt;ldsum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldsum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;ldsum.ZOrder" xml:space="preserve">
+    <value>11</value>
+  </data>
+  <data name="&gt;&gt;lda.Name" xml:space="preserve">
+    <value>lda</value>
+  </data>
+  <data name="&gt;&gt;lda.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lda.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lda.ZOrder" xml:space="preserve">
+    <value>12</value>
+  </data>
+  <data name="&gt;&gt;ldk.Name" xml:space="preserve">
+    <value>ldk</value>
+  </data>
+  <data name="&gt;&gt;ldk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;ldk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;ldk.ZOrder" xml:space="preserve">
+    <value>13</value>
+  </data>
+  <data name="&gt;&gt;lgsum.Name" xml:space="preserve">
+    <value>lgsum</value>
+  </data>
+  <data name="&gt;&gt;lgsum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgsum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgsum.ZOrder" xml:space="preserve">
+    <value>14</value>
+  </data>
+  <data name="&gt;&gt;lga.Name" xml:space="preserve">
+    <value>lga</value>
+  </data>
+  <data name="&gt;&gt;lga.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lga.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lga.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="&gt;&gt;lgk.Name" xml:space="preserve">
+    <value>lgk</value>
+  </data>
+  <data name="&gt;&gt;lgk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgk.ZOrder" xml:space="preserve">
+    <value>16</value>
+  </data>
+  <data name="&gt;&gt;lpgsum.Name" xml:space="preserve">
+    <value>lpgsum</value>
+  </data>
+  <data name="&gt;&gt;lpgsum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpgsum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lpgsum.ZOrder" xml:space="preserve">
+    <value>17</value>
+  </data>
+  <data name="&gt;&gt;lpga.Name" xml:space="preserve">
+    <value>lpga</value>
+  </data>
+  <data name="&gt;&gt;lpga.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpga.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lpga.ZOrder" xml:space="preserve">
+    <value>18</value>
+  </data>
+  <data name="&gt;&gt;lpgk.Name" xml:space="preserve">
+    <value>lpgk</value>
+  </data>
+  <data name="&gt;&gt;lpgk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lpgk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lpgk.ZOrder" xml:space="preserve">
+    <value>19</value>
+  </data>
+  <data name="&gt;&gt;lasum.Name" xml:space="preserve">
+    <value>lasum</value>
+  </data>
+  <data name="&gt;&gt;lasum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lasum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lasum.ZOrder" xml:space="preserve">
+    <value>20</value>
+  </data>
+  <data name="&gt;&gt;laa.Name" xml:space="preserve">
+    <value>laa</value>
+  </data>
+  <data name="&gt;&gt;laa.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;laa.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;laa.ZOrder" xml:space="preserve">
+    <value>21</value>
+  </data>
+  <data name="&gt;&gt;lak.Name" xml:space="preserve">
+    <value>lak</value>
+  </data>
+  <data name="&gt;&gt;lak.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lak.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lak.ZOrder" xml:space="preserve">
+    <value>22</value>
+  </data>
+  <data name="&gt;&gt;lgssum.Name" xml:space="preserve">
+    <value>lgssum</value>
+  </data>
+  <data name="&gt;&gt;lgssum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgssum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgssum.ZOrder" xml:space="preserve">
+    <value>23</value>
+  </data>
+  <data name="&gt;&gt;lgsa.Name" xml:space="preserve">
+    <value>lgsa</value>
+  </data>
+  <data name="&gt;&gt;lgsa.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgsa.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgsa.ZOrder" xml:space="preserve">
+    <value>24</value>
+  </data>
+  <data name="&gt;&gt;lgsk.Name" xml:space="preserve">
+    <value>lgsk</value>
+  </data>
+  <data name="&gt;&gt;lgsk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgsk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgsk.ZOrder" xml:space="preserve">
+    <value>25</value>
+  </data>
+  <data name="&gt;&gt;lgasum.Name" xml:space="preserve">
+    <value>lgasum</value>
+  </data>
+  <data name="&gt;&gt;lgasum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgasum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgasum.ZOrder" xml:space="preserve">
+    <value>26</value>
+  </data>
+  <data name="&gt;&gt;lgaa.Name" xml:space="preserve">
+    <value>lgaa</value>
+  </data>
+  <data name="&gt;&gt;lgaa.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgaa.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgaa.ZOrder" xml:space="preserve">
+    <value>27</value>
+  </data>
+  <data name="&gt;&gt;lgak.Name" xml:space="preserve">
+    <value>lgak</value>
+  </data>
+  <data name="&gt;&gt;lgak.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lgak.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lgak.ZOrder" xml:space="preserve">
+    <value>28</value>
+  </data>
+  <data name="&gt;&gt;lssum.Name" xml:space="preserve">
+    <value>lssum</value>
+  </data>
+  <data name="&gt;&gt;lssum.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lssum.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lssum.ZOrder" xml:space="preserve">
+    <value>29</value>
+  </data>
+  <data name="&gt;&gt;lsa.Name" xml:space="preserve">
+    <value>lsa</value>
+  </data>
+  <data name="&gt;&gt;lsa.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsa.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lsa.ZOrder" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="&gt;&gt;lsk.Name" xml:space="preserve">
+    <value>lsk</value>
+  </data>
+  <data name="&gt;&gt;lsk.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;lsk.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;lsk.ZOrder" xml:space="preserve">
+    <value>31</value>
+  </data>
+  <data name="&gt;&gt;cbdv.Name" xml:space="preserve">
+    <value>cbdv</value>
+  </data>
+  <data name="&gt;&gt;cbdv.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbdv.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbdv.ZOrder" xml:space="preserve">
+    <value>32</value>
+  </data>
+  <data name="&gt;&gt;cbd.Name" xml:space="preserve">
+    <value>cbd</value>
+  </data>
+  <data name="&gt;&gt;cbd.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbd.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbd.ZOrder" xml:space="preserve">
+    <value>33</value>
+  </data>
+  <data name="&gt;&gt;cbg.Name" xml:space="preserve">
+    <value>cbg</value>
+  </data>
+  <data name="&gt;&gt;cbg.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbg.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbg.ZOrder" xml:space="preserve">
+    <value>34</value>
+  </data>
+  <data name="&gt;&gt;cbpg.Name" xml:space="preserve">
+    <value>cbpg</value>
+  </data>
+  <data name="&gt;&gt;cbpg.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbpg.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbpg.ZOrder" xml:space="preserve">
+    <value>35</value>
+  </data>
+  <data name="&gt;&gt;cba.Name" xml:space="preserve">
+    <value>cba</value>
+  </data>
+  <data name="&gt;&gt;cba.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cba.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cba.ZOrder" xml:space="preserve">
+    <value>36</value>
+  </data>
+  <data name="&gt;&gt;cbgs.Name" xml:space="preserve">
+    <value>cbgs</value>
+  </data>
+  <data name="&gt;&gt;cbgs.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbgs.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbgs.ZOrder" xml:space="preserve">
+    <value>37</value>
+  </data>
+  <data name="&gt;&gt;cbga.Name" xml:space="preserve">
+    <value>cbga</value>
+  </data>
+  <data name="&gt;&gt;cbga.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbga.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbga.ZOrder" xml:space="preserve">
+    <value>38</value>
+  </data>
+  <data name="&gt;&gt;cbs.Name" xml:space="preserve">
+    <value>cbs</value>
+  </data>
+  <data name="&gt;&gt;cbs.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;cbs.Parent" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;cbs.ZOrder" xml:space="preserve">
+    <value>39</value>
+  </data>
+  <data name="GBSumFin.Location" type="System.Drawing.Point, System.Drawing">
+    <value>1107, 311</value>
+  </data>
+  <data name="GBSumFin.Size" type="System.Drawing.Size, System.Drawing">
+    <value>369, 278</value>
+  </data>
+  <data name="GBSumFin.TabIndex" type="System.Int32, mscorlib">
+    <value>107</value>
+  </data>
+  <data name="GBSumFin.Text" xml:space="preserve">
+    <value>ფინანსები</value>
+  </data>
+  <data name="&gt;&gt;GBSumFin.Name" xml:space="preserve">
+    <value>GBSumFin</value>
+  </data>
+  <data name="&gt;&gt;GBSumFin.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;GBSumFin.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;GBSumFin.ZOrder" xml:space="preserve">
+    <value>3</value>
   </data>
   <data name="lsumsum.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -5230,30 +6538,6 @@
   <data name="&gt;&gt;cbs.ZOrder" xml:space="preserve">
     <value>39</value>
   </data>
-  <data name="GBSumFin.Location" type="System.Drawing.Point, System.Drawing">
-    <value>1107, 311</value>
-  </data>
-  <data name="GBSumFin.Size" type="System.Drawing.Size, System.Drawing">
-    <value>369, 278</value>
-  </data>
-  <data name="GBSumFin.TabIndex" type="System.Int32, mscorlib">
-    <value>107</value>
-  </data>
-  <data name="GBSumFin.Text" xml:space="preserve">
-    <value>ფინანსები</value>
-  </data>
-  <data name="&gt;&gt;GBSumFin.Name" xml:space="preserve">
-    <value>GBSumFin</value>
-  </data>
-  <data name="&gt;&gt;GBSumFin.Type" xml:space="preserve">
-    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;GBSumFin.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;GBSumFin.ZOrder" xml:space="preserve">
-    <value>5</value>
-  </data>
   <data name="BtnNext.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Bottom, Right</value>
   </data>
@@ -5752,7 +7036,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BtnNext.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>1</value>
   </data>
   <data name="BtnPrev.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Bottom, Right</value>
@@ -6250,7 +7534,7 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;BtnPrev.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>2</value>
   </data>
   <data name="LPage.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Bottom, Right</value>
@@ -6283,66 +7567,6 @@
     <value>$this</value>
   </data>
   <data name="&gt;&gt;LPage.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="Label22.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
-  <data name="Label22.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="Label22.Location" type="System.Drawing.Point, System.Drawing">
-    <value>1123, 592</value>
-  </data>
-  <data name="Label22.Size" type="System.Drawing.Size, System.Drawing">
-    <value>45, 13</value>
-  </data>
-  <data name="Label22.TabIndex" type="System.Int32, mscorlib">
-    <value>111</value>
-  </data>
-  <data name="Label22.Text" xml:space="preserve">
-    <value>Label22</value>
-  </data>
-  <data name="&gt;&gt;Label22.Name" xml:space="preserve">
-    <value>Label22</value>
-  </data>
-  <data name="&gt;&gt;Label22.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;Label22.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;Label22.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="Label23.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
-    <value>Top, Right</value>
-  </data>
-  <data name="Label23.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="Label23.Location" type="System.Drawing.Point, System.Drawing">
-    <value>1123, 614</value>
-  </data>
-  <data name="Label23.Size" type="System.Drawing.Size, System.Drawing">
-    <value>45, 13</value>
-  </data>
-  <data name="Label23.TabIndex" type="System.Int32, mscorlib">
-    <value>112</value>
-  </data>
-  <data name="Label23.Text" xml:space="preserve">
-    <value>Label23</value>
-  </data>
-  <data name="&gt;&gt;Label23.Name" xml:space="preserve">
-    <value>Label23</value>
-  </data>
-  <data name="&gt;&gt;Label23.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;Label23.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;Label23.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

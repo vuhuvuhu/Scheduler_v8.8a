@@ -1,9 +1,9 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class UC_Schedule
     Inherits System.Windows.Forms.UserControl
 
     'UserControl overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -20,7 +20,7 @@ Partial Class UC_Schedule
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(UC_Schedule))
         Me.Label9 = New System.Windows.Forms.Label()
@@ -154,8 +154,6 @@ Partial Class UC_Schedule
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.BtnPrev = New System.Windows.Forms.Button()
         Me.LPage = New System.Windows.Forms.Label()
-        Me.Label22 = New System.Windows.Forms.Label()
-        Me.Label23 = New System.Windows.Forms.Label()
         CType(Me.DgvSchedule, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -1103,22 +1101,10 @@ Partial Class UC_Schedule
         resources.ApplyResources(Me.LPage, "LPage")
         Me.LPage.Name = "LPage"
         '
-        'Label22
-        '
-        resources.ApplyResources(Me.Label22, "Label22")
-        Me.Label22.Name = "Label22"
-        '
-        'Label23
-        '
-        resources.ApplyResources(Me.Label23, "Label23")
-        Me.Label23.Name = "Label23"
-        '
         'UC_Schedule
         '
         resources.ApplyResources(Me, "$this")
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.Controls.Add(Me.Label23)
-        Me.Controls.Add(Me.Label22)
         Me.Controls.Add(Me.LPage)
         Me.Controls.Add(Me.BtnNext)
         Me.Controls.Add(Me.BtnPrev)
@@ -1270,6 +1256,4 @@ Partial Class UC_Schedule
     Friend WithEvents BtnPrev As Button
     Friend WithEvents LPage As Label
     Friend WithEvents btnToPDF As Button
-    Friend WithEvents Label22 As Label
-    Friend WithEvents Label23 As Label
 End Class

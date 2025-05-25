@@ -114,7 +114,7 @@ Namespace Scheduler_v8_8a.Services
         End Class
 
         ''' <summary>
-        ''' ფილტრაციის შედეგების მიღება გვერდებად დაყოფით
+        ''' ფილტრაციის შედეგების მიღება გვერდებად დაყოფით - შესწორებული ვერსია
         ''' </summary>
         ''' <param name="criteria">ფილტრაციის კრიტერიუმები</param>
         ''' <param name="pageNumber">გვერდის ნომერი (1-დან იწყება)</param>
@@ -122,7 +122,7 @@ Namespace Scheduler_v8_8a.Services
         ''' <returns>გვერდების შედეგი</returns>
         Public Function GetFilteredSchedule(criteria As FilterCriteria, pageNumber As Integer, pageSize As Integer) As PagedResult
             Try
-                Debug.WriteLine($"ScheduleDataProcessor: GetFilteredSchedule - გვერდი {pageNumber}, ზომა {pageSize}")
+                Debug.WriteLine($"ScheduleDataProcessor: GetFilteredSchedule - მოთხოვნილი გვერდი {pageNumber}, ზომა {pageSize}")
 
                 ' ფილტრაციის შედეგების მიღება
                 Dim filteredData = GetFilteredData(criteria)
@@ -130,30 +130,42 @@ Namespace Scheduler_v8_8a.Services
                 ' გვერდების გამოთვლა
                 Dim totalRecords = filteredData.Count
                 Dim totalPages = Math.Max(1, Math.Ceiling(totalRecords / pageSize))
-                Dim validPageNumber = Math.Max(1, Math.Min(pageNumber, totalPages))
+
+                ' 🔧 გვერდის ნომრის ვალიდაცია - მაგრამ არ შევცვალოთ უკიდურეს შემთხვევებში
+                Dim validPageNumber As Integer
+                If pageNumber < 1 Then
+                    validPageNumber = 1
+                    Debug.WriteLine($"ScheduleDataProcessor: გვერდის ნომერი {pageNumber} < 1, გამოყენებულია 1")
+                ElseIf pageNumber > totalPages Then
+                    validPageNumber = totalPages
+                    Debug.WriteLine($"ScheduleDataProcessor: გვერდის ნომერი {pageNumber} > {totalPages}, გამოყენებულია {totalPages}")
+                Else
+                    validPageNumber = pageNumber ' 🔧 ნორმალურ შემთხვევაში არ ვცვლით
+                End If
 
                 ' მიმდინარე გვერდის მონაცემების მიღება
-                Dim pageData = filteredData.Skip((validPageNumber - 1) * pageSize).Take(pageSize).ToList()
+                Dim skipCount = (validPageNumber - 1) * pageSize
+                Dim pageData = filteredData.Skip(skipCount).Take(pageSize).ToList()
 
-                Debug.WriteLine($"ScheduleDataProcessor: სულ {totalRecords} ჩანაწერი, {totalPages} გვერდი, მიმდინარე გვერდი {validPageNumber}")
+                Debug.WriteLine($"ScheduleDataProcessor: სულ {totalRecords} ჩანაწერი, {totalPages} გვერდი, მოთხოვნილი: {pageNumber}, გამოყენებული: {validPageNumber}")
 
                 Return New PagedResult With {
-                    .Data = pageData,
-                    .CurrentPage = validPageNumber,
-                    .TotalPages = totalPages,
-                    .TotalRecords = totalRecords,
-                    .PageSize = pageSize
-                }
+            .Data = pageData,
+            .CurrentPage = validPageNumber, ' 🔧 რეალურად გამოყენებული გვერდი
+            .TotalPages = totalPages,
+            .TotalRecords = totalRecords,
+            .PageSize = pageSize
+        }
 
             Catch ex As Exception
                 Debug.WriteLine($"ScheduleDataProcessor: GetFilteredSchedule შეცდომა: {ex.Message}")
                 Return New PagedResult With {
-                    .Data = New List(Of IList(Of Object))(),
-                    .CurrentPage = 1,
-                    .TotalPages = 1,
-                    .TotalRecords = 0,
-                    .PageSize = pageSize
-                }
+            .Data = New List(Of IList(Of Object))(),
+            .CurrentPage = Math.Max(1, pageNumber), ' 🔧 შეცდომის შემთხვევაშიც ვაბრუნებთ მოთხოვნილ გვერდს
+            .TotalPages = 1,
+            .TotalRecords = 0,
+            .PageSize = pageSize
+        }
             End Try
         End Function
 
