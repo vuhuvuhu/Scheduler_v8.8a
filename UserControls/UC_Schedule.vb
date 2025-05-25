@@ -29,6 +29,9 @@ Public Class UC_Schedule
     ' გვერდების მონაცემები
     Private currentPage As Integer = 1
 
+    ' 🔧 ციკლური ივენთების თავიდან აცილება - ეს ველები დაამატეთ
+    Private isNavigating As Boolean = False
+    Private isLoadingData As Boolean = False
 #End Region
 
 #Region "საჯარო მეთოდები"
@@ -276,7 +279,7 @@ Public Class UC_Schedule
     End Function
 
     ''' <summary>
-    ''' ივენთების მიბმა
+    ''' ივენთების მიბმა - ნავიგაციის ღილაკების ივენთები ამოღებულია
     ''' </summary>
     Private Sub BindEvents()
         Try
@@ -287,9 +290,7 @@ Public Class UC_Schedule
             ' DataGridView-ის ივენთები
             AddHandler DgvSchedule.CellClick, AddressOf OnDataGridViewCellClick
 
-            ' ნავიგაციის ღილაკების ივენთები
-            AddHandler BtnPrev.Click, AddressOf OnPreviousPageClick
-            AddHandler BtnNext.Click, AddressOf OnNextPageClick
+            ' 🔧 ნავიგაციის ღილაკების ივენთები ამოღებულია - იყენებენ Handles-ს
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: BindEvents შეცდომა: {ex.Message}")
@@ -318,39 +319,56 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub LoadFilteredSchedule()
         Try
+            ' 🔧 შემოწმებები ციკლური გადაკვრის თავიდან ასაცილებლად
             If dataProcessor Is Nothing OrElse uiManager Is Nothing OrElse filterManager Is Nothing Then
                 Debug.WriteLine("UC_Schedule: სერვისები არ არის ინიციალიზებული")
                 Return
             End If
 
-            Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule - მოთხოვნილი გვერდი: {currentPage}")
-
-            ' ფილტრის კრიტერიუმების მიღება
-            Dim criteria = filterManager.GetFilterCriteria()
-            Dim pageSize = filterManager.GetPageSize()
-
-            ' მონაცემების მიღება - currentPage-ს არ ვცვლით აქ
-            Dim result = dataProcessor.GetFilteredSchedule(criteria, currentPage, pageSize)
-
-            ' 🔧 მხოლოდ მაშინ განვაახლოთ currentPage, თუ dataProcessor-მა შეცვალა
-            ' (მაგალითად, თუ ძალიან დიდი გვერდის ნომერი იყო მოთხოვნილი)
-            If result.CurrentPage <> currentPage Then
-                Debug.WriteLine($"UC_Schedule: dataProcessor-მა შეცვალა გვერდი {currentPage} -> {result.CurrentPage}")
-                currentPage = result.CurrentPage
+            If isLoadingData AndAlso Not isNavigating Then
+                Debug.WriteLine("UC_Schedule: მონაცემები უკვე იტვირთება, LoadFilteredSchedule გადავახტეთ")
+                Return
             End If
 
-            ' UI-ს განახლება
-            uiManager.LoadDataToGrid(result.Data, userRoleID)
-            uiManager.UpdatePageLabel(result.CurrentPage, result.TotalPages)
-            uiManager.UpdateNavigationButtons(result.CurrentPage, result.TotalPages)
+            Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule - გვერდი {currentPage}, isNavigating: {isNavigating}")
 
-            ' სტატისტიკისა და ფინანსური ანალიზის განახლება
-            System.Threading.Tasks.Task.Run(Sub() UpdateStatisticsAsync(criteria))
+            ' 🔧 მხოლოდ ნავიგაციის გარეშე ვაყენოთ isLoadingData
+            If Not isNavigating Then
+                isLoadingData = True
+            End If
 
-            Debug.WriteLine($"UC_Schedule: ჩატვირთულია {result.Data.Count} ჩანაწერი, გვერდი: {result.CurrentPage}/{result.TotalPages}")
+            Try
+                ' ფილტრის კრიტერიუმების მიღება
+                Dim criteria = filterManager.GetFilterCriteria()
+                Dim pageSize = filterManager.GetPageSize()
+
+                ' მონაცემების მიღება
+                Dim result = dataProcessor.GetFilteredSchedule(criteria, currentPage, pageSize)
+
+                ' UI-ს განახლება
+                uiManager.LoadDataToGrid(result.Data, userRoleID)
+                uiManager.UpdatePageLabel(result.CurrentPage, result.TotalPages)
+                uiManager.UpdateNavigationButtons(result.CurrentPage, result.TotalPages)
+
+                currentPage = result.CurrentPage
+
+                ' 🔧 სტატისტიკა მხოლოდ ნავიგაციის გარეშე
+                If Not isNavigating Then
+                    System.Threading.Tasks.Task.Run(Sub() UpdateStatisticsAsync(criteria))
+                End If
+
+                Debug.WriteLine($"UC_Schedule: ჩატვირთულია {result.Data.Count} ჩანაწერი გვერდზე {currentPage}")
+
+            Finally
+                ' 🔧 isLoadingData მხოლოდ ნავიგაციის გარეშე ვანულებთ
+                If Not isNavigating Then
+                    isLoadingData = False
+                End If
+            End Try
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule შეცდომა: {ex.Message}")
+            isLoadingData = False
             MessageBox.Show($"მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
                        MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -393,13 +411,29 @@ Public Class UC_Schedule
 #Region "ივენთ ჰენდლერები"
 
     ''' <summary>
-    ''' ფილტრის შეცვლის ივენთი - შესწორებული ვერსია
+    ''' 🔧 გამართული ფილტრის შეცვლის ივენთი
+    ''' ნავიგაციის დროს გვერდი არ რესეტდება
     ''' </summary>
     Private Sub OnFilterChanged()
         Try
-            Debug.WriteLine("UC_Schedule: OnFilterChanged - ფილტრი შეიცვალა, პირველ გვერდზე გადასვლა")
-            currentPage = 1 ' 🔧 ფილტრის შეცვლისას ყოველთვის პირველ გვერდზე
+            Debug.WriteLine($"UC_Schedule: OnFilterChanged - isNavigating: {isNavigating}, isLoadingData: {isLoadingData}")
+
+            ' 🔧 ნავიგაციის დროს ფილტრის ივენთი არ უნდა გავარდეს
+            If isNavigating Then
+                Debug.WriteLine("UC_Schedule: ნავიგაციის დროს FilterChanged ივენთი იგნორირებულია")
+                Return
+            End If
+
+            ' 🔧 მონაცემების დატვირთვის დროს არ ვუშვებთ ციკლს
+            If isLoadingData Then
+                Debug.WriteLine("UC_Schedule: მონაცემების დატვირთვის დროს FilterChanged ივენთი იგნორირებულია")
+                Return
+            End If
+
+            ' ფილტრის შეცვლისას გვერდი რესეტდება 1-ზე
+            currentPage = 1
             LoadFilteredSchedule()
+
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnFilterChanged შეცდომა: {ex.Message}")
         End Try
@@ -467,16 +501,20 @@ Public Class UC_Schedule
         Try
             Debug.WriteLine($"UC_Schedule: OnPreviousPageClick - მიმდინარე გვერდი: {currentPage}")
 
-            If currentPage > 1 Then
-                currentPage -= 1 ' 🔧 ჯერ currentPage-ს ვამცირებთ
-                Debug.WriteLine($"UC_Schedule: წინა გვერდზე გადასვლა - ახალი გვერდი: {currentPage}")
-                LoadFilteredSchedule() ' 🔧 შემდეგ ვტვირთავთ
-            Else
-                Debug.WriteLine("UC_Schedule: წინა გვერდის ღილაკი - უკვე პირველ გვერდზე ვართ")
+            If currentPage > 1 AndAlso Not isLoadingData Then
+                ' 🔧 ნავიგაციის Flag-ი
+                isNavigating = True
+                Try
+                    currentPage -= 1
+                    LoadFilteredSchedule()
+                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავედი გვერდზე {currentPage}")
+                Finally
+                    isNavigating = False
+                End Try
             End If
-
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnPreviousPageClick შეცდომა: {ex.Message}")
+            isNavigating = False
         End Try
     End Sub
 
@@ -487,19 +525,38 @@ Public Class UC_Schedule
         Try
             Debug.WriteLine($"UC_Schedule: OnNextPageClick - მიმდინარე გვერდი: {currentPage}")
 
-            ' 🔧 შევამოწმოთ შეიძლება თუ არა შემდეგ გვერდზე გადასვლა
-            If BtnNext.Enabled Then
-                currentPage += 1 ' 🔧 ჯერ currentPage-ს ვზრდით
-                Debug.WriteLine($"UC_Schedule: შემდეგ გვერდზე გადასვლა - ახალი გვერდი: {currentPage}")
-                LoadFilteredSchedule() ' 🔧 შემდეგ ვტვირთავთ
-            Else
-                Debug.WriteLine("UC_Schedule: შემდეგი გვერდის ღილაკი - უკანასკნელ გვერდზე ვართ")
+            If BtnNext.Enabled AndAlso Not isLoadingData Then
+                ' 🔧 ნავიგაციის Flag-ი
+                isNavigating = True
+                Try
+                    currentPage += 1
+                    LoadFilteredSchedule()
+                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავედი გვერდზე {currentPage}")
+                Finally
+                    isNavigating = False
+                End Try
             End If
-
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnNextPageClick შეცდომა: {ex.Message}")
+            isNavigating = False
         End Try
     End Sub
+
+    ''' <summary>
+    ''' 🔧 წინა გვერდის ღილაკის პირდაპირ ივენთი (Designer-დან)
+    ''' </summary>
+    Private Sub BtnPrev_Click(sender As Object, e As EventArgs) Handles BtnPrev.Click
+        OnPreviousPageClick(sender, e)
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 შემდეგი გვერდის ღილაკის პირდაპირ ივენთი (Designer-დან)
+    ''' </summary>
+    Private Sub BtnNext_Click(sender As Object, e As EventArgs) Handles BtnNext.Click
+        OnNextPageClick(sender, e)
+    End Sub
+
+
 
     ''' <summary>
     ''' განახლების ღილაკი
