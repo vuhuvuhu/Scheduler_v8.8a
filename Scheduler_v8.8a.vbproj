@@ -25,7 +25,7 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>2</ApplicationRevision>
+    <ApplicationRevision>3</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -226,6 +226,12 @@
     <Compile Include="Services\SheetDataService.vb" />
     <Compile Include="Services\SimplePDFExportService.vb" />
     <Compile Include="Services\UserService.vb" />
+    <Compile Include="UserControls\UC_BeneficiaryReport.Designer.vb">
+      <DependentUpon>UC_BeneficiaryReport.vb</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\UC_BeneficiaryReport.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="UserControls\UC_Calendar.Designer.vb">
       <DependentUpon>UC_Calendar.vb</DependentUpon>
     </Compile>
@@ -242,6 +248,12 @@
       <DependentUpon>UC_Schedule.vb</DependentUpon>
     </Compile>
     <Compile Include="UserControls\UC_Schedule.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\UC_TherapistReport.Designer.vb">
+      <DependentUpon>UC_TherapistReport.vb</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\UC_TherapistReport.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Utils\CalendarUtils.vb" />
@@ -277,6 +289,9 @@
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\UC_BeneficiaryReport.resx">
+      <DependentUpon>UC_BeneficiaryReport.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UserControls\UC_Calendar.resx">
       <DependentUpon>UC_Calendar.vb</DependentUpon>
     </EmbeddedResource>
@@ -288,6 +303,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\UC_Schedule.resx">
       <DependentUpon>UC_Schedule.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\UC_TherapistReport.resx">
+      <DependentUpon>UC_TherapistReport.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

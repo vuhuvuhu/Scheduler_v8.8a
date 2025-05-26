@@ -38,7 +38,7 @@ Public Class Form1
     End Function
 
     ''' <summary>
-    ''' "განრიგი" მენიუს არჩევისას გამოძახებული მეთოდი
+    ''' კონსტრუქტორი - განახლებული ივენთების მიმსმენები ჩართებულია
     ''' </summary>
     Public Sub New()
         InitializeComponent()
@@ -50,13 +50,15 @@ Public Class Form1
         ' მენიუს მენეჯერის ინიციალიზაცია
         menuMgr = New MenuManager(mainMenu)
 
-        ' დავამატოთ ივენთის მსმენელი "განრიგი" მენიუს არჩევისას
+        ' ✨ ივენთების მსმენელების დამატება - განახლებული!
         AddHandler menuMgr.ScheduleMenuSelected, AddressOf OnScheduleMenuSelected
+        AddHandler menuMgr.BeneficiaryReportSelected, AddressOf OnBeneficiaryReportSelected
+        AddHandler menuMgr.TherapistReportSelected, AddressOf OnTherapistReportSelected
 
         ' UC_Home-ის შექმნისას SheetDataService-ის მიბმა
         homeControl = New UC_Home(homeViewModel)
         homeControl.Dock = DockStyle.Fill
-        homeControl.SetDataService(dataService) ' ახალი ხაზი
+        homeControl.SetDataService(dataService)
         pnlMain.Controls.Add(homeControl)
     End Sub
 
@@ -654,9 +656,6 @@ Public Class Form1
             Dim menuItemText = e.ClickedItem.Text
             Debug.WriteLine($"mainMenu_ItemClicked: მომხმარებელმა აირჩია '{menuItemText}'")
 
-            ' ვნახოთ ელემენტის ტიპი დებაგირებისთვის
-            Debug.WriteLine($"ClickedItem ტიპი: {e.ClickedItem.GetType().Name}")
-
             ' კონკრეტული მენიუს პუნქტების დაჭერის დამუშავება
             Select Case menuItemText
                 Case "საწყისი"
@@ -664,26 +663,26 @@ Public Class Form1
                 Case "კალენდარი"
                     ShowCalendar()
                 Case "ბაზები"
-                    ' თუ "ბაზები" არჩეულია, არ გავაკეთოთ არაფერი, რადგან ეს აჩვენებს ქვემენიუს
                     Debug.WriteLine("'ბაზები' არჩეულია, ველოდებით ქვემენიუს არჩევას")
                 Case "განრიგი"
-                    ' განრიგის გვერდის ჩვენება
                     Debug.WriteLine("'განრიგი' არჩეულია, ვაჩვენებთ განრიგის გვერდს")
                     ShowSchedule()
                 Case "ბენეფიციარები", "თერაპევტები", "თერაპიები", "დაფინანსება"
-                    ' დროებითი UI-ის ჩვენება შეტყობინების გარეშე
                     ShowTemporaryDatabasesUI(menuItemText)
                 Case "გრაფიკები"
-                    ' დროებითი გრაფიკების UI-ის ჩვენება
                     ShowTemporaryGraphsUI()
                 Case "დოკუმენტები"
-                    ' დროებითი დოკუმენტების UI-ის ჩვენება
-                    ShowTemporaryDocumentsUI()
+                    Debug.WriteLine("'დოკუმენტები' არჩეულია, ველოდებით ქვემენიუს არჩევას")
+                ' ✨ ახალი ქვემენიუს პუნქტები
+                Case "ბენეფიციარის ანგარიში"
+                    Debug.WriteLine("'ბენეფიციარის ანგარიში' არჩეულია")
+                    OnBeneficiaryReportSelected(Me, EventArgs.Empty)
+                Case "თერაპევტის ანგარიში"
+                    Debug.WriteLine("'თერაპევტის ანგარიში' არჩეულია")
+                    OnTherapistReportSelected(Me, EventArgs.Empty)
                 Case "ფინანსები"
-                    ' დროებითი ფინანსების UI-ის ჩვენება
                     ShowTemporaryFinancesUI()
                 Case "ადმინისტრირება", "მომხმარებელთა რეგისტრაცია"
-                    ' დროებითი ადმინისტრირების UI-ის ჩვენება
                     ShowTemporaryAdminUI(menuItemText)
             End Select
         Catch ex As Exception
@@ -786,36 +785,14 @@ Public Class Form1
     ''' </summary>
     Private Sub ShowTemporaryDocumentsUI()
         Try
-            ' გავასუფთავოთ მთავარი პანელი
-            pnlMain.Controls.Clear()
+            Debug.WriteLine("ShowTemporaryDocumentsUI: აღარ გამოიყენება - ნამდვილი ქვემენიუები ხელმისაწვდომია")
 
-            ' შევქმნათ დროებითი პანელი
-            Dim tempPanel As New Panel()
-            tempPanel.Dock = DockStyle.Fill
-            tempPanel.BackColor = Color.FromArgb(245, 240, 230)
+            ' თუ რაიმე მიზეზით აქ მოვიდა, მაშინ უფრო ინფორმაციული შეტყობინება ვაჩვენოთ
+            MessageBox.Show("დოკუმენტების სექცია გამოიყენეთ ქვემენიუდან:" & Environment.NewLine &
+                          "• ბენეფიციარის ანგარიში" & Environment.NewLine &
+                          "• თერაპევტის ანგარიში",
+                          "დოკუმენტები", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-            ' დავამატოთ სათაური
-            Dim titleLabel As New Label()
-            titleLabel.Text = "დოკუმენტები - მუშავდება"
-            titleLabel.Font = New Font("Sylfaen", 18, FontStyle.Bold)
-            titleLabel.AutoSize = True
-            titleLabel.Location = New Point(20, 20)
-            tempPanel.Controls.Add(titleLabel)
-
-            ' დავამატოთ აღწერა
-            Dim descLabel As New Label()
-            descLabel.Text = "დოკუმენტების ფუნქციონალი ამჟამად მუშავდება და მალე იქნება ხელმისაწვდომი." &
-                          Environment.NewLine & Environment.NewLine &
-                          "გთხოვთ სცადოთ მოგვიანებით."
-            descLabel.Font = New Font("Sylfaen", 12, FontStyle.Regular)
-            descLabel.AutoSize = True
-            descLabel.Location = New Point(20, 60)
-            tempPanel.Controls.Add(descLabel)
-
-            ' დავამატოთ პანელი მთავარ კონტეინერზე
-            pnlMain.Controls.Add(tempPanel)
-
-            Debug.WriteLine("ShowTemporaryDocumentsUI: დროებითი ინტერფეისი გამოჩნდა - დოკუმენტები")
         Catch ex As Exception
             Debug.WriteLine($"ShowTemporaryDocumentsUI: შეცდომა - {ex.Message}")
         End Try
@@ -1009,7 +986,163 @@ Public Class Form1
         Debug.WriteLine($"  Controls Count: {control.Controls.Count}")
     End Sub
 
+    ''' <summary>
+    ''' ✨ ბენეფიციარის ანგარიშის მენიუს არჩევისას გამოძახებული მეთოდი
+    ''' ხელმისაწვდომია როლებისთვის: 1, 2, 3
+    ''' </summary>
+    Private Sub OnBeneficiaryReportSelected(sender As Object, e As EventArgs)
+        Debug.WriteLine("OnBeneficiaryReportSelected: 'ბენეფიციარის ანგარიში' არჩეულია მენიუში")
 
+        ' როლის შემოწმება
+        If Not IsAccessAllowed({"1", "2", "3"}) Then
+            MessageBox.Show("თქვენ არ გაქვთ ბენეფიციარის ანგარიშზე წვდომის უფლება", "წვდომა შეზღუდულია",
+                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ShowBeneficiaryReport()
+    End Sub
+
+    ''' <summary>
+    ''' ✨ თერაპევტის ანგარიშის მენიუს არჩევისას გამოძახებული მეთოდი
+    ''' ხელმისაწვდომია მხოლოდ როლებისთვის: 1, 2
+    ''' </summary>
+    Private Sub OnTherapistReportSelected(sender As Object, e As EventArgs)
+        Debug.WriteLine("OnTherapistReportSelected: 'თერაპევტის ანგარიში' არჩეულია მენიუში")
+
+        ' როლის შემოწმება
+        If Not IsAccessAllowed({"1", "2"}) Then
+            MessageBox.Show("თქვენ არ გაქვთ თერაპევტის ანგარიშზე წვდომის უფლება", "წვდომა შეზღუდულია",
+                          MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ShowTherapistReport()
+    End Sub
+
+    ''' <summary>
+    ''' ✨ წვდომის შემოწმება - ახალი დამხმარე მეთოდი
+    ''' </summary>
+    ''' <param name="allowedRoles">ნებადართული როლების მასივი</param>
+    ''' <returns>True თუ წვდომა ნებადართულია</returns>
+    Private Function IsAccessAllowed(allowedRoles As String()) As Boolean
+        Try
+            ' ავტორიზაციის შემოწმება
+            If Not viewModel.IsAuthorized Then
+                Debug.WriteLine("IsAccessAllowed: მომხმარებელი არ არის ავტორიზებული")
+                Return False
+            End If
+
+            ' როლის შემოწმება
+            Dim userRole As String = viewModel.Role
+            If String.IsNullOrEmpty(userRole) Then
+                Debug.WriteLine("IsAccessAllowed: მომხმარებლის როლი არ არის მითითებული")
+                Return False
+            End If
+
+            ' შემოწმება ნებადართულ როლებში
+            Dim hasAccess As Boolean = allowedRoles.Contains(userRole.Trim())
+            Debug.WriteLine($"IsAccessAllowed: მომხმარებლის როლი '{userRole}', წვდომა: {hasAccess}")
+
+            Return hasAccess
+
+        Catch ex As Exception
+            Debug.WriteLine($"IsAccessAllowed: შეცდომა - {ex.Message}")
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' ✨ ბენეფიციარის ანგარიშის გვერდის ჩვენება
+    ''' </summary>
+    Private Sub ShowBeneficiaryReport()
+        Try
+            Debug.WriteLine("ShowBeneficiaryReport: დაიწყო")
+
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' UC_BeneficiaryReport კონტროლის შექმნა
+            Dim beneficiaryReportControl As New UC_BeneficiaryReport()
+            beneficiaryReportControl.Dock = DockStyle.Fill
+
+            ' მონაცემთა სერვისის მითითება
+            If dataService IsNot Nothing Then
+                beneficiaryReportControl.SetDataService(dataService)
+                Debug.WriteLine("ShowBeneficiaryReport: მონაცემთა სერვისი გადაცემულია")
+            Else
+                Debug.WriteLine("ShowBeneficiaryReport: ❌ dataService არის Nothing")
+            End If
+
+            ' მომხმარებლის ინფორმაციის გადაცემა
+            If viewModel IsNot Nothing Then
+                Dim userEmail As String = If(String.IsNullOrEmpty(viewModel.Email), "user@example.com", viewModel.Email)
+                Dim userRole As String = If(String.IsNullOrEmpty(viewModel.Role), "6", viewModel.Role)
+
+                beneficiaryReportControl.SetUserInfo(userEmail, userRole)
+                Debug.WriteLine($"ShowBeneficiaryReport: მომხმარებლის ინფორმაცია გადაცემულია - ელფოსტა: '{userEmail}', როლი: '{userRole}'")
+            Else
+                Debug.WriteLine("ShowBeneficiaryReport: ❌ viewModel არის Nothing")
+                beneficiaryReportControl.SetUserInfo("user@example.com", "6")
+            End If
+
+            ' კონტროლის დამატება პანელზე
+            pnlMain.Controls.Add(beneficiaryReportControl)
+
+            Debug.WriteLine("ShowBeneficiaryReport: ბენეფიციარის ანგარიშის გვერდი წარმატებით გამოჩნდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowBeneficiaryReport: შეცდომა - {ex.Message}")
+            MessageBox.Show($"ბენეფიციარის ანგარიშის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ თერაპევტის ანგარიშის გვერდის ჩვენება
+    ''' </summary>
+    Private Sub ShowTherapistReport()
+        Try
+            Debug.WriteLine("ShowTherapistReport: დაიწყო")
+
+            ' გავასუფთავოთ მთავარი პანელი
+            pnlMain.Controls.Clear()
+
+            ' UC_TherapistReport კონტროლის შექმნა
+            Dim therapistReportControl As New UC_TherapistReport()
+            therapistReportControl.Dock = DockStyle.Fill
+
+            ' მონაცემთა სერვისის მითითება
+            If dataService IsNot Nothing Then
+                therapistReportControl.SetDataService(dataService)
+                Debug.WriteLine("ShowTherapistReport: მონაცემთა სერვისი გადაცემულია")
+            Else
+                Debug.WriteLine("ShowTherapistReport: ❌ dataService არის Nothing")
+            End If
+
+            ' მომხმარებლის ინფორმაციის გადაცემა
+            If viewModel IsNot Nothing Then
+                Dim userEmail As String = If(String.IsNullOrEmpty(viewModel.Email), "user@example.com", viewModel.Email)
+                Dim userRole As String = If(String.IsNullOrEmpty(viewModel.Role), "6", viewModel.Role)
+
+                therapistReportControl.SetUserInfo(userEmail, userRole)
+                Debug.WriteLine($"ShowTherapistReport: მომხმარებლის ინფორმაცია გადაცემულია - ელფოსტა: '{userEmail}', როლი: '{userRole}'")
+            Else
+                Debug.WriteLine("ShowTherapistReport: ❌ viewModel არის Nothing")
+                therapistReportControl.SetUserInfo("user@example.com", "6")
+            End If
+
+            ' კონტროლის დამატება პანელზე
+            pnlMain.Controls.Add(therapistReportControl)
+
+            Debug.WriteLine("ShowTherapistReport: თერაპევტის ანგარიშის გვერდი წარმატებით გამოჩნდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"ShowTherapistReport: შეცდომა - {ex.Message}")
+            MessageBox.Show($"თერაპევტის ანგარიშის გვერდის ჩვენების შეცდომა: {ex.Message}", "შეცდომა",
+                       MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
     ' Form1.vb ფაილში დაამატეთ ეს ღილაკზე დაჭერის ფუნქცია
     Private Sub TestBirthdaysDirect()
         Try
