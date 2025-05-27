@@ -24,11 +24,9 @@ Partial Class UC_BeneficiaryReport
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(UC_BeneficiaryReport))
         Me.pnlFilter = New System.Windows.Forms.Panel()
+        Me.BtnExportToExcel = New System.Windows.Forms.Button()
         Me.btnToPDF = New System.Windows.Forms.Button()
-        Me.btbPrint = New System.Windows.Forms.Button()
-        Me.RB100 = New System.Windows.Forms.RadioButton()
-        Me.RB50 = New System.Windows.Forms.RadioButton()
-        Me.RB20 = New System.Windows.Forms.RadioButton()
+        Me.btnPrint = New System.Windows.Forms.Button()
         Me.CheckBox5 = New System.Windows.Forms.CheckBox()
         Me.CheckBox7 = New System.Windows.Forms.CheckBox()
         Me.CheckBox6 = New System.Windows.Forms.CheckBox()
@@ -55,18 +53,18 @@ Partial Class UC_BeneficiaryReport
         Me.LName = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
+        Me.DgvSessions = New System.Windows.Forms.DataGridView()
         Me.pnlFilter.SuspendLayout()
+        CType(Me.DgvSessions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'pnlFilter
         '
         Me.pnlFilter.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.pnlFilter.Controls.Add(Me.BtnExportToExcel)
         Me.pnlFilter.Controls.Add(Me.btnToPDF)
-        Me.pnlFilter.Controls.Add(Me.btbPrint)
-        Me.pnlFilter.Controls.Add(Me.RB100)
-        Me.pnlFilter.Controls.Add(Me.RB50)
-        Me.pnlFilter.Controls.Add(Me.RB20)
+        Me.pnlFilter.Controls.Add(Me.btnPrint)
         Me.pnlFilter.Controls.Add(Me.CheckBox5)
         Me.pnlFilter.Controls.Add(Me.CheckBox7)
         Me.pnlFilter.Controls.Add(Me.CheckBox6)
@@ -98,6 +96,18 @@ Partial Class UC_BeneficiaryReport
         Me.pnlFilter.Size = New System.Drawing.Size(1504, 79)
         Me.pnlFilter.TabIndex = 57
         '
+        'BtnExportToExcel
+        '
+        Me.BtnExportToExcel.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnExportToExcel.BackgroundImage = CType(resources.GetObject("BtnExportToExcel.BackgroundImage"), System.Drawing.Image)
+        Me.BtnExportToExcel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnExportToExcel.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.BtnExportToExcel.Location = New System.Drawing.Point(1226, 4)
+        Me.BtnExportToExcel.Name = "BtnExportToExcel"
+        Me.BtnExportToExcel.Size = New System.Drawing.Size(50, 50)
+        Me.BtnExportToExcel.TabIndex = 71
+        Me.BtnExportToExcel.UseVisualStyleBackColor = True
+        '
         'btnToPDF
         '
         Me.btnToPDF.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
@@ -110,56 +120,17 @@ Partial Class UC_BeneficiaryReport
         Me.btnToPDF.TabIndex = 70
         Me.btnToPDF.UseVisualStyleBackColor = True
         '
-        'btbPrint
+        'btnPrint
         '
-        Me.btbPrint.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.btbPrint.BackgroundImage = CType(resources.GetObject("btbPrint.BackgroundImage"), System.Drawing.Image)
-        Me.btbPrint.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.btbPrint.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.btbPrint.Location = New System.Drawing.Point(1338, 4)
-        Me.btbPrint.Name = "btbPrint"
-        Me.btbPrint.Size = New System.Drawing.Size(50, 50)
-        Me.btbPrint.TabIndex = 69
-        Me.btbPrint.UseVisualStyleBackColor = True
-        '
-        'RB100
-        '
-        Me.RB100.AutoSize = True
-        Me.RB100.BackColor = System.Drawing.Color.Transparent
-        Me.RB100.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB100.Location = New System.Drawing.Point(981, 49)
-        Me.RB100.Name = "RB100"
-        Me.RB100.Size = New System.Drawing.Size(96, 17)
-        Me.RB100.TabIndex = 68
-        Me.RB100.TabStop = True
-        Me.RB100.Text = "100 ჩანაწერი"
-        Me.RB100.UseVisualStyleBackColor = False
-        '
-        'RB50
-        '
-        Me.RB50.AutoSize = True
-        Me.RB50.BackColor = System.Drawing.Color.Transparent
-        Me.RB50.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB50.Location = New System.Drawing.Point(981, 26)
-        Me.RB50.Name = "RB50"
-        Me.RB50.Size = New System.Drawing.Size(90, 17)
-        Me.RB50.TabIndex = 67
-        Me.RB50.TabStop = True
-        Me.RB50.Text = "50 ჩანაწერი"
-        Me.RB50.UseVisualStyleBackColor = False
-        '
-        'RB20
-        '
-        Me.RB20.AutoSize = True
-        Me.RB20.BackColor = System.Drawing.Color.Transparent
-        Me.RB20.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB20.Location = New System.Drawing.Point(981, 3)
-        Me.RB20.Name = "RB20"
-        Me.RB20.Size = New System.Drawing.Size(90, 17)
-        Me.RB20.TabIndex = 66
-        Me.RB20.TabStop = True
-        Me.RB20.Text = "20 ჩანაწერი"
-        Me.RB20.UseVisualStyleBackColor = False
+        Me.btnPrint.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnPrint.BackgroundImage = CType(resources.GetObject("btnPrint.BackgroundImage"), System.Drawing.Image)
+        Me.btnPrint.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.btnPrint.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.btnPrint.Location = New System.Drawing.Point(1338, 4)
+        Me.btnPrint.Name = "btnPrint"
+        Me.btnPrint.Size = New System.Drawing.Size(50, 50)
+        Me.btnPrint.TabIndex = 69
+        Me.btnPrint.UseVisualStyleBackColor = True
         '
         'CheckBox5
         '
@@ -430,25 +401,32 @@ Partial Class UC_BeneficiaryReport
         Me.Label2.TabIndex = 45
         Me.Label2.Text = "-დან"
         '
+        'DgvSessions
+        '
+        Me.DgvSessions.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
+        Me.DgvSessions.Location = New System.Drawing.Point(3, 88)
+        Me.DgvSessions.Name = "DgvSessions"
+        Me.DgvSessions.Size = New System.Drawing.Size(892, 386)
+        Me.DgvSessions.TabIndex = 58
+        '
         'UC_BeneficiaryReport
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.DgvSessions)
         Me.Controls.Add(Me.pnlFilter)
         Me.Name = "UC_BeneficiaryReport"
         Me.Size = New System.Drawing.Size(1510, 516)
         Me.pnlFilter.ResumeLayout(False)
         Me.pnlFilter.PerformLayout()
+        CType(Me.DgvSessions, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
 
     End Sub
 
     Friend WithEvents pnlFilter As Panel
     Friend WithEvents btnToPDF As Button
-    Friend WithEvents btbPrint As Button
-    Friend WithEvents RB100 As RadioButton
-    Friend WithEvents RB50 As RadioButton
-    Friend WithEvents RB20 As RadioButton
+    Friend WithEvents btnPrint As Button
     Friend WithEvents CheckBox5 As CheckBox
     Friend WithEvents CheckBox7 As CheckBox
     Friend WithEvents CheckBox6 As CheckBox
@@ -475,4 +453,6 @@ Partial Class UC_BeneficiaryReport
     Friend WithEvents LName As Label
     Friend WithEvents Label3 As Label
     Friend WithEvents Label2 As Label
+    Friend WithEvents DgvSessions As DataGridView
+    Friend WithEvents BtnExportToExcel As Button
 End Class

@@ -359,6 +359,9 @@
     <Content Include="Resources\AppImages\BtnRightFast.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\AppImages\BtnToExcel.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\AppImages\logo1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
