@@ -1,16 +1,22 @@
-﻿' ===========================================
-' 📄 UserControls/UC_BeneficiaryReport.vb - სრულად თავიდან დაწერილი
+﻿
+' ===========================================
+' 📄 UserControls/UC_BeneficiaryReport.vb - გამართული ვერსია
 ' -------------------------------------------
 ' ბენეფიციარის ინვოისის ფორმის UserControl
 ' UC_Schedule-ის ფილტრაციის სისტემის გამოყენებით
 ' 
+' 🔧 გამართული პრობლემები:
+' - სახელის არჩევის შემდეგ ახალი სახელის არჩევის საშუალება
+' - ComboBox-ების ციკლური განახლების თავიდან აცილება
+' - ივენთების სწორი მუშაობა
+' 
 ' 🎯 ხელმისაწვდომია როლებისთვის: 1 (ადმინი), 2 (მენეჯერი), 3
 ' ===========================================
 Imports System.ComponentModel
-Imports Scheduler_v8_8a.Services
-Imports Scheduler_v8_8a.Models
-Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
-Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
+        Imports Scheduler_v8_8a.Services
+        Imports Scheduler_v8_8a.Models
+        Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+        Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
 Public Class UC_BeneficiaryReport
     Inherits UserControl
@@ -30,9 +36,11 @@ Public Class UC_BeneficiaryReport
     Private currentFilteredSessions As List(Of SessionModel) = Nothing
     Private currentBeneficiaryData As List(Of SessionModel) = Nothing
 
-    ' 🔧 ციკლური ივენთების თავიდან აცილება
+    ' 🔧 ციკლური ივენთების თავიდან აცილება - გამართული ლოგიკა
     Private isLoadingData As Boolean = False
-    Private isUpdatingComboBoxes As Boolean = False
+    Private isUpdatingBeneficiaryName As Boolean = False      ' სახელის ComboBox განახლებისთვის
+    Private isUpdatingBeneficiarySurname As Boolean = False   ' გვარის ComboBox განახლებისთვის
+    Private isUpdatingTherapistData As Boolean = False        ' თერაპევტის/თერაპიის ComboBox განახლებისთვის
 
 #End Region
 
@@ -143,17 +151,17 @@ Public Class UC_BeneficiaryReport
             ' მხოლოდ საჭირო კონტროლები
             filterManager = New ScheduleFilterManager(
                 DtpDan, DtpMde,
-                CBBeneName, CBBeneSurname, CBPer, CBTer, Nothing, Nothing ' Space და Funding არ გვჭირდება ახლა
+                Nothing, Nothing, Nothing, Nothing, Nothing, Nothing ' ComboBox-ები ხელით მოვამუშავებთ
             )
 
             ' სტატუსის CheckBox-ების ინიციალიზაცია
             InitializeStatusCheckBoxes()
 
-            ' ფილტრების ინიციალიზაცია
+            ' ფილტრების ინიციალიზაცია (თარიღების და სტატუსების)
             filterManager.InitializeFilters()
 
-            ' ივენთების მიბმა
-            BindEvents()
+            ' 🔧 მხოლოდ FilterChanged ივენთი გვჭირდება
+            AddHandler filterManager.FilterChanged, AddressOf OnFilterChanged
 
             ' DataGridView-ის კონფიგურაცია
             ConfigureDataGridView()
@@ -233,26 +241,11 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' ივენთების მიბმა
-    ''' </summary>
-    Private Sub BindEvents()
-        Try
-            Debug.WriteLine("UC_BeneficiaryReport: ივენთების მიბმა")
-
-            ' ფილტრების ივენთები
-            AddHandler filterManager.FilterChanged, AddressOf OnFilterChanged
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: BindEvents შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' DataGridView-ის კონფიგურაცია ინვოისის ფორმისთვის
+    ''' 🔧 DataGridView-ის კონფიგურაცია ინვოისის ფორმისთვის - გაუმჯობესებული ვერსია
     ''' </summary>
     Private Sub ConfigureDataGridView()
         Try
-            Debug.WriteLine("UC_BeneficiaryReport: DataGridView-ის კონფიგურაცია")
+            Debug.WriteLine("UC_BeneficiaryReport: DataGridView-ის კონფიგურაცია (გაუმჯობესებული)")
 
             If DgvSessions Is Nothing Then
                 Debug.WriteLine("UC_BeneficiaryReport: DgvSessions არ არსებობს")
@@ -263,9 +256,9 @@ Public Class UC_BeneficiaryReport
                 .AutoGenerateColumns = False
                 .AllowUserToAddRows = False
                 .AllowUserToDeleteRows = False
-                .ReadOnly = True
+                .ReadOnly = False  ' 🔧 ჩეკბოქსების რედაქტირებისთვის
                 .SelectionMode = DataGridViewSelectionMode.FullRowSelect
-                .MultiSelect = False
+                .MultiSelect = True  ' 🔧 მრავალი მწკრივის მონიშვნისთვის
 
                 ' თავის სტილი
                 .EnableHeadersVisualStyles = False
@@ -278,12 +271,15 @@ Public Class UC_BeneficiaryReport
                 .AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 250)
                 .DefaultCellStyle.SelectionBackColor = Color.FromArgb(180, 200, 255)
                 .DefaultCellStyle.SelectionForeColor = Color.Black
+
+                ' 🔧 ჩეკბოქსების რედაქტირების ჩართვა
+                .EditMode = DataGridViewEditMode.EditOnKeystroke
             End With
 
             ' სვეტების შექმნა ინვოისისთვის
             CreateInvoiceColumns()
 
-            Debug.WriteLine("UC_BeneficiaryReport: DataGridView კონფიგურაცია დასრულდა")
+            Debug.WriteLine("UC_BeneficiaryReport: DataGridView კონფიგურაცია დასრულდა (გაუმჯობესებული)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: ConfigureDataGridView შეცდომა: {ex.Message}")
@@ -291,11 +287,12 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ინვოისის სვეტების შექმნა - მხოლოდ საჭირო სვეტები
+    ''' 🔧 ინვოისის სვეტების შექმნა - გაფართოებული ვერსია
+    ''' დამატებული: დაფინანსება, სტატუსი, ჩეკბოქსი, რედაქტირება
     ''' </summary>
     Private Sub CreateInvoiceColumns()
         Try
-            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების შექმნა")
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების შექმნა (გაფართოებული)")
 
             DgvSessions.Columns.Clear()
 
@@ -306,8 +303,8 @@ Public Class UC_BeneficiaryReport
                 ' თარიღი
                 .Add("DateTime", "თარიღი")
 
-                ' ხანგძლივობა
-                .Add("Duration", "ხანგძლივობა")
+                ' ხანგძლივობა - შემცირებული სიგანე
+                .Add("Duration", "ხანგძლ.")
 
                 ' თერაპია
                 .Add("TherapyType", "თერაპია")
@@ -315,14 +312,41 @@ Public Class UC_BeneficiaryReport
                 ' თერაპევტი
                 .Add("Therapist", "თერაპევტი")
 
+                ' 🆕 დაფინანსების სვეტი
+                .Add("Funding", "დაფინანსება")
+
+                ' 🆕 სტატუსის სვეტი
+                .Add("Status", "სტატუსი")
+
                 ' თანხა
                 .Add("Price", "თანხა")
+
+                ' 🆕 ჩეკბოქსის სვეტი - ინვოისში ჩართვის/ამოღების კონტროლი
+                Dim excludeCheckColumn As New DataGridViewCheckBoxColumn()
+                excludeCheckColumn.Name = "ExcludeFromInvoice"
+                excludeCheckColumn.HeaderText = "ამოღება"
+                excludeCheckColumn.ToolTipText = "მონიშნე ინვოისიდან ამოსაღებად"
+                excludeCheckColumn.Width = 70
+                excludeCheckColumn.FalseValue = False
+                excludeCheckColumn.TrueValue = True
+                excludeCheckColumn.ThreeState = False
+                .Add(excludeCheckColumn)
+
+                ' 🆕 რედაქტირების ღილაკი
+                Dim editBtn As New DataGridViewButtonColumn()
+                editBtn.Name = "EditSession"
+                editBtn.HeaderText = ""
+                editBtn.Text = "✎"
+                editBtn.UseColumnTextForButtonValue = True
+                editBtn.ToolTipText = "სესიის რედაქტირება"
+                editBtn.Width = 35
+                .Add(editBtn)
             End With
 
             ' სვეტების სიგანეების დაყენება
             SetInvoiceColumnWidths()
 
-            Debug.WriteLine($"UC_BeneficiaryReport: შეიქმნა {DgvSessions.Columns.Count} სვეტი ინვოისისთვის")
+            Debug.WriteLine($"UC_BeneficiaryReport: შეიქმნა {DgvSessions.Columns.Count} სვეტი ინვოისისთვის (ჩეკბოქსი და რედაქტირების ღილაკით)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: CreateInvoiceColumns შეცდომა: {ex.Message}")
@@ -330,24 +354,38 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ინვოისის სვეტების სიგანეების დაყენება
+    ''' 🔧 ინვოისის სვეტების სიგანეების დაყენება - გაუმჯობესებული ვერსია
     ''' </summary>
     Private Sub SetInvoiceColumnWidths()
         Try
             With DgvSessions.Columns
                 .Item("InvoiceN").Width = 50          ' N
-                .Item("DateTime").Width = 150         ' თარიღი
-                .Item("Duration").Width = 80          ' ხანგძლივობა
-                .Item("TherapyType").Width = 200      ' თერაპია
-                .Item("Therapist").Width = 180        ' თერაპევტი
-                .Item("Price").Width = 100            ' თანხა
+                .Item("DateTime").Width = 120         ' თარიღი - ოდნავ შემცირებული
+                .Item("Duration").Width = 40          ' ხანგძლივობა - 50%-ით შემცირებული (80->40)
+                .Item("TherapyType").Width = 180      ' თერაპია - ოდნავ შემცირებული
+                .Item("Therapist").Width = 150        ' თერაპევტი - ოდნავ შემცირებული
+                .Item("Funding").Width = 100          ' 🆕 დაფინანსება
+                .Item("Status").Width = 120           ' 🆕 სტატუსი
+                .Item("Price").Width = 80             ' თანხა
+                .Item("ExcludeFromInvoice").Width = 70  ' 🆕 ჩეკბოქსი
+                .Item("EditSession").Width = 35       ' 🆕 რედაქტირება
 
                 ' ფასის სვეტის ფორმატი
                 .Item("Price").DefaultCellStyle.Format = "N2"
                 .Item("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+
+                ' სტატუსის სვეტის ფორმატი
+                .Item("Status").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+
+                ' ჩეკბოქსის სვეტის ფორმატი
+                .Item("ExcludeFromInvoice").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                .Item("ExcludeFromInvoice").HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter
+
+                ' რედაქტირების ღილაკის ფორმატი
+                .Item("EditSession").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
             End With
 
-            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების სიგანეები დაყენებულია")
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების სიგანეები დაყენებულია (გაფართოებული ვერსია)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: SetInvoiceColumnWidths შეცდომა: {ex.Message}")
@@ -365,16 +403,8 @@ Public Class UC_BeneficiaryReport
             DtpDan.Value = New DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) ' თვის პირველი დღე
             DtpMde.Value = DateTime.Today ' დღეს
 
-            ' ComboBox-ების საწყისი მდგომარეობა
-            CBBeneName.Enabled = False
-            CBBeneSurname.Enabled = False
-            CBPer.Enabled = False
-            CBTer.Enabled = False
-
-            CBBeneName.Items.Clear()
-            CBBeneSurname.Items.Clear()
-            CBPer.Items.Clear()
-            CBTer.Items.Clear()
+            ' 🔧 ComboBox-ების საწყისი მდგომარეობა - გამართული ლოგიკით
+            ResetAllComboBoxes()
 
             ' DataGridView-ის გასუფთავება
             DgvSessions.Rows.Clear()
@@ -383,6 +413,61 @@ Public Class UC_BeneficiaryReport
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: SetInitialFilters შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 ყველა ComboBox-ის რესეტი - გამართული ვერსია
+    ''' </summary>
+    Private Sub ResetAllComboBoxes()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ResetAllComboBoxes")
+
+            ' Flag-ების დაყენება
+            isUpdatingBeneficiaryName = True
+            isUpdatingBeneficiarySurname = True
+            isUpdatingTherapistData = True
+
+            Try
+                ' სახელების ComboBox რესეტი
+                CBBeneName.Items.Clear()
+                CBBeneName.Text = ""
+                CBBeneName.SelectedIndex = -1
+                CBBeneName.Enabled = False
+
+                ' გვარების ComboBox რესეტი
+                CBBeneSurname.Items.Clear()
+                CBBeneSurname.Text = ""
+                CBBeneSurname.SelectedIndex = -1
+                CBBeneSurname.Enabled = False
+
+                ' თერაპევტის ComboBox რესეტი
+                CBPer.Items.Clear()
+                CBPer.Text = ""
+                CBPer.SelectedIndex = -1
+                CBPer.Enabled = False
+
+                ' თერაპიის ComboBox რესეტი
+                CBTer.Items.Clear()
+                CBTer.Text = ""
+                CBTer.SelectedIndex = -1
+                CBTer.Enabled = False
+
+                Debug.WriteLine("UC_BeneficiaryReport: ყველა ComboBox გასუფთავებულია")
+
+            Finally
+                ' Flag-ების ჩართვა ყოველთვის
+                isUpdatingBeneficiaryName = False
+                isUpdatingBeneficiarySurname = False
+                isUpdatingTherapistData = False
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ResetAllComboBoxes შეცდომა: {ex.Message}")
+            ' Flag-ების ჩართვა შეცდომის შემთხვევაშიც
+            isUpdatingBeneficiaryName = False
+            isUpdatingBeneficiarySurname = False
+            isUpdatingTherapistData = False
         End Try
     End Sub
 
@@ -404,7 +489,7 @@ Public Class UC_BeneficiaryReport
 
 #End Region
 
-#Region "ფილტრაციის ლოგიკა"
+#Region "ფილტრაციის ლოგიკა - გამართული ვერსია"
 
     ''' <summary>
     ''' ფილტრაციის შედეგების ჩატვირთვა - UC_Schedule-ის ანალოგია
@@ -437,11 +522,11 @@ Public Class UC_BeneficiaryReport
 
                 Debug.WriteLine($"UC_BeneficiaryReport: ფილტრირებულია {currentFilteredSessions.Count} სესია")
 
-                ' 🔧 UC_Schedule-ის ანალოგია: ComboBox-ების განახლება
-                UpdateComboBoxesIfNeeded()
+                ' 🔧 ბენეფიციარის სახელების ComboBox-ის განახლება
+                PopulateBeneficiaryNamesComboBox()
 
-                ' ბენეფიციარის სპეციფიკური მონაცემების ფილტრაცია
-                FilterBeneficiarySpecificData()
+                ' მონაცემების გასუფთავება (სახელი ახალი არჩევისთვის)
+                ClearBeneficiarySpecificData()
 
             Finally
                 isLoadingData = False
@@ -484,22 +569,7 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' ComboBox-ების განახლება თუ საჭიროა - UC_Schedule-ის ანალოგია
-    ''' </summary>
-    Private Sub UpdateComboBoxesIfNeeded()
-        Try
-            If isUpdatingComboBoxes Then Return
-
-            ' ბენეფიციარების სახელების ჩატვირთვა - UC_Schedule-ის მანერით
-            PopulateBeneficiaryNamesComboBox()
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: UpdateComboBoxesIfNeeded შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ბენეფიციარების სახელების ComboBox-ის შევსება - UC_Schedule-ის ანალოგია
+    ''' 🔧 ბენეფიციარის სახელების ComboBox-ის შევსება - გამართული ვერსია
     ''' </summary>
     Private Sub PopulateBeneficiaryNamesComboBox()
         Try
@@ -507,101 +577,18 @@ Public Class UC_BeneficiaryReport
 
             If CBBeneName Is Nothing OrElse currentFilteredSessions Is Nothing Then Return
 
-            ' 🔧 UC_Schedule-ის მანერით: შევინახოთ მიმდინარე არჩეული მნიშვნელობა
-            Dim selectedValue As String = GetComboBoxSelectedValue(CBBeneName)
-
-            CBBeneName.Items.Clear()
-
-            If currentFilteredSessions.Count = 0 Then
-                CBBeneName.Enabled = False
-                Debug.WriteLine("UC_BeneficiaryReport: ფილტრირებული სესიები ცარიელია")
-                Return
-            End If
-
-            ' უნიკალური სახელების მიღება
-            Dim uniqueNames = currentFilteredSessions.Where(Function(s) Not String.IsNullOrEmpty(s.BeneficiaryName)) _
-                                                   .Select(Function(s) s.BeneficiaryName.Trim()) _
-                                                   .Distinct() _
-                                                   .OrderBy(Function(nameItem) nameItem) _
-                                                   .ToList()
-
-            ' სახელების დამატება
-            For i As Integer = 0 To uniqueNames.Count - 1
-                CBBeneName.Items.Add(uniqueNames(i))
-            Next
-
-            CBBeneName.Enabled = (uniqueNames.Count > 0)
-
-            ' 🔧 UC_Schedule-ის მანერით: ვაბრუნებთ არჩეულ მნიშვნელობას
-            SetComboBoxSelectedValue(CBBeneName, selectedValue)
-
-            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {uniqueNames.Count} სახელი, აღდგენილია: '{selectedValue}'")
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: PopulateBeneficiaryNamesComboBox შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ComboBox-ის მიმდინარე არჩეული მნიშვნელობის მიღება - UC_Schedule-დან
-    ''' </summary>
-    Private Function GetComboBoxSelectedValue(comboBox As ComboBox) As String
-        Try
-            If comboBox IsNot Nothing AndAlso comboBox.SelectedItem IsNot Nothing Then
-                Return comboBox.SelectedItem.ToString()
-            End If
-            Return ""
-        Catch
-            Return ""
-        End Try
-    End Function
-
-    ''' <summary>
-    ''' ComboBox-ის არჩეული მნიშვნელობის დაყენება - UC_Schedule-დან
-    ''' </summary>
-    Private Sub SetComboBoxSelectedValue(comboBox As ComboBox, value As String)
-        Try
-            If comboBox Is Nothing OrElse String.IsNullOrEmpty(value) Then Return
-
-            For i As Integer = 0 To comboBox.Items.Count - 1
-                If String.Equals(comboBox.Items(i).ToString(), value, StringComparison.OrdinalIgnoreCase) Then
-                    comboBox.SelectedIndex = i
-                    Return
-                End If
-            Next
-
-            ' თუ არ მოიძებნა, პირველი ელემენტი არ დავაყენოთ
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: SetComboBoxSelectedValue შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ბენეფიციარების სახელების ჩატვირთვა
-    ''' </summary>
-    Private Sub LoadBeneficiaryNames()
-        Try
-            Debug.WriteLine("UC_BeneficiaryReport: LoadBeneficiaryNames")
-
-            isUpdatingComboBoxes = True
+            ' 🔧 ტემპორარული flag განახლებისთვის
+            isUpdatingBeneficiaryName = True
 
             Try
+                ' 🔧 მიმდინარე არჩეული მნიშვნელობის შენახვა
+                Dim selectedValue As String = CBBeneName.SelectedItem?.ToString()
+
                 CBBeneName.Items.Clear()
-                CBBeneSurname.Items.Clear()
-                CBPer.Items.Clear()
-                CBTer.Items.Clear()
 
-                CBBeneName.Text = ""
-                CBBeneSurname.Text = ""
-                CBPer.Text = ""
-                CBTer.Text = ""
-
-                If currentFilteredSessions Is Nothing OrElse currentFilteredSessions.Count = 0 Then
+                If currentFilteredSessions.Count = 0 Then
                     CBBeneName.Enabled = False
-                    CBBeneSurname.Enabled = False
-                    CBPer.Enabled = False
-                    CBTer.Enabled = False
+                    CBBeneName.Text = ""
                     Debug.WriteLine("UC_BeneficiaryReport: ფილტრირებული სესიები ცარიელია")
                     Return
                 End If
@@ -614,24 +601,164 @@ Public Class UC_BeneficiaryReport
                                                        .ToList()
 
                 ' სახელების დამატება
-                For Each nameItem In uniqueNames
-                    CBBeneName.Items.Add(nameItem)
+                For i As Integer = 0 To uniqueNames.Count - 1
+                    CBBeneName.Items.Add(uniqueNames(i))
                 Next
 
                 CBBeneName.Enabled = (uniqueNames.Count > 0)
-                CBBeneSurname.Enabled = False
-                CBPer.Enabled = False
-                CBTer.Enabled = False
 
-                Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {uniqueNames.Count} უნიკალური სახელი")
+                ' 🔧 არჩეული მნიშვნელობის აღდგენა (თუ ჯერ კიდევ არსებობს)
+                If Not String.IsNullOrEmpty(selectedValue) Then
+                    For i As Integer = 0 To CBBeneName.Items.Count - 1
+                        If String.Equals(CBBeneName.Items(i).ToString(), selectedValue, StringComparison.OrdinalIgnoreCase) Then
+                            CBBeneName.SelectedIndex = i
+                            Debug.WriteLine($"UC_BeneficiaryReport: აღდგენილია სახელი: '{selectedValue}'")
+                            Exit For
+                        End If
+                    Next
+                End If
+
+                Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {uniqueNames.Count} სახელი")
 
             Finally
-                isUpdatingComboBoxes = False
+                isUpdatingBeneficiaryName = False
             End Try
 
         Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: LoadBeneficiaryNames შეცდომა: {ex.Message}")
-            isUpdatingComboBoxes = False
+            Debug.WriteLine($"UC_BeneficiaryReport: PopulateBeneficiaryNamesComboBox შეცდომა: {ex.Message}")
+            isUpdatingBeneficiaryName = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 ბენეფიციარის სპეციფიკური მონაცემების გასუფთავება
+    ''' </summary>
+    Private Sub ClearBeneficiarySpecificData()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ClearBeneficiarySpecificData")
+
+            ' მონაცემების გასუფთავება
+            currentBeneficiaryData = New List(Of SessionModel)()
+            LoadSessionsToGrid(currentBeneficiaryData)
+
+            ' გვარის, თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
+            isUpdatingBeneficiarySurname = True
+            isUpdatingTherapistData = True
+
+            Try
+                CBBeneSurname.Items.Clear()
+                CBBeneSurname.Text = ""
+                CBBeneSurname.SelectedIndex = -1
+                CBBeneSurname.Enabled = False
+
+                CBPer.Items.Clear()
+                CBPer.Text = ""
+                CBPer.SelectedIndex = -1
+                CBPer.Enabled = False
+
+                CBTer.Items.Clear()
+                CBTer.Text = ""
+                CBTer.SelectedIndex = -1
+                CBTer.Enabled = False
+
+            Finally
+                isUpdatingBeneficiarySurname = False
+                isUpdatingTherapistData = False
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ClearBeneficiarySpecificData შეცდომა: {ex.Message}")
+            isUpdatingBeneficiarySurname = False
+            isUpdatingTherapistData = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 ბენეფიციარის გვარების ComboBox-ის განახლება - გამართული ვერსია
+    ''' </summary>
+    Public Sub UpdateBeneficiarySurnames(selectedName As String)
+        Try
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateBeneficiarySurnames - სახელი: '{selectedName}'")
+
+            If CBBeneSurname Is Nothing OrElse currentFilteredSessions Is Nothing Then Return
+
+            isUpdatingBeneficiarySurname = True
+
+            Try
+                CBBeneSurname.Items.Clear()
+
+                If String.IsNullOrWhiteSpace(selectedName) Then
+                    CBBeneSurname.Enabled = False
+                    CBBeneSurname.Text = ""
+                    CBBeneSurname.SelectedIndex = -1
+
+                    ' თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
+                    ClearTherapistAndTherapyComboBoxes()
+
+                    ' ცარიელი მონაცემები
+                    currentBeneficiaryData = New List(Of SessionModel)()
+                    LoadSessionsToGrid(currentBeneficiaryData)
+                    Return
+                End If
+
+                ' უნიკალური გვარების მიღება არჩეული სახელისთვის
+                Dim uniqueSurnames = currentFilteredSessions.Where(Function(s)
+                                                                       Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                              Not String.IsNullOrEmpty(s.BeneficiarySurname)
+                                                                   End Function) _
+                                                           .Select(Function(s) s.BeneficiarySurname.Trim()) _
+                                                           .Distinct() _
+                                                           .OrderBy(Function(surnameItem) surnameItem) _
+                                                           .ToList()
+
+                For i As Integer = 0 To uniqueSurnames.Count - 1
+                    CBBeneSurname.Items.Add(uniqueSurnames(i))
+                Next
+
+                CBBeneSurname.Enabled = (uniqueSurnames.Count > 0)
+
+                ' თუ მხოლოდ ერთი გვარია, ავტომატურად არჩევა
+                If uniqueSurnames.Count = 1 Then
+                    CBBeneSurname.SelectedIndex = 0
+                End If
+
+                Debug.WriteLine($"UC_BeneficiaryReport: სახელისთვის '{selectedName}' ნაპოვნია {uniqueSurnames.Count} გვარი")
+
+            Finally
+                isUpdatingBeneficiarySurname = False
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateBeneficiarySurnames შეცდომა: {ex.Message}")
+            isUpdatingBeneficiarySurname = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
+    ''' </summary>
+    Private Sub ClearTherapistAndTherapyComboBoxes()
+        Try
+            isUpdatingTherapistData = True
+
+            Try
+                CBPer.Items.Clear()
+                CBPer.Text = ""
+                CBPer.SelectedIndex = -1
+                CBPer.Enabled = False
+
+                CBTer.Items.Clear()
+                CBTer.Text = ""
+                CBTer.SelectedIndex = -1
+                CBTer.Enabled = False
+
+            Finally
+                isUpdatingTherapistData = False
+            End Try
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ClearTherapistAndTherapyComboBoxes შეცდომა: {ex.Message}")
+            isUpdatingTherapistData = False
         End Try
     End Sub
 
@@ -649,6 +776,9 @@ Public Class UC_BeneficiaryReport
                 ' ბენეფიციარი არ არის სრულად არჩეული
                 currentBeneficiaryData = New List(Of SessionModel)()
                 LoadSessionsToGrid(currentBeneficiaryData)
+
+                ' თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
+                ClearTherapistAndTherapyComboBoxes()
                 Return
             End If
 
@@ -674,11 +804,12 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' სესიების ჩატვირთვა DataGridView-ში ინვოისის ფორმატით
+    ''' 🔧 სესიების ჩატვირთვა DataGridView-ში ინვოისის ფორმატით - გაფართოებული ვერსია
+    ''' დამატებული: დაფინანსება, სტატუსი, ჩეკბოქსი, სესიის ID შენახვა
     ''' </summary>
     Private Sub LoadSessionsToGrid(sessions As List(Of SessionModel))
         Try
-            Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid - {sessions.Count} სესია")
+            Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid - {sessions.Count} სესია (გაფართოებული)")
 
             If DgvSessions Is Nothing Then
                 Debug.WriteLine("UC_BeneficiaryReport: DgvSessions არ არსებობს")
@@ -693,17 +824,24 @@ Public Class UC_BeneficiaryReport
                 ' ინვოისის ნომერი (არა ბაზის ID)
                 Dim invoiceNumber As Integer = i + 1
 
-                ' მწკრივის მონაცემები
+                ' 🔧 მწკრივის მონაცემები - გაფართოებული
                 Dim rowData As Object() = {
                     invoiceNumber,                                  ' ინვოისის N
                     session.DateTime.ToString("dd.MM.yyyy HH:mm"), ' თარიღი
-                    $"{session.Duration} წთ",                       ' ხანგძლივობა
+                    $"{session.Duration}წთ",                        ' ხანგძლივობა - მოკლე ფორმატი
                     session.TherapyType,                            ' თერაპია
                     session.TherapistName,                          ' თერაპევტი
-                    session.Price                                   ' თანხა
+                    session.Funding,                                ' 🆕 დაფინანსება
+                    session.Status,                                 ' 🆕 სტატუსი
+                    session.Price,                                  ' თანხა
+                    False,                                          ' 🆕 ჩეკბოქსი - ნაგულისხმევად არ არის მონიშნული
+                    "✎"                                             ' 🆕 რედაქტირების ღილაკი
                 }
 
                 Dim addedRowIndex = DgvSessions.Rows.Add(rowData)
+
+                ' 🔧 სესიის ID-ის შენახვა მწკრივში - რედაქტირებისთვის
+                DgvSessions.Rows(addedRowIndex).Tag = session.Id
 
                 ' მწკრივის ფერის დაყენება სტატუსის მიხედვით
                 Try
@@ -714,7 +852,11 @@ Public Class UC_BeneficiaryReport
                 End Try
             Next
 
-            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {sessions.Count} სესია DataGridView-ში")
+            ' 🔧 ჩეკბოქსის ივენთის მიბმა
+            AddHandler DgvSessions.CellValueChanged, AddressOf DgvSessions_CellValueChanged
+            AddHandler DgvSessions.CellClick, AddressOf DgvSessions_CellClick
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {sessions.Count} სესია DataGridView-ში (გაფართოებული)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid შეცდომა: {ex.Message}")
@@ -722,21 +864,18 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' თერაპევტების და თერაპიების ComboBox-ების განახლება
+    ''' 🔧 თერაპევტების და თერაპიების ComboBox-ების განახლება - გამართული ვერსია
     ''' </summary>
     Private Sub UpdateTherapistAndTherapyComboBoxes()
         Try
             Debug.WriteLine("UC_BeneficiaryReport: UpdateTherapistAndTherapyComboBoxes")
 
             If currentBeneficiaryData Is Nothing OrElse currentBeneficiaryData.Count = 0 Then
-                CBPer.Items.Clear()
-                CBTer.Items.Clear()
-                CBPer.Enabled = False
-                CBTer.Enabled = False
+                ClearTherapistAndTherapyComboBoxes()
                 Return
             End If
 
-            isUpdatingComboBoxes = True
+            isUpdatingTherapistData = True
 
             Try
                 ' თერაპევტები
@@ -776,27 +915,27 @@ Public Class UC_BeneficiaryReport
                 Debug.WriteLine($"UC_BeneficiaryReport: თერაპევტები: {uniqueTherapists.Count}, თერაპიები: {uniqueTherapies.Count}")
 
             Finally
-                isUpdatingComboBoxes = False
+                isUpdatingTherapistData = False
             End Try
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: UpdateTherapistAndTherapyComboBoxes შეცდომა: {ex.Message}")
-            isUpdatingComboBoxes = False
+            isUpdatingTherapistData = False
         End Try
     End Sub
 
 #End Region
 
-#Region "ივენთ ჰენდლერები"
+#Region "ივენთ ჰენდლერები - გამართული ვერსია"
 
     ''' <summary>
-    ''' ფილტრის შეცვლის ივენთი - UC_Schedule-ის ანალოგია
+    ''' ფილტრის შეცვლის ივენთი - FilterManager-დან
     ''' </summary>
     Private Sub OnFilterChanged()
         Try
             Debug.WriteLine($"UC_BeneficiaryReport: OnFilterChanged - isLoadingData: {isLoadingData}")
 
-            ' 🔧 UC_Schedule-ის ანალოგია: მონაცემების დატვირთვის დროს არ ვუშვებთ ციკლს
+            ' 🔧 მონაცემების დატვირთვის დროს არ ვუშვებთ ციკლს
             If isLoadingData Then
                 Debug.WriteLine("UC_BeneficiaryReport: მონაცემების დატვირთვის დროს FilterChanged ივენთი იგნორირებულია")
                 Return
@@ -810,13 +949,13 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ბენეფიციარის სახელის ComboBox-ის შეცვლა - UC_Schedule-ის ანალოგია
+    ''' 🔧 ბენეფიციარის სახელის ComboBox-ის შეცვლა - გამართული ვერსია
     ''' </summary>
     Private Sub CBBeneName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneName.SelectedIndexChanged
         Try
-            ' 🔧 UC_Schedule-ის ანალოგია: ციკლური განახლებების თავიდან აცილება
-            If isUpdatingComboBoxes Then
-                Debug.WriteLine("UC_BeneficiaryReport: CBBeneName_SelectedIndexChanged იგნორირებულია - ComboBox-ები განახლების პროცესშია")
+            ' 🔧 ციკლური განახლებების თავიდან აცილება
+            If isUpdatingBeneficiaryName Then
+                Debug.WriteLine("UC_BeneficiaryReport: CBBeneName_SelectedIndexChanged იგნორირებულია - სახელები განახლების პროცესშია")
                 Return
             End If
 
@@ -825,7 +964,7 @@ Public Class UC_BeneficiaryReport
             Dim actualSelectedName As String = If(CBBeneName?.SelectedItem?.ToString(), "")
             Debug.WriteLine($"UC_BeneficiaryReport: ბენეფიციარის სახელი შეიცვალა: '{actualSelectedName}'")
 
-            ' ბენეფიციარის გვარების ComboBox-ის განახლება - UC_Schedule-ის ანალოგია
+            ' ბენეფიციარის გვარების ComboBox-ის განახლება
             UpdateBeneficiarySurnames(actualSelectedName)
 
         Catch ex As Exception
@@ -834,116 +973,15 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ბენეფიციარის გვარების ComboBox-ის განახლება - UC_Schedule-დან კოპირებული ლოგიკა
-    ''' </summary>
-    Public Sub UpdateBeneficiarySurnames(selectedName As String)
-        Try
-            If CBBeneSurname Is Nothing OrElse currentFilteredSessions Is Nothing Then Return
-
-            CBBeneSurname.Items.Clear()
-
-            If String.IsNullOrWhiteSpace(selectedName) Then
-                CBBeneSurname.Enabled = False
-                CBPer.Enabled = False
-                CBTer.Enabled = False
-
-                ' ცარიელი მონაცემები
-                currentBeneficiaryData = New List(Of SessionModel)()
-                LoadSessionsToGrid(currentBeneficiaryData)
-                Return
-            End If
-
-            ' უნიკალური გვარების მიღება არჩეული სახელისთვის
-            Dim uniqueSurnames = currentFilteredSessions.Where(Function(s)
-                                                                   Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
-                                                                          Not String.IsNullOrEmpty(s.BeneficiarySurname)
-                                                               End Function) _
-                                                       .Select(Function(s) s.BeneficiarySurname.Trim()) _
-                                                       .Distinct() _
-                                                       .OrderBy(Function(surnameItem) surnameItem) _
-                                                       .ToList()
-
-            For i As Integer = 0 To uniqueSurnames.Count - 1
-                CBBeneSurname.Items.Add(uniqueSurnames(i))
-            Next
-
-            CBBeneSurname.Enabled = (uniqueSurnames.Count > 0)
-
-            ' თუ მხოლოდ ერთი გვარია, ავტომატურად არჩევა
-            If uniqueSurnames.Count = 1 Then
-                CBBeneSurname.SelectedIndex = 0
-            End If
-
-            Debug.WriteLine($"UC_BeneficiaryReport: სახელისთვის '{selectedName}' ნაპოვნია {uniqueSurnames.Count} გვარი")
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: UpdateBeneficiarySurnames შეცდომა: {ex.Message}")
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' გვარების ComboBox-ის განახლება არჩეული სახელისთვის
-    ''' </summary>
-    Private Sub UpdateSurnamesComboBox(selectedName As String)
-        Try
-            Debug.WriteLine($"UC_BeneficiaryReport: UpdateSurnamesComboBox - სახელი: '{selectedName}'")
-
-            isUpdatingComboBoxes = True
-
-            Try
-                CBBeneSurname.Items.Clear()
-                CBBeneSurname.Text = ""
-                CBPer.Items.Clear()
-                CBTer.Items.Clear()
-
-                If String.IsNullOrEmpty(selectedName) Then
-                    CBBeneSurname.Enabled = False
-                    CBPer.Enabled = False
-                    CBTer.Enabled = False
-                    currentBeneficiaryData = New List(Of SessionModel)()
-                    LoadSessionsToGrid(currentBeneficiaryData)
-                    Return
-                End If
-
-                ' გვარების ComboBox-ის განახლება არჩეული სახელისთვის
-                Dim uniqueSurnames = currentFilteredSessions.Where(Function(s)
-                                                                       Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
-                                                                              Not String.IsNullOrEmpty(s.BeneficiarySurname)
-                                                                   End Function) _
-                                                            .Select(Function(s) s.BeneficiarySurname.Trim()) _
-                                                            .Distinct() _
-                                                            .OrderBy(Function(surnameItem) surnameItem) _
-                                                            .ToList()
-
-                For i As Integer = 0 To uniqueSurnames.Count - 1
-                    CBBeneSurname.Items.Add(uniqueSurnames(i))
-                Next
-
-                CBBeneSurname.Enabled = (uniqueSurnames.Count > 0)
-
-                ' თუ მხოლოდ ერთი გვარია, ავტომატურად არჩევა
-                If uniqueSurnames.Count = 1 Then
-                    CBBeneSurname.SelectedIndex = 0
-                End If
-
-                Debug.WriteLine($"UC_BeneficiaryReport: სახელისთვის '{selectedName}' ნაპოვნია {uniqueSurnames.Count} გვარი")
-
-            Finally
-                isUpdatingComboBoxes = False
-            End Try
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport: UpdateSurnamesComboBox შეცდომა: {ex.Message}")
-            isUpdatingComboBoxes = False
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ბენეფიციარის გვარის ComboBox-ის შეცვლა
+    ''' 🔧 ბენეფიციარის გვარის ComboBox-ის შეცვლა - გამართული ვერსია
     ''' </summary>
     Private Sub CBBeneSurname_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBBeneSurname.SelectedIndexChanged
         Try
-            If isUpdatingComboBoxes Then Return
+            ' 🔧 ციკლური განახლებების თავიდან აცილება
+            If isUpdatingBeneficiarySurname Then
+                Debug.WriteLine("UC_BeneficiaryReport: CBBeneSurname_SelectedIndexChanged იგნორირებულია - გვარები განახლების პროცესშია")
+                Return
+            End If
 
             Debug.WriteLine("UC_BeneficiaryReport: CBBeneSurname_SelectedIndexChanged")
 
@@ -956,11 +994,15 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' თერაპევტის ComboBox-ის შეცვლა
+    ''' 🔧 თერაპევტის ComboBox-ის შეცვლა - გამართული ვერსია
     ''' </summary>
     Private Sub CBPer_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBPer.SelectedIndexChanged
         Try
-            If isUpdatingComboBoxes Then Return
+            ' 🔧 ციკლური განახლებების თავიდან აცილება
+            If isUpdatingTherapistData Then
+                Debug.WriteLine("UC_BeneficiaryReport: CBPer_SelectedIndexChanged იგნორირებულია - თერაპევტები განახლების პროცესშია")
+                Return
+            End If
 
             Debug.WriteLine("UC_BeneficiaryReport: CBPer_SelectedIndexChanged")
 
@@ -973,11 +1015,15 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' თერაპიის ComboBox-ის შეცვლა
+    ''' 🔧 თერაპიის ComboBox-ის შეცვლა - გამართული ვერსია
     ''' </summary>
     Private Sub CBTer_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CBTer.SelectedIndexChanged
         Try
-            If isUpdatingComboBoxes Then Return
+            ' 🔧 ციკლური განახლებების თავიდან აცილება
+            If isUpdatingTherapistData Then
+                Debug.WriteLine("UC_BeneficiaryReport: CBTer_SelectedIndexChanged იგნორირებულია - თერაპიები განახლების პროცესშია")
+                Return
+            End If
 
             Debug.WriteLine("UC_BeneficiaryReport: CBTer_SelectedIndexChanged")
 
@@ -1034,9 +1080,10 @@ Public Class UC_BeneficiaryReport
 #Region "დამხმარე მეთოდები"
 
     ''' <summary>
-    ''' ინვოისის ჯამური თანხის გამოთვლა
+    ''' 🔧 ინვოისის ჯამური თანხის გამოთვლა - გაუმჯობესებული ვერსია
+    ''' მხოლოდ ის სესიები ითვლება, რომლებიც არ არის მონიშნული ამოღებისთვის
     ''' </summary>
-    ''' <returns>ინვოისის ჯამური თანხა</returns>
+    ''' <returns>ინვოისის ჯამური თანხა (გამორიცხული სესიების გარეშე)</returns>
     Public Function GetInvoiceTotalAmount() As Decimal
         Try
             If DgvSessions Is Nothing OrElse DgvSessions.Rows.Count = 0 Then
@@ -1047,18 +1094,26 @@ Public Class UC_BeneficiaryReport
 
             For Each row As DataGridViewRow In DgvSessions.Rows
                 Try
-                    If row.Cells("Price").Value IsNot Nothing Then
+                    ' 🔧 შევამოწმოთ ჩეკბოქსი - თუ მონიშნულია, არ ჩავითვალოთ
+                    Dim isExcluded As Boolean = False
+                    If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), isExcluded)
+                    End If
+
+                    ' თუ სესია არ არის მონიშნული ამოღებისთვის, ჩავითვალოთ
+                    If Not isExcluded AndAlso row.Cells("Price").Value IsNot Nothing Then
                         Dim price As Decimal
                         If Decimal.TryParse(row.Cells("Price").Value.ToString(), price) Then
                             total += price
                         End If
                     End If
+
                 Catch
                     Continue For
                 End Try
             Next
 
-            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის ჯამური თანხა: {total:N2}")
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის ჯამური თანხა (გამორიცხულების გარეშე): {total:N2}")
             Return total
 
         Catch ex As Exception
@@ -1068,12 +1123,74 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' ინვოისის სესიების რაოდენობის მიღება
+    ''' 🔧 ინვოისის სესიების რაოდენობის მიღება - გაუმჯობესებული ვერსია
+    ''' მხოლოდ ის სესიები ითვლება, რომლებიც არ არის მონიშნული ამოღებისთვის
     ''' </summary>
-    ''' <returns>სესიების რაოდენობა</returns>
+    ''' <returns>ინვოისში ჩართული სესიების რაოდენობა</returns>
     Public Function GetInvoiceSessionCount() As Integer
         Try
-            Return If(DgvSessions?.Rows.Count, 0)
+            If DgvSessions Is Nothing OrElse DgvSessions.Rows.Count = 0 Then
+                Return 0
+            End If
+
+            Dim includedCount As Integer = 0
+
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    ' 🔧 შევამოწმოთ ჩეკბოქსი - თუ მონიშნულია, არ ჩავითვალოთ
+                    Dim isExcluded As Boolean = False
+                    If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), isExcluded)
+                    End If
+
+                    ' თუ სესია არ არის მონიშნული ამოღებისთვის, ჩავითვალოთ
+                    If Not isExcluded Then
+                        includedCount += 1
+                    End If
+
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისში ჩართული სესიები: {includedCount}")
+            Return includedCount
+
+        Catch
+            Return 0
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' 🆕 გამორიცხული სესიების რაოდენობის მიღება
+    ''' </summary>
+    ''' <returns>გამორიცხული სესიების რაოდენობა</returns>
+    Public Function GetExcludedSessionCount() As Integer
+        Try
+            If DgvSessions Is Nothing OrElse DgvSessions.Rows.Count = 0 Then
+                Return 0
+            End If
+
+            Dim excludedCount As Integer = 0
+
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    Dim isExcluded As Boolean = False
+                    If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), isExcluded)
+                    End If
+
+                    If isExcluded Then
+                        excludedCount += 1
+                    End If
+
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            Return excludedCount
+
         Catch
             Return 0
         End Try
@@ -1148,4 +1265,254 @@ Public Class UC_BeneficiaryReport
 
 #End Region
 
+#Region "🆕 DataGridView ივენთ ჰენდლერები - ჩეკბოქსი და რედაქტირება"
+
+    ''' <summary>
+    ''' 🔧 DataGridView უჯრაზე დაჭერის ივენთი - რედაქტირების ღილაკისთვის
+    ''' </summary>
+    Private Sub DgvSessions_CellClick(sender As Object, e As DataGridViewCellEventArgs)
+        Try
+            ' შევამოწმოთ არის თუ არა ვალიდური მწკრივი და სვეტი
+            If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
+
+            ' 🔧 რედაქტირების ღილაკზე დაჭერა
+            If DgvSessions.Columns(e.ColumnIndex).Name = "EditSession" Then
+                Debug.WriteLine($"UC_BeneficiaryReport: რედაქტირების ღილაკზე დაჭერა - მწკრივი {e.RowIndex}")
+
+                ' სესიის ID-ის მიღება მწკრივის Tag-დან
+                Dim sessionId As Integer = 0
+                If DgvSessions.Rows(e.RowIndex).Tag IsNot Nothing Then
+                    Integer.TryParse(DgvSessions.Rows(e.RowIndex).Tag.ToString(), sessionId)
+                End If
+
+                If sessionId > 0 Then
+                    EditSession(sessionId)
+                Else
+                    MessageBox.Show("სესიის ID ვერ მოიძებნა", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: DgvSessions_CellClick შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 DataGridView უჯრის მნიშვნელობის შეცვლის ივენთი - ჩეკბოქსისთვის
+    ''' </summary>
+    Private Sub DgvSessions_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
+        Try
+            ' შევამოწმოთ არის თუ არა ჩეკბოქსის სვეტი
+            If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 AndAlso
+               DgvSessions.Columns(e.ColumnIndex).Name = "ExcludeFromInvoice" Then
+
+                Debug.WriteLine($"UC_BeneficiaryReport: ჩეკბოქსი შეიცვალა - მწკრივი {e.RowIndex}")
+
+                ' მწკრივის ვიზუალური სტილის განახლება
+                UpdateRowVisualStyle(e.RowIndex)
+
+                ' ინვოისის ჯამების ხელახალი გამოთვლა (თუ საჭიროა)
+                OnInvoiceTotalsChanged()
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: DgvSessions_CellValueChanged შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 მწკრივის ვიზუალური სტილის განახლება ჩეკბოქსის მდგომარეობის მიხედვით
+    ''' </summary>
+    ''' <param name="rowIndex">მწკრივის ინდექსი</param>
+    Private Sub UpdateRowVisualStyle(rowIndex As Integer)
+        Try
+            If rowIndex < 0 OrElse rowIndex >= DgvSessions.Rows.Count Then Return
+
+            Dim row = DgvSessions.Rows(rowIndex)
+
+            ' ჩეკბოქსის მდგომარეობის შემოწმება
+            Dim isExcluded As Boolean = False
+            If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), isExcluded)
+            End If
+
+            If isExcluded Then
+                ' 🔧 მონიშნული მწკრივი - ნაცრისფერი ტექსტი და ღია ფონი
+                row.DefaultCellStyle.ForeColor = Color.Gray
+                row.DefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240)
+                row.DefaultCellStyle.Font = New Font(DgvSessions.DefaultCellStyle.Font, FontStyle.Strikeout)
+
+                Debug.WriteLine($"UC_BeneficiaryReport: მწკრივი {rowIndex} მონიშნულია ამოღებისთვის")
+            Else
+                ' 🔧 ჩვეულებრივი მწკრივი - სტანდარტული სტილი
+                row.DefaultCellStyle.ForeColor = Color.Black
+                row.DefaultCellStyle.Font = New Font(DgvSessions.DefaultCellStyle.Font, FontStyle.Regular)
+
+                ' სტატუსის ფერის აღდგენა
+                Try
+                    If currentBeneficiaryData IsNot Nothing AndAlso rowIndex < currentBeneficiaryData.Count Then
+                        Dim session = currentBeneficiaryData(rowIndex)
+                        Dim statusColor = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
+                        row.DefaultCellStyle.BackColor = statusColor
+                    Else
+                        row.DefaultCellStyle.BackColor = Color.White
+                    End If
+                Catch
+                    row.DefaultCellStyle.BackColor = Color.White
+                End Try
+
+                Debug.WriteLine($"UC_BeneficiaryReport: მწკრივი {rowIndex} აღდგენილია ჩვეულებრივ მდგომარეობაში")
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateRowVisualStyle შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 სესიის რედაქტირების ფუნქცია
+    ''' </summary>
+    ''' <param name="sessionId">სესიის ID</param>
+    Private Sub EditSession(sessionId As Integer)
+        Try
+            Debug.WriteLine($"UC_BeneficiaryReport: სესიის რედაქტირება - ID={sessionId}")
+
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემთა სერვისი არ არის ხელმისაწვდომი", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' რედაქტირების ფორმის გახსნა - UC_Schedule-ის ანალოგია
+            Using editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_BeneficiaryReport")
+                Dim result As DialogResult = editForm.ShowDialog()
+
+                If result = DialogResult.OK Then
+                    Debug.WriteLine($"UC_BeneficiaryReport: სესია ID={sessionId} წარმატებით განახლდა")
+
+                    ' მონაცემების განახლება
+                    RefreshData()
+
+                    MessageBox.Show($"სესია წარმატებით განახლდა", "წარმატება",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+            End Using
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: EditSession შეცდომა: {ex.Message}")
+            MessageBox.Show($"სესიის რედაქტირების შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 ინვოისის ჯამების შეცვლის ივენთი - მომავალი გამოყენებისთვის
+    ''' (მაგალითად Label-ების განახლება ან სხვა UI კომპონენტების ინფორმირება)
+    ''' </summary>
+    Private Sub OnInvoiceTotalsChanged()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის ჯამები შეიცვალა")
+
+            ' აქ შეიძლება დავამატოთ ლოგიკა:
+            ' - Label-ების განახლება ჯამური თანხით
+            ' - სტატისტიკის პანელების განახლება
+            ' - ივენთის გაშვება მშობელი ფორმისთვის
+
+            Dim totalAmount = GetInvoiceTotalAmount()
+            Dim includedSessions = GetInvoiceSessionCount()
+            Dim excludedSessions = GetExcludedSessionCount()
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ჯამური თანხა: {totalAmount:N2}, ჩართული: {includedSessions}, გამორიცხული: {excludedSessions}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: OnInvoiceTotalsChanged შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 ყველა სესიის ჩართვა ინვოისში (ყველა ჩეკბოქსის გასუფთავება)
+    ''' </summary>
+    Public Sub IncludeAllSessions()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ყველა სესიის ჩართვა ინვოისში")
+
+            If DgvSessions Is Nothing OrElse DgvSessions.Rows.Count = 0 Then Return
+
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    row.Cells("ExcludeFromInvoice").Value = False
+                    UpdateRowVisualStyle(row.Index)
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            OnInvoiceTotalsChanged()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: IncludeAllSessions შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 ყველა სესიის ამოღება ინვოისიდან (ყველა ჩეკბოქსის მონიშვნა)
+    ''' </summary>
+    Public Sub ExcludeAllSessions()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ყველა სესიის ამოღება ინვოისიდან")
+
+            If DgvSessions Is Nothing OrElse DgvSessions.Rows.Count = 0 Then Return
+
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    row.Cells("ExcludeFromInvoice").Value = True
+                    UpdateRowVisualStyle(row.Index)
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            OnInvoiceTotalsChanged()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ExcludeAllSessions შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 მონიშნული სესიების ჩართვა/ამოღება ინვოისში/ინვოისიდან
+    ''' </summary>
+    Public Sub ToggleSelectedSessions()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: მონიშნული სესიების ჩართვა/ამოღება")
+
+            If DgvSessions Is Nothing OrElse DgvSessions.SelectedRows.Count = 0 Then
+                MessageBox.Show("აირჩიეთ სესიები ჩართვის/ამოღების კონტროლისთვის", "ინფორმაცია",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            For Each row As DataGridViewRow In DgvSessions.SelectedRows
+                Try
+                    ' მიმდინარე მდგომარეობის შებრუნება
+                    Dim currentValue As Boolean = False
+                    If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), currentValue)
+                    End If
+
+                    row.Cells("ExcludeFromInvoice").Value = Not currentValue
+                    UpdateRowVisualStyle(row.Index)
+
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            OnInvoiceTotalsChanged()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ToggleSelectedSessions შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+#End Region
 End Class
