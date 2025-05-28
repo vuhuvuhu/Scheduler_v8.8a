@@ -1,22 +1,19 @@
-﻿
-' ===========================================
-' 📄 UserControls/UC_BeneficiaryReport.vb - გამართული ვერსია
+﻿' ===========================================
+' 📄 UserControls/UC_BeneficiaryReport.vb - განახლებული ვერსია ინვოისის პრევიუთი
 ' -------------------------------------------
 ' ბენეფიციარის ინვოისის ფორმის UserControl
-' UC_Schedule-ის ფილტრაციის სისტემის გამოყენებით
-' 
-' 🔧 გამართული პრობლემები:
-' - სახელის არჩევის შემდეგ ახალი სახელის არჩევის საშუალება
-' - ComboBox-ების ციკლური განახლების თავიდან აცილება
-' - ივენთების სწორი მუშაობა
+' ✨ ახალი ფუნქციონალი:
+' - ეკრანის გაყოფა: 70% DataGridView, 30% ინვოისის პრევიუ
+' - რეალური ინვოისის ფორმატის ნიმუში PDF-ის მიხედვით
+' - ხანგძლიობის სვეტის ზომის გაზრდა 5 პიკსელით
 ' 
 ' 🎯 ხელმისაწვდომია როლებისთვის: 1 (ადმინი), 2 (მენეჯერი), 3
 ' ===========================================
 Imports System.ComponentModel
-        Imports Scheduler_v8_8a.Services
-        Imports Scheduler_v8_8a.Models
-        Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
-        Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
+Imports Scheduler_v8_8a.Services
+Imports Scheduler_v8_8a.Models
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
 Public Class UC_BeneficiaryReport
     Inherits UserControl
@@ -41,6 +38,21 @@ Public Class UC_BeneficiaryReport
     Private isUpdatingBeneficiaryName As Boolean = False      ' სახელის ComboBox განახლებისთვის
     Private isUpdatingBeneficiarySurname As Boolean = False   ' გვარის ComboBox განახლებისთვის
     Private isUpdatingTherapistData As Boolean = False        ' თერაპევტის/თერაპიის ComboBox განახლებისთვის
+
+    ' ✨ ახალი UI კონტროლები ინვოისის პრევიუსთვის
+    Private WithEvents pnlMain As Panel                       ' მთავარი კონტეინერი
+    Private WithEvents pnlLeft As Panel                       ' მარცხენა პანელი (DataGrid)
+    Private WithEvents pnlRight As Panel                      ' მარჯვენა პანელი (პრევიუ)
+    Private WithEvents splitter As Splitter                   ' განმყოფი
+
+    ' ინვოისის პრევიუს კონტროლები
+    Private WithEvents lblInvoiceTitle As Label               ' ინვოისის სათაური
+    Private WithEvents lblCompanyInfo As RichTextBox          ' კომპანიის ინფორმაცია
+    Private WithEvents lblBeneficiaryInfo As RichTextBox      ' ბენეფიციარის ინფორმაცია
+    Private WithEvents dgvInvoicePreview As DataGridView      ' ინვოისის ცხრილის პრევიუ
+    Private WithEvents lblTotalAmount As Label                ' ჯამური თანხა
+    Private WithEvents lblTotalWords As Label                 ' თანხა სიტყვიერად
+    Private WithEvents lblSignature As Label                  ' ხელმოწერა
 
 #End Region
 
@@ -123,6 +135,9 @@ Public Class UC_BeneficiaryReport
         Try
             Debug.WriteLine("UC_BeneficiaryReport: კონტროლის ჩატვირთვა")
 
+            ' ✨ ახალი UI-ის შექმნა
+            CreateSplitLayoutUI()
+
             ' ფონის ფერების დაყენება
             SetBackgroundColors()
 
@@ -136,6 +151,245 @@ Public Class UC_BeneficiaryReport
             Debug.WriteLine($"UC_BeneficiaryReport: Load შეცდომა: {ex.Message}")
         End Try
     End Sub
+
+    ''' <summary>
+    ''' ✨ ახალი გაყოფილი UI-ის შექმნა - 70% DataGrid, 30% ინვოისის პრევიუ
+    ''' </summary>
+    Private Sub CreateSplitLayoutUI()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: გაყოფილი UI-ის შექმნა")
+
+            ' მთავარი კონტეინერის შექმნა
+            pnlMain = New Panel()
+            pnlMain.Dock = DockStyle.Fill
+            pnlMain.BorderStyle = BorderStyle.None
+            Me.Controls.Add(pnlMain)
+
+            ' მარცხენა პანელი - DataGridView-სთვის (70%)
+            pnlLeft = New Panel()
+            pnlLeft.Dock = DockStyle.Left
+            pnlLeft.Width = CInt(Me.Width * 0.7) ' 70%
+            pnlLeft.BorderStyle = BorderStyle.FixedSingle
+            pnlLeft.BackColor = Color.FromArgb(245, 245, 250)
+            pnlMain.Controls.Add(pnlLeft)
+
+            ' განმყოფი
+            splitter = New Splitter()
+            splitter.Dock = DockStyle.Left
+            splitter.Width = 5
+            splitter.BackColor = Color.Gray
+            splitter.BorderStyle = BorderStyle.Fixed3D
+            pnlMain.Controls.Add(splitter)
+
+            ' მარჯვენა პანელი - ინვოისის პრევიუსთვის (30%)
+            pnlRight = New Panel()
+            pnlRight.Dock = DockStyle.Fill ' დანარჩენი ადგილი
+            pnlRight.BorderStyle = BorderStyle.FixedSingle
+            pnlRight.BackColor = Color.White
+            pnlRight.AutoScroll = True
+            pnlMain.Controls.Add(pnlRight)
+
+            ' არსებული კონტროლების მარცხენა პანელში გადატანა
+            MoveExistingControlsToLeftPanel()
+
+            ' ინვოისის პრევიუს შექმნა მარჯვენა პანელში
+            CreateInvoicePreviewUI()
+
+            Debug.WriteLine("UC_BeneficiaryReport: გაყოფილი UI წარმატებით შეიქმნა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: CreateSplitLayoutUI შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ არსებული კონტროლების მარცხენა პანელში გადატანა
+    ''' </summary>
+    Private Sub MoveExistingControlsToLeftPanel()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: არსებული კონტროლების გადატანა")
+
+            ' ყველა არსებული კონტროლის პოვნა და მარცხენა პანელში გადატანა
+            Dim controlsToMove As New List(Of Control)()
+
+            For Each ctrl As Control In Me.Controls
+                If ctrl IsNot pnlMain Then
+                    controlsToMove.Add(ctrl)
+                End If
+            Next
+
+            ' კონტროლების გადატანა
+            For Each ctrl In controlsToMove
+                Me.Controls.Remove(ctrl)
+                pnlLeft.Controls.Add(ctrl)
+            Next
+
+            Debug.WriteLine($"UC_BeneficiaryReport: გადატანილია {controlsToMove.Count} კონტროლი")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: MoveExistingControlsToLeftPanel შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის პრევიუს UI-ის შექმნა PDF ნიმუშის მიხედვით
+    ''' </summary>
+    Private Sub CreateInvoicePreviewUI()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის პრევიუს UI-ის შექმნა")
+
+            Dim yPos As Integer = 10
+            Dim margin As Integer = 10
+
+            ' ✨ ინვოისის სათაური
+            lblInvoiceTitle = New Label()
+            lblInvoiceTitle.Text = "ინვოისი მომსახურების გაწევაზე"
+            lblInvoiceTitle.Font = New Font("Sylfaen", 12, FontStyle.Bold)
+            lblInvoiceTitle.Location = New Point(margin, yPos)
+            lblInvoiceTitle.Size = New Size(pnlRight.Width - margin * 2, 25)
+            lblInvoiceTitle.TextAlign = ContentAlignment.MiddleCenter
+            lblInvoiceTitle.ForeColor = Color.DarkBlue
+            pnlRight.Controls.Add(lblInvoiceTitle)
+            yPos += 35
+
+            ' ✨ კომპანიის ინფორმაცია
+            lblCompanyInfo = New RichTextBox()
+            lblCompanyInfo.Text = GetCompanyInfoText()
+            lblCompanyInfo.Font = New Font("Sylfaen", 8, FontStyle.Regular)
+            lblCompanyInfo.Location = New Point(margin, yPos)
+            lblCompanyInfo.Size = New Size(pnlRight.Width - margin * 2, 80)
+            lblCompanyInfo.ReadOnly = True
+            lblCompanyInfo.BorderStyle = BorderStyle.None
+            lblCompanyInfo.BackColor = pnlRight.BackColor
+            pnlRight.Controls.Add(lblCompanyInfo)
+            yPos += 90
+
+            ' ✨ ბენეფიციარის ინფორმაცია
+            lblBeneficiaryInfo = New RichTextBox()
+            lblBeneficiaryInfo.Text = "ბენეფიციარი: [არჩეული ბენეფიციარი]" & vbCrLf &
+                                    "დაბადების თარიღი:" & vbCrLf &
+                                    "საბანკო რეკვიზიტები: პ/ნ:" & vbCrLf &
+                                    "კანონიერი წარმომადგენელი:" & vbCrLf &
+                                    "წარმომადგენლის პ/ნ:"
+            lblBeneficiaryInfo.Font = New Font("Sylfaen", 8, FontStyle.Regular)
+            lblBeneficiaryInfo.Location = New Point(margin, yPos)
+            lblBeneficiaryInfo.Size = New Size(pnlRight.Width - margin * 2, 70)
+            lblBeneficiaryInfo.ReadOnly = True
+            lblBeneficiaryInfo.BorderStyle = BorderStyle.FixedSingle
+            lblBeneficiaryInfo.BackColor = Color.FromArgb(250, 250, 250)
+            pnlRight.Controls.Add(lblBeneficiaryInfo)
+            yPos += 80
+
+            ' ✨ ინვოისის ცხრილის პრევიუ
+            dgvInvoicePreview = New DataGridView()
+            dgvInvoicePreview.Location = New Point(margin, yPos)
+            dgvInvoicePreview.Size = New Size(pnlRight.Width - margin * 2, 200)
+            dgvInvoicePreview.ReadOnly = True
+            dgvInvoicePreview.AllowUserToAddRows = False
+            dgvInvoicePreview.AllowUserToDeleteRows = False
+            dgvInvoicePreview.RowHeadersVisible = False
+            dgvInvoicePreview.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            dgvInvoicePreview.BackgroundColor = Color.White
+            dgvInvoicePreview.GridColor = Color.Black
+            dgvInvoicePreview.Font = New Font("Sylfaen", 8, FontStyle.Regular)
+
+            ' ინვოისის ცხრილის სვეტები
+            CreateInvoicePreviewColumns()
+
+            pnlRight.Controls.Add(dgvInvoicePreview)
+            yPos += 210
+
+            ' ✨ ჯამური თანხა
+            lblTotalAmount = New Label()
+            lblTotalAmount.Text = "მომსახურების საფასური სულ: 0.00 ₾"
+            lblTotalAmount.Font = New Font("Sylfaen", 10, FontStyle.Bold)
+            lblTotalAmount.Location = New Point(margin, yPos)
+            lblTotalAmount.Size = New Size(pnlRight.Width - margin * 2, 25)
+            lblTotalAmount.TextAlign = ContentAlignment.MiddleRight
+            lblTotalAmount.ForeColor = Color.DarkGreen
+            pnlRight.Controls.Add(lblTotalAmount)
+            yPos += 35
+
+            ' ✨ თანხა სიტყვიერად
+            lblTotalWords = New Label()
+            lblTotalWords.Text = "თანხა სიტყვიერად: ნული ლარი, ნული თეთრი"
+            lblTotalWords.Font = New Font("Sylfaen", 9, FontStyle.Italic)
+            lblTotalWords.Location = New Point(margin, yPos)
+            lblTotalWords.Size = New Size(pnlRight.Width - margin * 2, 25)
+            lblTotalWords.TextAlign = ContentAlignment.MiddleLeft
+            pnlRight.Controls.Add(lblTotalWords)
+            yPos += 35
+
+            ' ✨ ხელმოწერა
+            lblSignature = New Label()
+            lblSignature.Text = GetSignatureText()
+            lblSignature.Font = New Font("Sylfaen", 8, FontStyle.Regular)
+            lblSignature.Location = New Point(margin, yPos)
+            lblSignature.Size = New Size(pnlRight.Width - margin * 2, 60)
+            lblSignature.TextAlign = ContentAlignment.BottomCenter
+            pnlRight.Controls.Add(lblSignature)
+
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის პრევიუს UI წარმატებით შეიქმნა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: CreateInvoicePreviewUI შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის პრევიუს ცხრილის სვეტების შექმნა
+    ''' </summary>
+    Private Sub CreateInvoicePreviewColumns()
+        Try
+            dgvInvoicePreview.Columns.Clear()
+
+            With dgvInvoicePreview.Columns
+                .Add("N", "N")           ' ნომერი
+                .Add("Date", "თარიღი")   ' თარიღი
+                .Add("Therapy", "თერაპია") ' თერაპია
+                .Add("Therapist", "თერაპევტი") ' თერაპევტი
+                .Add("Amount", "თანხა")   ' თანხა
+            End With
+
+            ' სვეტების სიგანეების დაყენება
+            With dgvInvoicePreview.Columns
+                .Item("N").Width = 30
+                .Item("Date").Width = 80
+                .Item("Therapy").Width = 100
+                .Item("Therapist").Width = 80
+                .Item("Amount").Width = 50
+
+                ' ფორმატირება
+                .Item("Amount").DefaultCellStyle.Format = "N2"
+                .Item("Amount").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                .Item("N").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+            End With
+
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის პრევიუს სვეტები შეიქმნა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: CreateInvoicePreviewColumns შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ კომპანიის ინფორმაციის ტექსტის მიღება
+    ''' </summary>
+    Private Function GetCompanyInfoText() As String
+        Return "შპს ""ბავშვთა და მოზარდთა განვითარების, აბილიტაციისა და" & vbCrLf &
+               "რეაბილიტაციის ცენტრი - პროსპერო""" & vbCrLf &
+               "მომსახურების განწევი: [კომპანიის რეკვიზიტები]" & vbCrLf &
+               "მომსახურების მიმღები: [მიმღების ინფორმაცია]"
+    End Function
+
+    ''' <summary>
+    ''' ✨ ხელმოწერის ტექსტის მიღება
+    ''' </summary>
+    Private Function GetSignatureText() As String
+        Return vbCrLf & "ცენტრის დირექტორი:" & vbCrLf &
+               "თეა ჩანადირი MD PhD DBP" & vbCrLf &
+               "მედიცინის დოქტორი,განვითარების და ქცევის პედიატრი"
+    End Function
 
     ''' <summary>
     ''' სერვისების ინიციალიზაცია - UC_Schedule-ის ანალოგია
@@ -188,7 +442,7 @@ Public Class UC_BeneficiaryReport
 
             ' CheckBox1-დან CheckBox7-მდე მოძიება
             For i As Integer = 1 To 7
-                Dim checkBox As CheckBox = FindCheckBoxRecursive(Me, $"CheckBox{i}")
+                Dim checkBox As CheckBox = FindCheckBoxRecursive(pnlLeft, $"CheckBox{i}")
                 If checkBox IsNot Nothing Then
                     statusCheckBoxes.Add(checkBox)
                     Debug.WriteLine($"UC_BeneficiaryReport: ნაპოვნი CheckBox{i} - ტექსტი: '{checkBox.Text}'")
@@ -241,11 +495,12 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' 🔧 DataGridView-ის კონფიგურაცია ინვოისის ფორმისთვის - გაუმჯობესებული ვერსია
+    ''' 🔧 DataGridView-ის კონფიგურაცია ინვოისის ფორმისთვის - განახლებული ვერსია
+    ''' ✨ ხანგძლიობის სვეტის ზომა გაზრდილია 5 პიკსელით
     ''' </summary>
     Private Sub ConfigureDataGridView()
         Try
-            Debug.WriteLine("UC_BeneficiaryReport: DataGridView-ის კონფიგურაცია (გაუმჯობესებული)")
+            Debug.WriteLine("UC_BeneficiaryReport: DataGridView-ის კონფიგურაცია (განახლებული)")
 
             If DgvSessions Is Nothing Then
                 Debug.WriteLine("UC_BeneficiaryReport: DgvSessions არ არსებობს")
@@ -279,7 +534,7 @@ Public Class UC_BeneficiaryReport
             ' სვეტების შექმნა ინვოისისთვის
             CreateInvoiceColumns()
 
-            Debug.WriteLine("UC_BeneficiaryReport: DataGridView კონფიგურაცია დასრულდა (გაუმჯობესებული)")
+            Debug.WriteLine("UC_BeneficiaryReport: DataGridView კონფიგურაცია დასრულდა (განახლებული)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: ConfigureDataGridView შეცდომა: {ex.Message}")
@@ -287,12 +542,12 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🔧 ინვოისის სვეტების შექმნა - გაფართოებული ვერსია
-    ''' დამატებული: დაფინანსება, სტატუსი, ჩეკბოქსი, რედაქტირება
+    ''' 🔧 ინვოისის სვეტების შექმნა - განახლებული ვერსია
+    ''' ✨ ხანგძლიობის სვეტის ზომა 45 პიკსელი (40+5)
     ''' </summary>
     Private Sub CreateInvoiceColumns()
         Try
-            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების შექმნა (გაფართოებული)")
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების შექმნა (განახლებული)")
 
             DgvSessions.Columns.Clear()
 
@@ -303,7 +558,7 @@ Public Class UC_BeneficiaryReport
                 ' თარიღი
                 .Add("DateTime", "თარიღი")
 
-                ' ხანგძლივობა - შემცირებული სიგანე
+                ' ხანგძლივობა - ✨ ზომა გაზრდილია 5 პიკსელით
                 .Add("Duration", "ხანგძლ.")
 
                 ' თერაპია
@@ -354,14 +609,15 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🔧 ინვოისის სვეტების სიგანეების დაყენება - გაუმჯობესებული ვერსია
+    ''' 🔧 ინვოისის სვეტების სიგანეების დაყენება - განახლებული ვერსია
+    ''' ✨ ხანგძლიობის სვეტი 45 პიკსელი (40+5)
     ''' </summary>
     Private Sub SetInvoiceColumnWidths()
         Try
             With DgvSessions.Columns
                 .Item("InvoiceN").Width = 50          ' N
                 .Item("DateTime").Width = 120         ' თარიღი - ოდნავ შემცირებული
-                .Item("Duration").Width = 40          ' ხანგძლივობა - 50%-ით შემცირებული (80->40)
+                .Item("Duration").Width = 45          ' ✨ ხანგძლივობა - 40+5=45 პიკსელი
                 .Item("TherapyType").Width = 180      ' თერაპია - ოდნავ შემცირებული
                 .Item("Therapist").Width = 150        ' თერაპევტი - ოდნავ შემცირებული
                 .Item("Funding").Width = 100          ' 🆕 დაფინანსება
@@ -385,7 +641,7 @@ Public Class UC_BeneficiaryReport
                 .Item("EditSession").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
             End With
 
-            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების სიგანეები დაყენებულია (გაფართოებული ვერსია)")
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის სვეტების სიგანეები დაყენებულია (ხანგძლივობა +5 პიკსელი)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: SetInvoiceColumnWidths შეცდომა: {ex.Message}")
@@ -408,6 +664,9 @@ Public Class UC_BeneficiaryReport
 
             ' DataGridView-ის გასუფთავება
             DgvSessions.Rows.Clear()
+
+            ' ✨ ინვოისის პრევიუს გასუფთავება
+            ClearInvoicePreview()
 
             Debug.WriteLine("UC_BeneficiaryReport: საწყისი ფილტრები დაყენებულია")
 
@@ -468,6 +727,42 @@ Public Class UC_BeneficiaryReport
             isUpdatingBeneficiaryName = False
             isUpdatingBeneficiarySurname = False
             isUpdatingTherapistData = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის პრევიუს გასუფთავება
+    ''' </summary>
+    Private Sub ClearInvoicePreview()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის პრევიუს გასუფთავება")
+
+            ' ბენეფიციარის ინფორმაციის რესეტი
+            If lblBeneficiaryInfo IsNot Nothing Then
+                lblBeneficiaryInfo.Text = "ბენეფიციარი: [არჩეული ბენეფიციარი]" & vbCrLf &
+                                        "დაბადების თარიღი:" & vbCrLf &
+                                        "საბანკო რეკვიზიტები: პ/ნ:" & vbCrLf &
+                                        "კანონიერი წარმომადგენელი:" & vbCrLf &
+                                        "წარმომადგენლის პ/ნ:"
+            End If
+
+            ' ცხრილის გასუფთავება
+            If dgvInvoicePreview IsNot Nothing Then
+                dgvInvoicePreview.Rows.Clear()
+            End If
+
+            ' ჯამური თანხის რესეტი
+            If lblTotalAmount IsNot Nothing Then
+                lblTotalAmount.Text = "მომსახურების საფასური სულ: 0.00 ₾"
+            End If
+
+            ' თანხა სიტყვიერად რესეტი
+            If lblTotalWords IsNot Nothing Then
+                lblTotalWords.Text = "თანხა სიტყვიერად: ნული ლარი, ნული თეთრი"
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ClearInvoicePreview შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -641,6 +936,9 @@ Public Class UC_BeneficiaryReport
             currentBeneficiaryData = New List(Of SessionModel)()
             LoadSessionsToGrid(currentBeneficiaryData)
 
+            ' ✨ ინვოისის პრევიუს გასუფთავება
+            UpdateInvoicePreview()
+
             ' გვარის, თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
             isUpdatingBeneficiarySurname = True
             isUpdatingTherapistData = True
@@ -795,6 +1093,9 @@ Public Class UC_BeneficiaryReport
             ' სესიების ჩატვირთვა DataGridView-ში
             LoadSessionsToGrid(currentBeneficiaryData)
 
+            ' ✨ ინვოისის პრევიუს განახლება
+            UpdateInvoicePreview()
+
             ' თერაპევტების და თერაპიების ComboBox-ების განახლება
             UpdateTherapistAndTherapyComboBoxes()
 
@@ -804,12 +1105,12 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🔧 სესიების ჩატვირთვა DataGridView-ში ინვოისის ფორმატით - გაფართოებული ვერსია
-    ''' დამატებული: დაფინანსება, სტატუსი, ჩეკბოქსი, სესიის ID შენახვა
+    ''' 🔧 სესიების ჩატვირთვა DataGridView-ში ინვოისის ფორმატით - განახლებული ვერსია
+    ''' ✨ ინვოისის პრევიუს ავტომატური განახლება
     ''' </summary>
     Private Sub LoadSessionsToGrid(sessions As List(Of SessionModel))
         Try
-            Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid - {sessions.Count} სესია (გაფართოებული)")
+            Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid - {sessions.Count} სესია")
 
             If DgvSessions Is Nothing Then
                 Debug.WriteLine("UC_BeneficiaryReport: DgvSessions არ არსებობს")
@@ -824,18 +1125,18 @@ Public Class UC_BeneficiaryReport
                 ' ინვოისის ნომერი (არა ბაზის ID)
                 Dim invoiceNumber As Integer = i + 1
 
-                ' 🔧 მწკრივის მონაცემები - გაფართოებული
+                ' 🔧 მწკრივის მონაცემები
                 Dim rowData As Object() = {
                     invoiceNumber,                                  ' ინვოისის N
                     session.DateTime.ToString("dd.MM.yyyy HH:mm"), ' თარიღი
                     $"{session.Duration}წთ",                        ' ხანგძლივობა - მოკლე ფორმატი
                     session.TherapyType,                            ' თერაპია
                     session.TherapistName,                          ' თერაპევტი
-                    session.Funding,                                ' 🆕 დაფინანსება
-                    session.Status,                                 ' 🆕 სტატუსი
+                    session.Funding,                                ' დაფინანსება
+                    session.Status,                                 ' სტატუსი
                     session.Price,                                  ' თანხა
-                    False,                                          ' 🆕 ჩეკბოქსი - ნაგულისხმევად არ არის მონიშნული
-                    "✎"                                             ' 🆕 რედაქტირების ღილაკი
+                    False,                                          ' ჩეკბოქსი - ნაგულისხმევად არ არის მონიშნული
+                    "✎"                                             ' რედაქტირების ღილაკი
                 }
 
                 Dim addedRowIndex = DgvSessions.Rows.Add(rowData)
@@ -856,7 +1157,10 @@ Public Class UC_BeneficiaryReport
             AddHandler DgvSessions.CellValueChanged, AddressOf DgvSessions_CellValueChanged
             AddHandler DgvSessions.CellClick, AddressOf DgvSessions_CellClick
 
-            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {sessions.Count} სესია DataGridView-ში (გაფართოებული)")
+            ' ✨ ინვოისის პრევიუს ავტომატური განახლება
+            UpdateInvoicePreview()
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {sessions.Count} სესია DataGridView-ში")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: LoadSessionsToGrid შეცდომა: {ex.Message}")
@@ -1077,6 +1381,167 @@ Public Class UC_BeneficiaryReport
 
 #End Region
 
+#Region "✨ ინვოისის პრევიუს განახლების მეთოდები"
+
+    ''' <summary>
+    ''' ✨ ინვოისის პრევიუს მთლიანი განახლება
+    ''' </summary>
+    Private Sub UpdateInvoicePreview()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის პრევიუს განახლება")
+
+            ' ბენეფიციარის ინფორმაციის განახლება
+            UpdateBeneficiaryInfoInPreview()
+
+            ' ინვოისის ცხრილის განახლება
+            UpdateInvoiceTablePreview()
+
+            ' ჯამური თანხის განახლება
+            UpdateTotalAmountInPreview()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateInvoicePreview შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ბენეფიციარის ინფორმაციის განახლება პრევიუში
+    ''' </summary>
+    Private Sub UpdateBeneficiaryInfoInPreview()
+        Try
+            If lblBeneficiaryInfo Is Nothing Then Return
+
+            Dim beneficiaryName = GetCurrentBeneficiaryName()
+
+            If String.IsNullOrEmpty(beneficiaryName) Then
+                lblBeneficiaryInfo.Text = "ბენეფიციარი: [არჩეული ბენეფიციარი]" & vbCrLf &
+                                        "დაბადების თარიღი:" & vbCrLf &
+                                        "საბანკო რეკვიზიტები: პ/ნ:" & vbCrLf &
+                                        "კანონიერი წარმომადგენელი:" & vbCrLf &
+                                        "წარმომადგენლის პ/ნ:"
+            Else
+                lblBeneficiaryInfo.Text = $"ბენეფიციარი: {beneficiaryName}" & vbCrLf &
+                                        "დაბადების თარიღი:" & vbCrLf &
+                                        "საბანკო რეკვიზიტები: პ/ნ:" & vbCrLf &
+                                        "თიბისი ბანკი TBCBGE21" & vbCrLf &
+                                        "GE17TB7742036020100004" & vbCrLf &
+                                        "კანონიერი წარმომადგენელი:" & vbCrLf &
+                                        "წარმომადგენლის პ/ნ:"
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateBeneficiaryInfoInPreview შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის ცხრილის პრევიუს განახლება
+    ''' </summary>
+    Private Sub UpdateInvoiceTablePreview()
+        Try
+            If dgvInvoicePreview Is Nothing OrElse DgvSessions Is Nothing Then Return
+
+            dgvInvoicePreview.Rows.Clear()
+
+            ' მხოლოდ ის სესიები, რომლებიც არ არის მონიშნული ამოღებისთვის
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    ' ჩეკბოქსის შემოწმება
+                    Dim isExcluded As Boolean = False
+                    If row.Cells("ExcludeFromInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("ExcludeFromInvoice").Value.ToString(), isExcluded)
+                    End If
+
+                    ' თუ სესია არ არის გამორიცხული, დავამატოთ პრევიუში
+                    If Not isExcluded Then
+                        Dim previewRowData As Object() = {
+                            row.Cells("InvoiceN").Value,                    ' N
+                            row.Cells("DateTime").Value,                    ' თარიღი
+                            row.Cells("TherapyType").Value,                 ' თერაპია
+                            row.Cells("Therapist").Value,                   ' თერაპევტი
+                            row.Cells("Price").Value                        ' თანხა
+                        }
+
+                        dgvInvoicePreview.Rows.Add(previewRowData)
+                    End If
+
+                Catch ex As Exception
+                    Debug.WriteLine($"UC_BeneficiaryReport: UpdateInvoiceTablePreview მწკრივის შეცდომა: {ex.Message}")
+                    Continue For
+                End Try
+            Next
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის პრევიუში ჩატვირთულია {dgvInvoicePreview.Rows.Count} სესია")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateInvoiceTablePreview შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ჯამური თანხის განახლება პრევიუში
+    ''' </summary>
+    Private Sub UpdateTotalAmountInPreview()
+        Try
+            If lblTotalAmount Is Nothing OrElse lblTotalWords Is Nothing Then Return
+
+            Dim totalAmount = GetInvoiceTotalAmount()
+
+            ' ჯამური თანხის ლეიბლი
+            lblTotalAmount.Text = $"მომსახურების საფასური სულ: {totalAmount:N2} ₾"
+
+            ' თანხა სიტყვიერად
+            lblTotalWords.Text = $"თანხა სიტყვიერად: {ConvertAmountToWords(totalAmount)}"
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: UpdateTotalAmountInPreview შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ თანხის სიტყვიერ ფორმად გარდაქმნა (მარტივი ვერსია)
+    ''' </summary>
+    ''' <param name="amount">თანხა</param>
+    ''' <returns>თანხა სიტყვიერად</returns>
+    Private Function ConvertAmountToWords(amount As Decimal) As String
+        Try
+            If amount = 0 Then
+                Return "ნული ლარი, ნული თეთრი"
+            End If
+
+            Dim lari As Integer = Math.Floor(amount)
+            Dim tetri As Integer = Math.Round((amount - lari) * 100)
+
+            Dim result As String = ""
+
+            ' ლარის ნაწილი (მარტივი ვერსია)
+            If lari = 0 Then
+                result = "ნული ლარი"
+            ElseIf lari = 1 Then
+                result = "ერთი ლარი"
+            Else
+                result = $"{lari} ლარი"
+            End If
+
+            ' თეთრის ნაწილი
+            If tetri = 0 Then
+                result += ", ნული თეთრი"
+            ElseIf tetri = 1 Then
+                result += ", ერთი თეთრი"
+            Else
+                result += $", {tetri} თეთრი"
+            End If
+
+            Return result
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ConvertAmountToWords შეცდომა: {ex.Message}")
+            Return "თანხის გარდაქმნის შეცდომა"
+        End Try
+    End Function
+
+#End Region
+
 #Region "დამხმარე მეთოდები"
 
     ''' <summary>
@@ -1248,23 +1713,6 @@ Public Class UC_BeneficiaryReport
 
 #End Region
 
-#Region "რესურსების განთავისუფლება"
-
-    ''' <summary>
-    ''' რესურსების განთავისუფლება
-    ''' </summary>
-    Protected Overrides Sub Finalize()
-        Try
-            currentFilteredSessions?.Clear()
-            currentBeneficiaryData?.Clear()
-            dataProcessor?.ClearCache()
-        Finally
-            MyBase.Finalize()
-        End Try
-    End Sub
-
-#End Region
-
 #Region "🆕 DataGridView ივენთ ჰენდლერები - ჩეკბოქსი და რედაქტირება"
 
     ''' <summary>
@@ -1299,6 +1747,7 @@ Public Class UC_BeneficiaryReport
 
     ''' <summary>
     ''' 🔧 DataGridView უჯრის მნიშვნელობის შეცვლის ივენთი - ჩეკბოქსისთვის
+    ''' ✨ ინვოისის პრევიუს ავტომატური განახლება
     ''' </summary>
     Private Sub DgvSessions_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
         Try
@@ -1310,6 +1759,9 @@ Public Class UC_BeneficiaryReport
 
                 ' მწკრივის ვიზუალური სტილის განახლება
                 UpdateRowVisualStyle(e.RowIndex)
+
+                ' ✨ ინვოისის პრევიუს განახლება
+                UpdateInvoicePreview()
 
                 ' ინვოისის ჯამების ხელახალი გამოთვლა (თუ საჭიროა)
                 OnInvoiceTotalsChanged()
@@ -1446,6 +1898,8 @@ Public Class UC_BeneficiaryReport
                 End Try
             Next
 
+            ' ✨ ინვოისის პრევიუს განახლება
+            UpdateInvoicePreview()
             OnInvoiceTotalsChanged()
 
         Catch ex As Exception
@@ -1471,6 +1925,8 @@ Public Class UC_BeneficiaryReport
                 End Try
             Next
 
+            ' ✨ ინვოისის პრევიუს განახლება
+            UpdateInvoicePreview()
             OnInvoiceTotalsChanged()
 
         Catch ex As Exception
@@ -1507,6 +1963,8 @@ Public Class UC_BeneficiaryReport
                 End Try
             Next
 
+            ' ✨ ინვოისის პრევიუს განახლება
+            UpdateInvoicePreview()
             OnInvoiceTotalsChanged()
 
         Catch ex As Exception
@@ -1515,4 +1973,218 @@ Public Class UC_BeneficiaryReport
     End Sub
 
 #End Region
+
+#Region "✨ ახალი საჯარო მეთოდები ინვოისის ექსპორტისთვის"
+
+    ''' <summary>
+    ''' ✨ ინვოისის PDF-ად ექსპორტი (მომავალში)
+    ''' </summary>
+    Public Sub ExportInvoiceToPDF()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის PDF ექსპორტი")
+
+            ' ინვოისის ვალიდობის შემოწმება
+            If Not IsInvoiceValid() Then
+                MessageBox.Show("ინვოისის ექსპორტისთვის აირჩიეთ ბენეფიციარი და მინიმუმ ერთი სესია", "ინფორმაცია",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            ' მომავალში: PDF ექსპორტის ლოგიკა
+            MessageBox.Show("PDF ექსპორტის ფუნქციონალი მომავალში დაემატება", "ინფორმაცია",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ExportInvoiceToPDF შეცდომა: {ex.Message}")
+            MessageBox.Show($"PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის ბეჭდვა
+    ''' </summary>
+    Public Sub PrintInvoice()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის ბეჭდვა")
+
+            ' ინვოისის ვალიდობის შემოწმება
+            If Not IsInvoiceValid() Then
+                MessageBox.Show("ინვოისის ბეჭდვისთვის აირჩიეთ ბენეფიციარი და მინიმუმ ერთი სესია", "ინფორმაცია",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            ' მომავალში: ბეჭდვის ლოგიკა
+            MessageBox.Show("ინვოისის ბეჭდვის ფუნქციონალი მომავალში დაემატება", "ინფორმაცია",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: PrintInvoice შეცდომა: {ex.Message}")
+            MessageBox.Show($"ბეჭდვის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის HTML-ად ექსპორტი
+    ''' </summary>
+    Public Sub ExportInvoiceToHTML()
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის HTML ექსპორტი")
+
+            ' ინვოისის ვალიდობის შემოწმება
+            If Not IsInvoiceValid() Then
+                MessageBox.Show("ინვოისის ექსპორტისთვის აირჩიეთ ბენეფიციარი და მინიმუმ ერთი სესია", "ინფორმაცია",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            ' მომავალში: HTML ექსპორტის ლოგიკა
+            MessageBox.Show("HTML ექსპორტის ფუნქციონალი მომავალში დაემატება", "ინფორმაცია",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ExportInvoiceToHTML შეცდომა: {ex.Message}")
+            MessageBox.Show($"HTML ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის მონაცემების JSON ფორმატში მიღება (API-სთვის)
+    ''' </summary>
+    Public Function GetInvoiceDataAsJSON() As String
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: ინვოისის JSON მონაცემები")
+
+            If Not IsInvoiceValid() Then
+                Return "{""error"": ""ინვოისი არავალიდურია""}"
+            End If
+
+            ' მომავალში: JSON სერიალიზაციის ლოგიკა
+            Return "{""message"": ""JSON ექსპორტი მომავალში დაემატება""}"
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: GetInvoiceDataAsJSON შეცდომა: {ex.Message}")
+            Return $"{{""error"": ""{ex.Message}""}}"
+        End Try
+    End Function
+
+#End Region
+
+#Region "✨ Splitter ივენთ ჰენდლერები"
+
+    ''' <summary>
+    ''' ✨ Splitter-ის მოძრაობისას მარჯვენა პანელის ელემენტების ზომის განახლება
+    ''' </summary>
+    Private Sub splitter_SplitterMoved(sender As Object, e As SplitterEventArgs) Handles splitter.SplitterMoved
+        Try
+            Debug.WriteLine("UC_BeneficiaryReport: Splitter გადაადგილდა")
+
+            ' ინვოისის პრევიუს ელემენტების ზომის განახლება
+            ResizeInvoicePreviewElements()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: splitter_SplitterMoved შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ ინვოისის პრევიუს ელემენტების ზომის განახლება
+    ''' </summary>
+    Private Sub ResizeInvoicePreviewElements()
+        Try
+            If pnlRight Is Nothing Then Return
+
+            Dim newWidth As Integer = pnlRight.Width - 20 ' მარჯინები
+
+            ' ყველა ელემენტის ზომის განახლება
+            If lblInvoiceTitle IsNot Nothing Then
+                lblInvoiceTitle.Width = newWidth
+            End If
+
+            If lblCompanyInfo IsNot Nothing Then
+                lblCompanyInfo.Width = newWidth
+            End If
+
+            If lblBeneficiaryInfo IsNot Nothing Then
+                lblBeneficiaryInfo.Width = newWidth
+            End If
+
+            If dgvInvoicePreview IsNot Nothing Then
+                dgvInvoicePreview.Width = newWidth
+            End If
+
+            If lblTotalAmount IsNot Nothing Then
+                lblTotalAmount.Width = newWidth
+            End If
+
+            If lblTotalWords IsNot Nothing Then
+                lblTotalWords.Width = newWidth
+            End If
+
+            If lblSignature IsNot Nothing Then
+                lblSignature.Width = newWidth
+            End If
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის პრევიუს ელემენტები გადაზომეთილია - ახალი სიგანე: {newWidth}")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ResizeInvoicePreviewElements შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ✨ UserControl-ის ზომის შეცვლისას
+    ''' </summary>
+    Private Sub UC_BeneficiaryReport_SizeChanged(sender As Object, e As EventArgs) Handles Me.SizeChanged
+        Try
+            ' მარცხენა პანელის ზომის განახლება (70%)
+            If pnlLeft IsNot Nothing AndAlso Me.Width > 0 Then
+                pnlLeft.Width = CInt(Me.Width * 0.7)
+            End If
+
+            ' ინვოისის პრევიუს ელემენტების ზომის განახლება
+            ResizeInvoicePreviewElements()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: SizeChanged შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+#End Region
+
+#Region "რესურსების განთავისუფლება"
+
+    ''' <summary>
+    ''' რესურსების განთავისუფლება
+    ''' </summary>
+    Protected Overrides Sub Finalize()
+        Try
+            currentFilteredSessions?.Clear()
+            currentBeneficiaryData?.Clear()
+            dataProcessor?.ClearCache()
+
+            ' ✨ ახალი UI კონტროლების განთავისუფლება
+            lblInvoiceTitle?.Dispose()
+            lblCompanyInfo?.Dispose()
+            lblBeneficiaryInfo?.Dispose()
+            dgvInvoicePreview?.Dispose()
+            lblTotalAmount?.Dispose()
+            lblTotalWords?.Dispose()
+            lblSignature?.Dispose()
+
+            pnlLeft?.Dispose()
+            pnlRight?.Dispose()
+            splitter?.Dispose()
+            pnlMain?.Dispose()
+
+        Finally
+            MyBase.Finalize()
+        End Try
+    End Sub
+
+#End Region
+
 End Class
