@@ -10,8 +10,8 @@
 ' 🎯 ხელმისაწვდომია როლებისთვის: 1 (ადმინი), 2 (მენეჯერი), 3
 ' ===========================================
 Imports System.ComponentModel
-Imports Scheduler_v8_8a.Services
-Imports Scheduler_v8_8a.Models
+'Imports Scheduler_v8_8a.Services
+'Imports Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 

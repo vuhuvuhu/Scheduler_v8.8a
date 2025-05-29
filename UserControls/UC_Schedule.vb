@@ -5,7 +5,7 @@
 ' მომხმარებლის ელფოსტისა და როლის სწორი მიღება Form1-დან
 ' ===========================================
 Imports System.Windows.Forms
-Imports Scheduler_v8_8a.Services
+'Imports Scheduler_v8_8a.Services
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
