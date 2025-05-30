@@ -4,6 +4,7 @@
 ' ბენეფიციარის რეპორტის UserControl - UC_Schedule.vb-ის საფუძველზე გადაწერილი
 ' მარტივი და გამართული არქიტექტურა - არა გართულებული UI გაყოფით
 ' ძირითადი ფუნქცია: ბენეფიციარის არჩევა და მისი სესიების ჩვენება
+' 🆕 თერაპევტისა და თერაპიის ფილტრები, ინვოისში შესრულების სვეტი
 ' ===========================================
 Imports System.Windows.Forms
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
@@ -202,7 +203,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის რეპორტისთვის სვეტების კონფიგურაცია
+    ''' 🆕 ბენეფიციარის სვეტების კონფიგურაცია (შესრულების სვეტით)
     ''' </summary>
     Private Sub ConfigureBeneficiaryColumns()
         Try
@@ -214,13 +215,13 @@ Public Class UC_BeneficiaryReport
 
             With DgvSessions.Columns
                 ' ბენეფიციარის რეპორტისთვის სპეციალური სვეტები
-                .Add("N", "N")                    ' ID
-                .Add("DateTime", "თარიღი")        ' თარიღი
-                .Add("Duration", "ხანგძლ.")       ' ხანგძლივობა
-                .Add("TherapyType", "თერაპია")    ' თერაპიის ტიპი
-                .Add("Therapist", "თერაპევტი")   ' თერაპევტი
-                .Add("Status", "სტატუსი")        ' სტატუსი
-                .Add("Price", "თანხა")           ' თანხა
+                .Add("N", "N")                        ' ID
+                .Add("DateTime", "თარიღი")            ' თარიღი
+                .Add("Duration", "ხანგძლ.")           ' ხანგძლივობა
+                .Add("Status", "შესრულება")           ' 🆕 შესრულების სვეტი
+                .Add("TherapyType", "თერაპია")        ' თერაპიის ტიპი
+                .Add("Therapist", "თერაპევტი")       ' თერაპევტი
+                .Add("Price", "თანხა")               ' თანხა
 
                 ' 🆕 ინვოისში ჩართვის CheckBox
                 Dim includeColumn As New DataGridViewCheckBoxColumn()
@@ -259,10 +260,10 @@ Public Class UC_BeneficiaryReport
             With DgvSessions.Columns
                 .Item("N").Width = 50
                 .Item("DateTime").Width = 130
-                .Item("Duration").Width = 50
-                .Item("TherapyType").Width = 200
-                .Item("Therapist").Width = 180
-                .Item("Status").Width = 130
+                .Item("Duration").Width = 60
+                .Item("Status").Width = 110           ' 🆕 შესრულების სვეტი
+                .Item("TherapyType").Width = 180
+                .Item("Therapist").Width = 160
                 .Item("Price").Width = 80
                 .Item("IncludeInInvoice").Width = 70
                 .Item("Edit").Width = 35
@@ -272,6 +273,7 @@ Public Class UC_BeneficiaryReport
                 .Item("Price").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
                 .Item("N").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
                 .Item("IncludeInInvoice").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
+                .Item("Status").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter
             End With
 
         Catch ex As Exception
@@ -334,6 +336,30 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
+    ''' 🆕 ComboBox-ის რეკურსიული ძებნა
+    ''' </summary>
+    Private Function FindComboBoxRecursive(parent As Control, name As String) As ComboBox
+        Try
+            For Each ctrl As Control In parent.Controls
+                If TypeOf ctrl Is ComboBox AndAlso ctrl.Name = name Then
+                    Return DirectCast(ctrl, ComboBox)
+                End If
+            Next
+
+            For Each ctrl As Control In parent.Controls
+                Dim found = FindComboBoxRecursive(ctrl, name)
+                If found IsNot Nothing Then
+                    Return found
+                End If
+            Next
+
+            Return Nothing
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>
     ''' ივენთების მიბმა
     ''' </summary>
     Private Sub BindEvents()
@@ -348,6 +374,21 @@ Public Class UC_BeneficiaryReport
             ' ბენეფიციარის ComboBox-ების ივენთები
             AddHandler CBBeneName.SelectedIndexChanged, AddressOf OnBeneficiaryNameChanged
             AddHandler CBBeneSurname.SelectedIndexChanged, AddressOf OnBeneficiarySurnameChanged
+
+            ' 🆕 თერაპევტისა და თერაპიის ComboBox-ების ივენთები
+            ' შევამოწმოთ ფორმაზე არსებობს თუ არა ეს კონტროლები
+            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")     ' 🔧 CBPer - არსებული კონტროლი
+            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")   ' 🔧 CBTer - არსებული კონტროლი
+
+            If cbTherapist IsNot Nothing Then
+                AddHandler cbTherapist.SelectedIndexChanged, AddressOf OnTherapistChanged
+                Debug.WriteLine("UC_BeneficiaryReport: თერაპევტის ComboBox (CBPer) ნაპოვნია და ივენთი მიბმულია")
+            End If
+
+            If cbTherapyType IsNot Nothing Then
+                AddHandler cbTherapyType.SelectedIndexChanged, AddressOf OnTherapyTypeChanged
+                Debug.WriteLine("UC_BeneficiaryReport: თერაპიის ComboBox (CBTer) ნაპოვნია და ივენთი მიბმულია")
+            End If
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: BindEvents შეცდომა: {ex.Message}")
@@ -396,6 +437,9 @@ Public Class UC_BeneficiaryReport
                 CBBeneSurname.Items.Clear()
                 CBBeneSurname.Enabled = False
 
+                ' 🆕 თერაპევტისა და თერაპიის ComboBox-ების გასუფთავება
+                ResetTherapistAndTherapyComboBoxes()
+
             Finally
                 isUpdatingBeneficiary = False
             End Try
@@ -407,7 +451,37 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის სახელების ComboBox-ის შევსება
+    ''' 🆕 თერაპევტისა და თერაპიის ComboBox-ების რესეტი
+    ''' </summary>
+    Private Sub ResetTherapistAndTherapyComboBoxes()
+        Try
+            ' თერაპევტის ComboBox (CBPer)
+            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")
+            If cbTherapist IsNot Nothing Then
+                cbTherapist.Items.Clear()
+                cbTherapist.Items.Add("ყველა")
+                cbTherapist.SelectedIndex = 0
+                cbTherapist.Enabled = False
+            End If
+
+            ' თერაპიის ComboBox (CBTer)
+            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")
+            If cbTherapyType IsNot Nothing Then
+                cbTherapyType.Items.Clear()
+                cbTherapyType.Items.Add("ყველა")
+                cbTherapyType.SelectedIndex = 0
+                cbTherapyType.Enabled = False
+            End If
+
+            Debug.WriteLine("UC_BeneficiaryReport: CBPer და CBTer ComboBox-ები დარესეტდა")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ResetTherapistAndTherapyComboBoxes შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' ბენეფიციარის სახელების ComboBox-ის შევსება
     ''' </summary>
     Private Sub PopulateBeneficiaryNamesComboBox(sessions As List(Of SessionModel))
         Try
@@ -439,7 +513,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის გვარების ComboBox-ის შევსება
+    ''' ბენეფიციარის გვარების ComboBox-ის შევსება
     ''' </summary>
     Private Sub PopulateBeneficiarySurnamesComboBox(selectedName As String, sessions As List(Of SessionModel))
         Try
@@ -473,6 +547,92 @@ Public Class UC_BeneficiaryReport
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: PopulateBeneficiarySurnamesComboBox შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 თერაპევტის ComboBox-ის შევსება ბენეფიციარისთვის
+    ''' </summary>
+    Private Sub PopulateTherapistComboBox(selectedName As String, selectedSurname As String, sessions As List(Of SessionModel))
+        Try
+            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")
+            If cbTherapist Is Nothing Then Return
+
+            cbTherapist.Items.Clear()
+
+            If String.IsNullOrEmpty(selectedName) OrElse String.IsNullOrEmpty(selectedSurname) OrElse sessions Is Nothing Then
+                cbTherapist.Items.Add("ყველა")
+                cbTherapist.SelectedIndex = 0
+                cbTherapist.Enabled = False
+                Return
+            End If
+
+            ' კონკრეტული ბენეფიციარის თერაპევტების მიღება
+            Dim beneficiaryTherapists = sessions.Where(Function(s)
+                                                           Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                 s.BeneficiarySurname.Trim().Equals(selectedSurname, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                 Not String.IsNullOrEmpty(s.TherapistName)
+                                                       End Function) _
+                                               .Select(Function(s) s.TherapistName.Trim()) _
+                                               .Distinct() _
+                                               .OrderBy(Function(therapist) therapist) _
+                                               .ToList()
+
+            cbTherapist.Items.Add("ყველა")
+            For Each therapist In beneficiaryTherapists
+                cbTherapist.Items.Add(therapist)
+            Next
+
+            cbTherapist.SelectedIndex = 0
+            cbTherapist.Enabled = (beneficiaryTherapists.Count > 0)
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ბენეფიციარისთვის '{selectedName} {selectedSurname}' ნაპოვნია {beneficiaryTherapists.Count} თერაპევტი (CBPer)")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: PopulateTherapistComboBox შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 თერაპიის ComboBox-ის შევსება ბენეფიციარისთვის
+    ''' </summary>
+    Private Sub PopulateTherapyTypeComboBox(selectedName As String, selectedSurname As String, sessions As List(Of SessionModel))
+        Try
+            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")
+            If cbTherapyType Is Nothing Then Return
+
+            cbTherapyType.Items.Clear()
+
+            If String.IsNullOrEmpty(selectedName) OrElse String.IsNullOrEmpty(selectedSurname) OrElse sessions Is Nothing Then
+                cbTherapyType.Items.Add("ყველა")
+                cbTherapyType.SelectedIndex = 0
+                cbTherapyType.Enabled = False
+                Return
+            End If
+
+            ' კონკრეტული ბენეფიციარის თერაპიების მიღება
+            Dim beneficiaryTherapies = sessions.Where(Function(s)
+                                                          Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                s.BeneficiarySurname.Trim().Equals(selectedSurname, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                Not String.IsNullOrEmpty(s.TherapyType)
+                                                      End Function) _
+                                              .Select(Function(s) s.TherapyType.Trim()) _
+                                              .Distinct() _
+                                              .OrderBy(Function(therapy) therapy) _
+                                              .ToList()
+
+            cbTherapyType.Items.Add("ყველა")
+            For Each therapy In beneficiaryTherapies
+                cbTherapyType.Items.Add(therapy)
+            Next
+
+            cbTherapyType.SelectedIndex = 0
+            cbTherapyType.Enabled = (beneficiaryTherapies.Count > 0)
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ბენეფიციარისთვის '{selectedName} {selectedSurname}' ნაპოვნია {beneficiaryTherapies.Count} თერაპია (CBTer)")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: PopulateTherapyTypeComboBox შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -572,11 +732,11 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში
+    ''' 🆕 ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში (თერაპ. ფილტრებით)
     ''' </summary>
     Private Sub LoadBeneficiarySessionsToGrid()
         Try
-            Debug.WriteLine($"UC_BeneficiaryReport: ბენეფიციარის სესიების ჩატვირთვა - {currentBeneficiaryData.Count} სესია")
+            Debug.WriteLine($"UC_BeneficiaryReport: ბენეფიციარის სესიების ჩატვირთვა - {If(currentBeneficiaryData?.Count, 0)} სესია")
 
             DgvSessions.Rows.Clear()
 
@@ -584,17 +744,35 @@ Public Class UC_BeneficiaryReport
                 Return
             End If
 
+            ' 🆕 თერაპევტისა და თერაპიის ფილტრების მიღება
+            Dim selectedTherapist As String = GetSelectedTherapist()
+            Dim selectedTherapyType As String = GetSelectedTherapyType()
+
             For i As Integer = 0 To currentBeneficiaryData.Count - 1
                 Dim session = currentBeneficiaryData(i)
 
-                ' მწკრივის მონაცემები
+                ' 🆕 თერაპევტის ფილტრაცია
+                If Not String.IsNullOrEmpty(selectedTherapist) AndAlso selectedTherapist <> "ყველა" Then
+                    If Not session.TherapistName.Trim().Equals(selectedTherapist, StringComparison.OrdinalIgnoreCase) Then
+                        Continue For
+                    End If
+                End If
+
+                ' 🆕 თერაპიის ფილტრაცია
+                If Not String.IsNullOrEmpty(selectedTherapyType) AndAlso selectedTherapyType <> "ყველა" Then
+                    If Not session.TherapyType.Trim().Equals(selectedTherapyType, StringComparison.OrdinalIgnoreCase) Then
+                        Continue For
+                    End If
+                End If
+
+                ' მწკრივის მონაცემები (შესრულების სვეტით)
                 Dim rowData As Object() = {
                     session.Id,                                     ' N
                     session.DateTime.ToString("dd.MM.yyyy HH:mm"), ' თარიღი
                     $"{session.Duration}წთ",                        ' ხანგძლივობა
+                    session.Status,                                 ' 🆕 შესრულების სვეტი
                     session.TherapyType,                            ' თერაპია
                     session.TherapistName,                          ' თერაპევტი
-                    session.Status,                                 ' სტატუსი
                     session.Price,                                  ' თანხა
                     True,                                           ' ნაგულისხმევად ინვოისში ჩართული
                     "✎"                                             ' რედაქტირების ღილაკი
@@ -614,12 +792,36 @@ Public Class UC_BeneficiaryReport
                 End Try
             Next
 
-            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {currentBeneficiaryData.Count} სესია")
+            Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {DgvSessions.Rows.Count} სესია (ფილტრაციის შემდეგ)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: LoadBeneficiarySessionsToGrid შეცდომა: {ex.Message}")
         End Try
     End Sub
+
+    ''' <summary>
+    ''' 🆕 არჩეული თერაპევტის მიღება
+    ''' </summary>
+    Private Function GetSelectedTherapist() As String
+        Try
+            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")
+            Return If(cbTherapist?.SelectedItem?.ToString(), "ყველა")
+        Catch
+            Return "ყველა"
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' 🆕 არჩეული თერაპიის მიღება
+    ''' </summary>
+    Private Function GetSelectedTherapyType() As String
+        Try
+            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")
+            Return If(cbTherapyType?.SelectedItem?.ToString(), "ყველა")
+        Catch
+            Return "ყველა"
+        End Try
+    End Function
 
 #End Region
 
@@ -666,10 +868,14 @@ Public Class UC_BeneficiaryReport
 
                 ' გვარების ComboBox-ის განახლება
                 PopulateBeneficiarySurnamesComboBox(selectedName, allSessions)
+
+                ' 🆕 თერაპევტისა და თერაპიის ComboBox-ების რესეტი (სახელი მაინც შეიცვალა)
+                ResetTherapistAndTherapyComboBoxes()
             Else
-                ' სახელი არ არის არჩეული - გვარების ComboBox გასუფთავება
+                ' სახელი არ არის არჩეული - ყველა ComboBox-ის გასუფთავება
                 CBBeneSurname.Items.Clear()
                 CBBeneSurname.Enabled = False
+                ResetTherapistAndTherapyComboBoxes()
             End If
 
             ' მონაცემების განახლება
@@ -689,11 +895,65 @@ Public Class UC_BeneficiaryReport
 
             Debug.WriteLine("UC_BeneficiaryReport: ბენეფიციარის გვარი შეიცვალა")
 
+            ' 🆕 თერაპევტისა და თერაპიის ComboBox-ების განახლება
+            Dim selectedName As String = CBBeneName.SelectedItem?.ToString()
+            Dim selectedSurname As String = CBBeneSurname.SelectedItem?.ToString()
+
+            If Not String.IsNullOrEmpty(selectedName) AndAlso Not String.IsNullOrEmpty(selectedSurname) Then
+                ' ფილტრაციის კრიტერიუმების მიღება
+                Dim criteria = filterManager.GetFilterCriteria()
+                Dim result = dataProcessor.GetFilteredSchedule(criteria, 1, Integer.MaxValue)
+                Dim allSessions = ConvertToSessionModels(result.Data)
+
+                ' თერაპევტისა და თერაპიის ComboBox-ების განახლება
+                PopulateTherapistComboBox(selectedName, selectedSurname, allSessions)
+                PopulateTherapyTypeComboBox(selectedName, selectedSurname, allSessions)
+            Else
+                ' ბენეფიციარი არ არის სრულად არჩეული - ComboBox-ების რესეტი
+                ResetTherapistAndTherapyComboBoxes()
+            End If
+
             ' მონაცემების განახლება
             LoadBeneficiarySpecificData()
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: OnBeneficiarySurnameChanged შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 თერაპევტის შეცვლის ივენთი
+    ''' </summary>
+    Private Sub OnTherapistChanged(sender As Object, e As EventArgs)
+        Try
+            If isUpdatingBeneficiary Then Return
+
+            Debug.WriteLine("UC_BeneficiaryReport: თერაპევტი შეიცვალა")
+
+            ' მონაცემების განახლება ახალი თერაპევტის ფილტრით
+            LoadBeneficiarySessionsToGrid()
+            UpdateInvoiceTotals()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: OnTherapistChanged შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🆕 თერაპიის ტიპის შეცვლის ივენთი
+    ''' </summary>
+    Private Sub OnTherapyTypeChanged(sender As Object, e As EventArgs)
+        Try
+            If isUpdatingBeneficiary Then Return
+
+            Debug.WriteLine("UC_BeneficiaryReport: თერაპიის ტიპი შეიცვალა")
+
+            ' მონაცემების განახლება ახალი თერაპიის ფილტრით
+            LoadBeneficiarySessionsToGrid()
+            UpdateInvoiceTotals()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: OnTherapyTypeChanged შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -748,7 +1008,7 @@ Public Class UC_BeneficiaryReport
 
                 Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის CheckBox შეიცვალა - მწკრივი {e.RowIndex}")
 
-                ' ინვოისის ჯამების განახლება (მომავალშ თუ საჭირო იქნება)
+                ' ინვოისის ჯამების განახლება
                 UpdateInvoiceTotals()
             End If
 
@@ -1154,7 +1414,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ინვოისის HTML-ის შექმნა
+    ''' 🆕 ინვოისის HTML-ის შექმნა (შესრულების სვეტით)
     ''' </summary>
     ''' <param name="forPrinting">True თუ ბეჭდვისთვის, False თუ ფაილისთვის</param>
     ''' <param name="filePath">ფაილის მისამართი (ფაილისთვის)</param>
@@ -1220,15 +1480,16 @@ Public Class UC_BeneficiaryReport
             html.AppendLine($"        <strong>პერიოდი:</strong> {period}")
             html.AppendLine("    </div>")
 
-            ' მომსახურებების ცხრილი
+            ' მომსახურებების ცხრილი (შესრულების სვეტით)
             html.AppendLine("    <table>")
             html.AppendLine("        <thead>")
             html.AppendLine("            <tr>")
             html.AppendLine("                <th style=""width: 30px;"">N</th>")
             html.AppendLine("                <th style=""width: 100px;"">თარიღი</th>")
-            html.AppendLine("                <th style=""width: 200px;"">მომსახურების სახე</th>")
-            html.AppendLine("                <th style=""width: 150px;"">თერაპევტი</th>")
             html.AppendLine("                <th style=""width: 60px;"">ხანგძლ.</th>")
+            html.AppendLine("                <th style=""width: 110px;"">შესრულება</th>")
+            html.AppendLine("                <th style=""width: 180px;"">მომსახურების სახე</th>")
+            html.AppendLine("                <th style=""width: 140px;"">თერაპევტი</th>")
             html.AppendLine("                <th style=""width: 80px;"">თანხა (₾)</th>")
             html.AppendLine("            </tr>")
             html.AppendLine("        </thead>")
@@ -1248,9 +1509,10 @@ Public Class UC_BeneficiaryReport
 
                     If isIncluded Then
                         Dim dateTime As String = If(row.Cells("DateTime").Value?.ToString(), "")
+                        Dim duration As String = If(row.Cells("Duration").Value?.ToString(), "")
+                        Dim status As String = If(row.Cells("Status").Value?.ToString(), "")
                         Dim therapyType As String = If(row.Cells("TherapyType").Value?.ToString(), "")
                         Dim therapist As String = If(row.Cells("Therapist").Value?.ToString(), "")
-                        Dim duration As String = If(row.Cells("Duration").Value?.ToString(), "")
 
                         Dim price As Decimal = 0
                         If row.Cells("Price").Value IsNot Nothing Then
@@ -1262,9 +1524,10 @@ Public Class UC_BeneficiaryReport
                         html.AppendLine("            <tr>")
                         html.AppendLine($"                <td style=""text-align: center;"">{invoiceNumber}</td>")
                         html.AppendLine($"                <td>{EscapeHtml(dateTime)}</td>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(duration)}</td>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(status)}</td>")
                         html.AppendLine($"                <td>{EscapeHtml(therapyType)}</td>")
                         html.AppendLine($"                <td>{EscapeHtml(therapist)}</td>")
-                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(duration)}</td>")
                         html.AppendLine($"                <td class=""amount"">{price:N2}</td>")
                         html.AppendLine("            </tr>")
 
@@ -1493,5 +1756,21 @@ Public Class UC_BeneficiaryReport
     End Sub
 
 #End Region
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 End Class

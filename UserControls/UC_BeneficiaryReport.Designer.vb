@@ -26,9 +26,8 @@ Partial Class UC_BeneficiaryReport
         Me.pnlFilter = New System.Windows.Forms.Panel()
         Me.btnToPDF = New System.Windows.Forms.Button()
         Me.btbPrint = New System.Windows.Forms.Button()
-        Me.RB100 = New System.Windows.Forms.RadioButton()
-        Me.RB50 = New System.Windows.Forms.RadioButton()
-        Me.RB20 = New System.Windows.Forms.RadioButton()
+        Me.RBRaport = New System.Windows.Forms.RadioButton()
+        Me.RBInvoice = New System.Windows.Forms.RadioButton()
         Me.CheckBox5 = New System.Windows.Forms.CheckBox()
         Me.CheckBox7 = New System.Windows.Forms.CheckBox()
         Me.CheckBox6 = New System.Windows.Forms.CheckBox()
@@ -40,10 +39,8 @@ Partial Class UC_BeneficiaryReport
         Me.BtnRef = New System.Windows.Forms.Button()
         Me.DtpDan = New System.Windows.Forms.DateTimePicker()
         Me.Label9 = New System.Windows.Forms.Label()
-        Me.CBSpace = New System.Windows.Forms.ComboBox()
         Me.CBDaf = New System.Windows.Forms.ComboBox()
         Me.DtpMde = New System.Windows.Forms.DateTimePicker()
-        Me.Label8 = New System.Windows.Forms.Label()
         Me.CBBeneName = New System.Windows.Forms.ComboBox()
         Me.Label7 = New System.Windows.Forms.Label()
         Me.CBBeneSurname = New System.Windows.Forms.ComboBox()
@@ -154,6 +151,7 @@ Partial Class UC_BeneficiaryReport
         Me.LPage = New System.Windows.Forms.Label()
         Me.BtnNext = New System.Windows.Forms.Button()
         Me.BtnPrev = New System.Windows.Forms.Button()
+        Me.BtnToExcel = New System.Windows.Forms.Button()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumFin.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -164,11 +162,11 @@ Partial Class UC_BeneficiaryReport
         '
         Me.pnlFilter.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.pnlFilter.Controls.Add(Me.BtnToExcel)
         Me.pnlFilter.Controls.Add(Me.btnToPDF)
         Me.pnlFilter.Controls.Add(Me.btbPrint)
-        Me.pnlFilter.Controls.Add(Me.RB100)
-        Me.pnlFilter.Controls.Add(Me.RB50)
-        Me.pnlFilter.Controls.Add(Me.RB20)
+        Me.pnlFilter.Controls.Add(Me.RBRaport)
+        Me.pnlFilter.Controls.Add(Me.RBInvoice)
         Me.pnlFilter.Controls.Add(Me.CheckBox5)
         Me.pnlFilter.Controls.Add(Me.CheckBox7)
         Me.pnlFilter.Controls.Add(Me.CheckBox6)
@@ -180,10 +178,8 @@ Partial Class UC_BeneficiaryReport
         Me.pnlFilter.Controls.Add(Me.BtnRef)
         Me.pnlFilter.Controls.Add(Me.DtpDan)
         Me.pnlFilter.Controls.Add(Me.Label9)
-        Me.pnlFilter.Controls.Add(Me.CBSpace)
         Me.pnlFilter.Controls.Add(Me.CBDaf)
         Me.pnlFilter.Controls.Add(Me.DtpMde)
-        Me.pnlFilter.Controls.Add(Me.Label8)
         Me.pnlFilter.Controls.Add(Me.CBBeneName)
         Me.pnlFilter.Controls.Add(Me.Label7)
         Me.pnlFilter.Controls.Add(Me.CBBeneSurname)
@@ -224,44 +220,31 @@ Partial Class UC_BeneficiaryReport
         Me.btbPrint.TabIndex = 69
         Me.btbPrint.UseVisualStyleBackColor = True
         '
-        'RB100
+        'RBRaport
         '
-        Me.RB100.AutoSize = True
-        Me.RB100.BackColor = System.Drawing.Color.Transparent
-        Me.RB100.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB100.Location = New System.Drawing.Point(981, 49)
-        Me.RB100.Name = "RB100"
-        Me.RB100.Size = New System.Drawing.Size(96, 17)
-        Me.RB100.TabIndex = 68
-        Me.RB100.TabStop = True
-        Me.RB100.Text = "100 ჩანაწერი"
-        Me.RB100.UseVisualStyleBackColor = False
+        Me.RBRaport.AutoSize = True
+        Me.RBRaport.BackColor = System.Drawing.Color.Transparent
+        Me.RBRaport.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.RBRaport.Location = New System.Drawing.Point(706, 27)
+        Me.RBRaport.Name = "RBRaport"
+        Me.RBRaport.Size = New System.Drawing.Size(74, 17)
+        Me.RBRaport.TabIndex = 67
+        Me.RBRaport.TabStop = True
+        Me.RBRaport.Text = "რაპორტი"
+        Me.RBRaport.UseVisualStyleBackColor = False
         '
-        'RB50
+        'RBInvoice
         '
-        Me.RB50.AutoSize = True
-        Me.RB50.BackColor = System.Drawing.Color.Transparent
-        Me.RB50.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB50.Location = New System.Drawing.Point(981, 26)
-        Me.RB50.Name = "RB50"
-        Me.RB50.Size = New System.Drawing.Size(90, 17)
-        Me.RB50.TabIndex = 67
-        Me.RB50.TabStop = True
-        Me.RB50.Text = "50 ჩანაწერი"
-        Me.RB50.UseVisualStyleBackColor = False
-        '
-        'RB20
-        '
-        Me.RB20.AutoSize = True
-        Me.RB20.BackColor = System.Drawing.Color.Transparent
-        Me.RB20.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.RB20.Location = New System.Drawing.Point(981, 3)
-        Me.RB20.Name = "RB20"
-        Me.RB20.Size = New System.Drawing.Size(90, 17)
-        Me.RB20.TabIndex = 66
-        Me.RB20.TabStop = True
-        Me.RB20.Text = "20 ჩანაწერი"
-        Me.RB20.UseVisualStyleBackColor = False
+        Me.RBInvoice.AutoSize = True
+        Me.RBInvoice.BackColor = System.Drawing.Color.Transparent
+        Me.RBInvoice.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.RBInvoice.Location = New System.Drawing.Point(706, 4)
+        Me.RBInvoice.Name = "RBInvoice"
+        Me.RBInvoice.Size = New System.Drawing.Size(69, 17)
+        Me.RBInvoice.TabIndex = 66
+        Me.RBInvoice.TabStop = True
+        Me.RBInvoice.Text = "ინვოისი"
+        Me.RBInvoice.UseVisualStyleBackColor = False
         '
         'CheckBox5
         '
@@ -389,18 +372,10 @@ Partial Class UC_BeneficiaryReport
         Me.Label9.TabIndex = 55
         Me.Label9.Text = "შესრულება"
         '
-        'CBSpace
-        '
-        Me.CBSpace.FormattingEnabled = True
-        Me.CBSpace.Location = New System.Drawing.Point(793, 27)
-        Me.CBSpace.Name = "CBSpace"
-        Me.CBSpace.Size = New System.Drawing.Size(182, 21)
-        Me.CBSpace.TabIndex = 54
-        '
         'CBDaf
         '
         Me.CBDaf.FormattingEnabled = True
-        Me.CBDaf.Location = New System.Drawing.Point(793, 0)
+        Me.CBDaf.Location = New System.Drawing.Point(894, 1)
         Me.CBDaf.Name = "CBDaf"
         Me.CBDaf.Size = New System.Drawing.Size(182, 21)
         Me.CBDaf.TabIndex = 53
@@ -411,17 +386,6 @@ Partial Class UC_BeneficiaryReport
         Me.DtpMde.Name = "DtpMde"
         Me.DtpMde.Size = New System.Drawing.Size(200, 20)
         Me.DtpMde.TabIndex = 38
-        '
-        'Label8
-        '
-        Me.Label8.AutoSize = True
-        Me.Label8.BackColor = System.Drawing.Color.Transparent
-        Me.Label8.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.Label8.Location = New System.Drawing.Point(706, 29)
-        Me.Label8.Name = "Label8"
-        Me.Label8.Size = New System.Drawing.Size(45, 13)
-        Me.Label8.TabIndex = 52
-        Me.Label8.Text = "სივრცე"
         '
         'CBBeneName
         '
@@ -436,7 +400,7 @@ Partial Class UC_BeneficiaryReport
         Me.Label7.AutoSize = True
         Me.Label7.BackColor = System.Drawing.Color.Transparent
         Me.Label7.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.Label7.Location = New System.Drawing.Point(706, 4)
+        Me.Label7.Location = New System.Drawing.Point(807, 6)
         Me.Label7.Name = "Label7"
         Me.Label7.Size = New System.Drawing.Size(81, 13)
         Me.Label7.TabIndex = 51
@@ -1738,6 +1702,18 @@ Partial Class UC_BeneficiaryReport
         Me.BtnPrev.TabIndex = 112
         Me.BtnPrev.UseVisualStyleBackColor = False
         '
+        'BtnToExcel
+        '
+        Me.BtnToExcel.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnToExcel.BackgroundImage = CType(resources.GetObject("BtnToExcel.BackgroundImage"), System.Drawing.Image)
+        Me.BtnToExcel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnToExcel.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.BtnToExcel.Location = New System.Drawing.Point(1391, 4)
+        Me.BtnToExcel.Name = "BtnToExcel"
+        Me.BtnToExcel.Size = New System.Drawing.Size(50, 50)
+        Me.BtnToExcel.TabIndex = 71
+        Me.BtnToExcel.UseVisualStyleBackColor = True
+        '
         'UC_BeneficiaryReport
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1766,9 +1742,8 @@ Partial Class UC_BeneficiaryReport
     Friend WithEvents pnlFilter As Panel
     Friend WithEvents btnToPDF As Button
     Friend WithEvents btbPrint As Button
-    Friend WithEvents RB100 As RadioButton
-    Friend WithEvents RB50 As RadioButton
-    Friend WithEvents RB20 As RadioButton
+    Friend WithEvents RBRaport As RadioButton
+    Friend WithEvents RBInvoice As RadioButton
     Friend WithEvents CheckBox5 As CheckBox
     Friend WithEvents CheckBox7 As CheckBox
     Friend WithEvents CheckBox6 As CheckBox
@@ -1780,10 +1755,8 @@ Partial Class UC_BeneficiaryReport
     Friend WithEvents BtnRef As Button
     Friend WithEvents DtpDan As DateTimePicker
     Friend WithEvents Label9 As Label
-    Friend WithEvents CBSpace As ComboBox
     Friend WithEvents CBDaf As ComboBox
     Friend WithEvents DtpMde As DateTimePicker
-    Friend WithEvents Label8 As Label
     Friend WithEvents CBBeneName As ComboBox
     Friend WithEvents Label7 As Label
     Friend WithEvents CBBeneSurname As ComboBox
@@ -1894,4 +1867,5 @@ Partial Class UC_BeneficiaryReport
     Friend WithEvents LPage As Label
     Friend WithEvents BtnNext As Button
     Friend WithEvents BtnPrev As Button
+    Friend WithEvents BtnToExcel As Button
 End Class
