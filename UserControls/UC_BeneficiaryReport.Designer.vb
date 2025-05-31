@@ -24,6 +24,7 @@ Partial Class UC_BeneficiaryReport
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(UC_BeneficiaryReport))
         Me.pnlFilter = New System.Windows.Forms.Panel()
+        Me.BtnToExcel = New System.Windows.Forms.Button()
         Me.btnToPDF = New System.Windows.Forms.Button()
         Me.btbPrint = New System.Windows.Forms.Button()
         Me.RBRaport = New System.Windows.Forms.RadioButton()
@@ -148,10 +149,6 @@ Partial Class UC_BeneficiaryReport
         Me.Label10 = New System.Windows.Forms.Label()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.DgvSessions = New System.Windows.Forms.DataGridView()
-        Me.LPage = New System.Windows.Forms.Label()
-        Me.BtnNext = New System.Windows.Forms.Button()
-        Me.BtnPrev = New System.Windows.Forms.Button()
-        Me.BtnToExcel = New System.Windows.Forms.Button()
         Me.pnlFilter.SuspendLayout()
         Me.GBSumFin.SuspendLayout()
         Me.GBSumInf.SuspendLayout()
@@ -195,6 +192,18 @@ Partial Class UC_BeneficiaryReport
         Me.pnlFilter.Name = "pnlFilter"
         Me.pnlFilter.Size = New System.Drawing.Size(1669, 79)
         Me.pnlFilter.TabIndex = 58
+        '
+        'BtnToExcel
+        '
+        Me.BtnToExcel.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.BtnToExcel.BackgroundImage = CType(resources.GetObject("BtnToExcel.BackgroundImage"), System.Drawing.Image)
+        Me.BtnToExcel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
+        Me.BtnToExcel.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.BtnToExcel.Location = New System.Drawing.Point(1391, 4)
+        Me.BtnToExcel.Name = "BtnToExcel"
+        Me.BtnToExcel.Size = New System.Drawing.Size(50, 50)
+        Me.BtnToExcel.TabIndex = 71
+        Me.BtnToExcel.UseVisualStyleBackColor = True
         '
         'btnToPDF
         '
@@ -1653,74 +1662,13 @@ Partial Class UC_BeneficiaryReport
         Me.DgvSessions.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DgvSessions.Location = New System.Drawing.Point(3, 85)
         Me.DgvSessions.Name = "DgvSessions"
-        Me.DgvSessions.Size = New System.Drawing.Size(1316, 645)
+        Me.DgvSessions.Size = New System.Drawing.Size(1316, 681)
         Me.DgvSessions.TabIndex = 108
-        '
-        'LPage
-        '
-        Me.LPage.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.LPage.AutoSize = True
-        Me.LPage.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!)
-        Me.LPage.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.LPage.Location = New System.Drawing.Point(900, 745)
-        Me.LPage.Name = "LPage"
-        Me.LPage.Size = New System.Drawing.Size(39, 13)
-        Me.LPage.TabIndex = 113
-        Me.LPage.Text = "Label1"
-        '
-        'BtnNext
-        '
-        Me.BtnNext.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.BtnNext.AutoEllipsis = True
-        Me.BtnNext.BackColor = System.Drawing.Color.Transparent
-        Me.BtnNext.BackgroundImage = CType(resources.GetObject("BtnNext.BackgroundImage"), System.Drawing.Image)
-        Me.BtnNext.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.BtnNext.Cursor = System.Windows.Forms.Cursors.Default
-        Me.BtnNext.FlatAppearance.BorderSize = 0
-        Me.BtnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.BtnNext.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnNext.Location = New System.Drawing.Point(945, 736)
-        Me.BtnNext.Name = "BtnNext"
-        Me.BtnNext.Size = New System.Drawing.Size(30, 30)
-        Me.BtnNext.TabIndex = 111
-        Me.BtnNext.UseVisualStyleBackColor = False
-        '
-        'BtnPrev
-        '
-        Me.BtnPrev.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.BtnPrev.AutoEllipsis = True
-        Me.BtnPrev.BackColor = System.Drawing.Color.Transparent
-        Me.BtnPrev.BackgroundImage = CType(resources.GetObject("BtnPrev.BackgroundImage"), System.Drawing.Image)
-        Me.BtnPrev.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.BtnPrev.Cursor = System.Windows.Forms.Cursors.Default
-        Me.BtnPrev.FlatAppearance.BorderSize = 0
-        Me.BtnPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.BtnPrev.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnPrev.Location = New System.Drawing.Point(864, 736)
-        Me.BtnPrev.Name = "BtnPrev"
-        Me.BtnPrev.Size = New System.Drawing.Size(30, 30)
-        Me.BtnPrev.TabIndex = 112
-        Me.BtnPrev.UseVisualStyleBackColor = False
-        '
-        'BtnToExcel
-        '
-        Me.BtnToExcel.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.BtnToExcel.BackgroundImage = CType(resources.GetObject("BtnToExcel.BackgroundImage"), System.Drawing.Image)
-        Me.BtnToExcel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
-        Me.BtnToExcel.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnToExcel.Location = New System.Drawing.Point(1391, 4)
-        Me.BtnToExcel.Name = "BtnToExcel"
-        Me.BtnToExcel.Size = New System.Drawing.Size(50, 50)
-        Me.BtnToExcel.TabIndex = 71
-        Me.BtnToExcel.UseVisualStyleBackColor = True
         '
         'UC_BeneficiaryReport
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.Controls.Add(Me.LPage)
-        Me.Controls.Add(Me.BtnNext)
-        Me.Controls.Add(Me.BtnPrev)
         Me.Controls.Add(Me.GBSumFin)
         Me.Controls.Add(Me.GBSumInf)
         Me.Controls.Add(Me.DgvSessions)
@@ -1735,7 +1683,6 @@ Partial Class UC_BeneficiaryReport
         Me.GBSumInf.PerformLayout()
         CType(Me.DgvSessions, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
-        Me.PerformLayout()
 
     End Sub
 
@@ -1864,8 +1811,5 @@ Partial Class UC_BeneficiaryReport
     Friend WithEvents Label10 As Label
     Friend WithEvents Label1 As Label
     Friend WithEvents DgvSessions As DataGridView
-    Friend WithEvents LPage As Label
-    Friend WithEvents BtnNext As Button
-    Friend WithEvents BtnPrev As Button
     Friend WithEvents BtnToExcel As Button
 End Class

@@ -143,7 +143,7 @@ Public Class UC_BeneficiaryReport
                 InitializeServices()
                 LoadBeneficiarySpecificData()
 
-                ' 🆕 რადიობუტონების საწყისი მდგომარეობის დაყენება
+                ' რადიობუტონების საწყისი მდგომარეობის დაყენება
                 InitializeReportModes()
             End If
 
@@ -153,7 +153,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' სერვისების ინიციალიზაცია - UC_Schedule-ის ანალოგია
+    ''' სერვისების ინიციალიზაცია - ნავიგაციის კონტროლების გარეშე
     ''' </summary>
     Private Sub InitializeServices()
         Try
@@ -162,8 +162,8 @@ Public Class UC_BeneficiaryReport
             ' მონაცემების დამუშავების სერვისი
             dataProcessor = New ScheduleDataProcessor(dataService)
 
-            ' UI მართვის სერვისი - ბენეფიციარის რეპორტისთვის მორგებული
-            uiManager = New ScheduleUIManager(DgvSessions, LPage, BtnPrev, BtnNext)
+            ' UI მართვის სერვისი - მხოლოდ DataGridView
+            uiManager = New ScheduleUIManager(DgvSessions, Nothing, Nothing, Nothing)
             ConfigureBeneficiaryReportUI()
 
             ' ფილტრების მართვის სერვისი - მხოლოდ საჭირო კონტროლები
@@ -184,7 +184,7 @@ Public Class UC_BeneficiaryReport
             ' ბენეფიციარის ComboBox-ების შევსება
             RefreshBeneficiaryComboBoxes()
 
-            ' 🆕 რადიობუტონების საწყისი მდგომარეობის დაყენება
+            ' რადიობუტონების საწყისი მდგომარეობის დაყენება
             InitializeReportModes()
 
             Debug.WriteLine("UC_BeneficiaryReport: სერვისების ინიციალიზაცია დასრულდა")
@@ -196,7 +196,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის რეპორტისთვის UI-ს კონფიგურაცია
+    ''' ბენეფიციარის რეპორტისთვის UI-ს კონფიგურაცია
     ''' </summary>
     Private Sub ConfigureBeneficiaryReportUI()
         Try
@@ -204,7 +204,6 @@ Public Class UC_BeneficiaryReport
 
             ' DataGridView-ის კონფიგურაცია
             uiManager.ConfigureDataGridView()
-            uiManager.ConfigureNavigationButtons()
 
             ' ბენეფიციარის რეპორტისთვის სპეციალური სვეტები
             ConfigureBeneficiaryColumns()
@@ -214,8 +213,9 @@ Public Class UC_BeneficiaryReport
         End Try
     End Sub
 
+
     ''' <summary>
-    ''' 🆕 ბენეფიციარის სვეტების კონფიგურაცია (შესრულების სვეტით)
+    ''' ბენეფიციარის სვეტების კონფიგურაცია (CheckBox-ის გაუმჯობესებული მართვით)
     ''' </summary>
     Private Sub ConfigureBeneficiaryColumns()
         Try
@@ -230,19 +230,21 @@ Public Class UC_BeneficiaryReport
                 .Add("N", "N")                        ' ID
                 .Add("DateTime", "თარიღი")            ' თარიღი
                 .Add("Duration", "ხანგძლ.")           ' ხანგძლივობა
-                .Add("Status", "შესრულება")           ' 🆕 შესრულების სვეტი
+                .Add("Status", "შესრულება")           ' შესრულების სვეტი
                 .Add("TherapyType", "თერაპია")        ' თერაპიის ტიპი
                 .Add("Therapist", "თერაპევტი")       ' თერაპევტი
                 .Add("Price", "თანხა")               ' თანხა
-                .Add("Funding", "დაფინანსება")        ' 🆕 დაფინანსების სვეტი
+                .Add("Funding", "დაფინანსება")        ' დაფინანსების სვეტი
 
-                ' 🆕 ინვოისში ჩართვის CheckBox
+                ' 🔧 ინვოისში ჩართვის CheckBox - გაუმჯობესებული კონფიგურაცია
                 Dim includeColumn As New DataGridViewCheckBoxColumn()
                 includeColumn.Name = "IncludeInInvoice"
                 includeColumn.HeaderText = "ინვოისში"
                 includeColumn.Width = 70
                 includeColumn.TrueValue = True
                 includeColumn.FalseValue = False
+                includeColumn.IndeterminateValue = False
+                includeColumn.ThreeState = False
                 .Add(includeColumn)
 
                 ' რედაქტირების ღილაკი
@@ -254,6 +256,11 @@ Public Class UC_BeneficiaryReport
                 editBtn.Width = 35
                 .Add(editBtn)
             End With
+
+            ' DataGridView-ის ზოგადი პარამეტრები CheckBox-ისთვის
+            DgvSessions.EditMode = DataGridViewEditMode.EditOnEnter
+            DgvSessions.AllowUserToAddRows = False
+            DgvSessions.AllowUserToDeleteRows = False
 
             ' სვეტების სიგანეების დაყენება
             SetBeneficiaryColumnWidths()
@@ -426,27 +433,25 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' ივენთების მიბმა
+    ''' ივენთების მიბმა (CheckBox-ის გაუმჯობესებული მართვით)
     ''' </summary>
     Private Sub BindEvents()
         Try
             ' ფილტრების ივენთები
             AddHandler filterManager.FilterChanged, AddressOf OnFilterChanged
 
-            ' DataGridView-ის ივენთები
+            ' 🔧 DataGridView-ის ივენთები - CheckBox-ის სწორი მართვისთვის
             AddHandler DgvSessions.CellClick, AddressOf OnDataGridViewCellClick
             AddHandler DgvSessions.CellValueChanged, AddressOf OnCheckBoxChanged
-            ' 🔧 CheckBox სვეტისთვის EditingControlShowing ივენთი
-            AddHandler DgvSessions.EditingControlShowing, AddressOf OnEditingControlShowing
+            AddHandler DgvSessions.CurrentCellDirtyStateChanged, AddressOf OnCurrentCellDirtyStateChanged
 
             ' ბენეფიციარის ComboBox-ების ივენთები
             AddHandler CBBeneName.SelectedIndexChanged, AddressOf OnBeneficiaryNameChanged
             AddHandler CBBeneSurname.SelectedIndexChanged, AddressOf OnBeneficiarySurnameChanged
 
-            ' 🆕 თერაპევტისა და თერაპიის ComboBox-ების ივენთები
-            ' შევამოწმოთ ფორმაზე არსებობს თუ არა ეს კონტროლები
-            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")     ' 🔧 CBPer - არსებული კონტროლი
-            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")   ' 🔧 CBTer - არსებული კონტროლი
+            ' თერაპევტისა და თერაპიის ComboBox-ების ივენთები
+            Dim cbTherapist As ComboBox = FindComboBoxRecursive(Me, "CBPer")
+            Dim cbTherapyType As ComboBox = FindComboBoxRecursive(Me, "CBTer")
 
             If cbTherapist IsNot Nothing Then
                 AddHandler cbTherapist.SelectedIndexChanged, AddressOf OnTherapistChanged
@@ -458,16 +463,35 @@ Public Class UC_BeneficiaryReport
                 Debug.WriteLine("UC_BeneficiaryReport: თერაპიის ComboBox (CBTer) ნაპოვნია და ივენთი მიბმულია")
             End If
 
-            ' 🆕 რადიობუტონების და დაფინანსების ComboBox-ის ივენთები
-            ' რადიობუტონები და CBDaf უკვე არსებობს დიზაინში
+            ' რადიობუტონების და დაფინანსების ComboBox-ის ივენთები
             AddHandler RBInvoice.CheckedChanged, AddressOf OnInvoiceModeChanged
             AddHandler RBRaport.CheckedChanged, AddressOf OnReportModeChanged
             AddHandler CBDaf.SelectedIndexChanged, AddressOf OnFundingChanged
 
-            Debug.WriteLine("UC_BeneficiaryReport: რადიობუტონები და დაფინანსების ComboBox ივენთები მიბმულია")
+            Debug.WriteLine("UC_BeneficiaryReport: ყველა ივენთი მიბმულია")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: BindEvents შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 CurrentCellDirtyStateChanged ივენთი - CheckBox-ის მყისიერი რეაგირებისთვის
+    ''' </summary>
+    Private Sub OnCurrentCellDirtyStateChanged(sender As Object, e As EventArgs)
+        Try
+            ' თუ CheckBox სვეტში ვართ და უჯრა "ღია" არის
+            If DgvSessions.IsCurrentCellDirty AndAlso
+               DgvSessions.CurrentCell IsNot Nothing AndAlso
+               DgvSessions.CurrentCell.ColumnIndex = DgvSessions.Columns("IncludeInInvoice").Index Then
+
+                ' მყისიერად კომიტი - CheckBox-ის ცვლილების დაფიქსირება
+                DgvSessions.CommitEdit(DataGridViewDataErrorContexts.Commit)
+                Debug.WriteLine("UC_BeneficiaryReport: CheckBox ცვლილება კომიტირებულია")
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: OnCurrentCellDirtyStateChanged შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -611,7 +635,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ბენეფიციარის გვარების ComboBox-ის შევსება
+    ''' ბენეფიციარის გვარების ComboBox-ის შევსება (პერიოდული ფილტრაციით)
     ''' </summary>
     Private Sub PopulateBeneficiarySurnamesComboBox(selectedName As String, sessions As List(Of SessionModel))
         Try
@@ -622,15 +646,20 @@ Public Class UC_BeneficiaryReport
                 Return
             End If
 
-            ' 🔧 არჩეული სახელისთვის უნიკალური გვარების მიღება (მხოლოდ პერიოდის სესიებიდან)
-            Dim uniqueSurnames = sessions.Where(Function(s) s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
-                                                       Not String.IsNullOrEmpty(s.BeneficiarySurname) AndAlso
-                                                       s.DateTime.Date >= filterManager.GetFilterCriteria().DateFrom.Date AndAlso
-                                                       s.DateTime.Date <= filterManager.GetFilterCriteria().DateTo.Date) _
-                                          .Select(Function(s) s.BeneficiarySurname.Trim()) _
-                                          .Distinct() _
-                                          .OrderBy(Function(surname) surname) _
-                                          .ToList()
+            ' მხოლოდ მოცემული პერიოდის სესიებიდან გვარების მიღება
+            Dim criteria = filterManager.GetFilterCriteria()
+
+            Dim uniqueSurnames = sessions.Where(Function(s)
+                                                    ' ყველა პირობის შემოწმება: სახელი, პერიოდი
+                                                    Return s.BeneficiaryName.Trim().Equals(selectedName, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                          Not String.IsNullOrEmpty(s.BeneficiarySurname) AndAlso
+                                                          s.DateTime.Date >= criteria.DateFrom.Date AndAlso
+                                                          s.DateTime.Date <= criteria.DateTo.Date
+                                                End Function) _
+                                        .Select(Function(s) s.BeneficiarySurname.Trim()) _
+                                        .Distinct() _
+                                        .OrderBy(Function(surname) surname) _
+                                        .ToList()
 
             For Each surname In uniqueSurnames
                 CBBeneSurname.Items.Add(surname)
@@ -643,7 +672,7 @@ Public Class UC_BeneficiaryReport
                 CBBeneSurname.SelectedIndex = 0
             End If
 
-            Debug.WriteLine($"UC_BeneficiaryReport: სახელისთვის '{selectedName}' ნაპოვნია {uniqueSurnames.Count} გვარი")
+            Debug.WriteLine($"UC_BeneficiaryReport: სახელისთვის '{selectedName}' პერიოდში {criteria.DateFrom:dd.MM.yyyy}-{criteria.DateTo:dd.MM.yyyy} ნაპოვნია {uniqueSurnames.Count} გვარი")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: PopulateBeneficiarySurnamesComboBox შეცდომა: {ex.Message}")
@@ -812,7 +841,7 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის სპეციფიკური მონაცემების ჩატვირთვა
+    ''' ბენეფიციარის სპეციფიკური მონაცემების ჩატვირთვა
     ''' </summary>
     Private Sub LoadBeneficiarySpecificData()
         Try
@@ -838,8 +867,6 @@ Public Class UC_BeneficiaryReport
                 If String.IsNullOrEmpty(selectedName) OrElse String.IsNullOrEmpty(selectedSurname) Then
                     ' ბენეფიციარი არ არის არჩეული - ცხრილის გასუფთავება
                     DgvSessions.Rows.Clear()
-                    uiManager.UpdatePageLabel(1, 1)
-                    uiManager.UpdateNavigationButtons(1, 1)
                     Return
                 End If
 
@@ -863,10 +890,6 @@ Public Class UC_BeneficiaryReport
                 ' მონაცემების ჩატვირთვა DataGridView-ში
                 LoadBeneficiarySessionsToGrid()
 
-                ' ნავიგაციის განახლება (ერთი გვერდი ყველა სესიით)
-                uiManager.UpdatePageLabel(1, 1)
-                uiManager.UpdateNavigationButtons(1, 1)
-
             Finally
                 isLoadingData = False
             End Try
@@ -878,7 +901,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში (თერაპ. ფილტრებით)
+    ''' ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში (CheckBox-ის გაუმჯობესებული ინიციალიზაცია)
     ''' </summary>
     Private Sub LoadBeneficiarySessionsToGrid()
         Try
@@ -890,7 +913,7 @@ Public Class UC_BeneficiaryReport
                 Return
             End If
 
-            ' 🆕 თერაპევტისა და თერაპიის ფილტრების მიღება
+            ' თერაპევტისა და თერაპიის ფილტრების მიღება
             Dim selectedTherapist As String = GetSelectedTherapist()
             Dim selectedTherapyType As String = GetSelectedTherapyType()
             Dim selectedFunding As String = GetSelectedFunding()
@@ -898,48 +921,48 @@ Public Class UC_BeneficiaryReport
             For i As Integer = 0 To currentBeneficiaryData.Count - 1
                 Dim session = currentBeneficiaryData(i)
 
-                ' 🆕 თერაპევტის ფილტრაცია
+                ' თერაპევტის ფილტრაცია
                 If Not String.IsNullOrEmpty(selectedTherapist) AndAlso selectedTherapist <> "ყველა" Then
                     If Not session.TherapistName.Trim().Equals(selectedTherapist, StringComparison.OrdinalIgnoreCase) Then
                         Continue For
                     End If
                 End If
 
-                ' 🆕 თერაპიის ფილტრაცია
+                ' თერაპიის ფილტრაცია
                 If Not String.IsNullOrEmpty(selectedTherapyType) AndAlso selectedTherapyType <> "ყველა" Then
                     If Not session.TherapyType.Trim().Equals(selectedTherapyType, StringComparison.OrdinalIgnoreCase) Then
                         Continue For
                     End If
                 End If
 
-                ' 🆕 დაფინანსების ფილტრაცია (მხოლოდ ინვოისის რეჟიმში)
+                ' დაფინანსების ფილტრაცია (მხოლოდ ინვოისის რეჟიმში)
                 If RBInvoice.Checked AndAlso Not String.IsNullOrEmpty(selectedFunding) Then
                     If Not session.Funding.Trim().Equals(selectedFunding, StringComparison.OrdinalIgnoreCase) Then
                         Continue For
                     End If
                 End If
 
-                ' მწკრივის მონაცემები (შესრულების სვეტით + დაფინანსება)
+                ' მწკრივის მონაცემები
                 Dim rowData As Object() = {
                     session.Id,                                     ' N
                     session.DateTime.ToString("dd.MM.yyyy HH:mm"), ' თარიღი
                     $"{session.Duration}წთ",                        ' ხანგძლივობა
-                    session.Status,                                 ' 🆕 შესრულების სვეტი
+                    session.Status,                                 ' შესრულების სვეტი
                     session.TherapyType,                            ' თერაპია
                     session.TherapistName,                          ' თერაპევტი
                     session.Price,                                  ' თანხა
-                    session.Funding,                                ' 🆕 დაფინანსების სვეტი
-                    True,                                           ' ნაგულისხმევად ინვოისში ჩართული
+                    session.Funding,                                ' დაფინანსების სვეტი
+                    True,                                           ' 🔧 ნაგულისხმევად ინვოისში ჩართული
                     "✎"                                             ' რედაქტირების ღილაკი
                 }
 
-                ' მწკრივის მონაცემების ჩატვირთვის შემდეგ ვიზუალური სტილის დაყენება
+                ' მწკრივის დამატება
                 Dim addedRowIndex = DgvSessions.Rows.Add(rowData)
 
                 ' სესიის ID-ის შენახვა მწკრივში
                 DgvSessions.Rows(addedRowIndex).Tag = session.Id
 
-                ' 🔧 CheckBox-ის საწყისი მნიშვნელობის განახლება (ნაგულისხმევად ჩართული)
+                ' 🔧 CheckBox-ის მნიშვნელობის ექსპლიციტური დაყენება
                 DgvSessions.Rows(addedRowIndex).Cells("IncludeInInvoice").Value = True
 
                 ' მწკრივის ფერის დაყენება სტატუსის მიხედვით
@@ -950,6 +973,9 @@ Public Class UC_BeneficiaryReport
                     ' სტატუსის ფერის შეცდომის შემთხვევაში
                 End Try
             Next
+
+            ' ინვოისის ჯამების განახლება
+            UpdateInvoiceTotals()
 
             Debug.WriteLine($"UC_BeneficiaryReport: ჩატვირთულია {DgvSessions.Rows.Count} სესია (ფილტრაციის შემდეგ)")
 
@@ -1278,20 +1304,26 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' 🆕 CheckBox-ის შეცვლის ივენთი (ინვოისში ჩართვა/ამოღება) - CellValueChanged
+    ''' CheckBox-ის შეცვლის ივენთი (გაუმჯობესებული ვერსია)
     ''' </summary>
     Private Sub OnCheckBoxChanged(sender As Object, e As DataGridViewCellEventArgs)
         Try
             If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 AndAlso
               DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInInvoice" Then
 
-                Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის CheckBox (CellValueChanged) შეიცვალა - მწკრივი {e.RowIndex}")
-
                 ' CheckBox-ის მნიშვნელობის მიღება
-                Dim isIncluded As Boolean = True
-                If DgvSessions.Rows(e.RowIndex).Cells("IncludeInInvoice").Value IsNot Nothing Then
-                    Boolean.TryParse(DgvSessions.Rows(e.RowIndex).Cells("IncludeInInvoice").Value.ToString(), isIncluded)
+                Dim isIncluded As Boolean = False
+                Dim cellValue = DgvSessions.Rows(e.RowIndex).Cells("IncludeInInvoice").Value
+
+                If cellValue IsNot Nothing Then
+                    If TypeOf cellValue Is Boolean Then
+                        isIncluded = DirectCast(cellValue, Boolean)
+                    Else
+                        Boolean.TryParse(cellValue.ToString(), isIncluded)
+                    End If
                 End If
+
+                Debug.WriteLine($"UC_BeneficiaryReport: CheckBox შეიცვალა - მწკრივი {e.RowIndex}, ახალი მნიშვნელობა: {isIncluded}")
 
                 ' მწკრივის ვიზუალური სტილის განახლება
                 UpdateRowVisualStyle(e.RowIndex, isIncluded)
@@ -1306,14 +1338,28 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი
+    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი (გაუმჯობესებული)
     ''' </summary>
     Private Sub OnDataGridViewCellClick(sender As Object, e As DataGridViewCellEventArgs)
         Try
-            ' რედაქტირების ღილაკზე დაჭერის შემოწმება
-            If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 AndAlso
-              DgvSessions.Columns(e.ColumnIndex).Name = "Edit" Then
+            If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
 
+            ' CheckBox სვეტზე დაჭერა
+            If DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInInvoice" Then
+                Debug.WriteLine($"UC_BeneficiaryReport: CheckBox სვეტზე დაჭერა - მწკრივი {e.RowIndex}")
+
+                ' CheckBox-ის მნიშვნელობის ჩვენება/დამალვა მყისიერად
+                Try
+                    DgvSessions.BeginEdit(True)
+                Catch
+                    ' თუ რედაქტირება ვერ დაიწყო, გაგრძელება
+                End Try
+
+                Return
+            End If
+
+            ' რედაქტირების ღილაკზე დაჭერა
+            If DgvSessions.Columns(e.ColumnIndex).Name = "Edit" Then
                 Dim sessionId As Integer = 0
                 If DgvSessions.Rows(e.RowIndex).Tag IsNot Nothing Then
                     Integer.TryParse(DgvSessions.Rows(e.RowIndex).Tag.ToString(), sessionId)
@@ -1344,22 +1390,6 @@ Public Class UC_BeneficiaryReport
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: OnDataGridViewCellClick შეცდომა: {ex.Message}")
         End Try
-    End Sub
-
-    ''' <summary>
-    ''' წინა გვერდის ღილაკი - ბენეფიციარის რეპორტში არ გამოიყენება
-    ''' </summary>
-    Private Sub BtnPrev_Click(sender As Object, e As EventArgs) Handles BtnPrev.Click
-        ' ბენეფიციარის რეპორტში ყველა სესია ერთ გვერდზე ჩანს
-        Debug.WriteLine("UC_BeneficiaryReport: წინა გვერდი - არ გამოიყენება")
-    End Sub
-
-    ''' <summary>
-    ''' შემდეგი გვერდის ღილაკი - ბენეფიციარის რეპორტში არ გამოიყენება
-    ''' </summary>
-    Private Sub BtnNext_Click(sender As Object, e As EventArgs) Handles BtnNext.Click
-        ' ბენეფიციარის რეპორტში ყველა სესია ერთ გვერდზე ჩანს
-        Debug.WriteLine("UC_BeneficiaryReport: შემდეგი გვერდი - არ გამოიყენება")
     End Sub
 
     ''' <summary>
@@ -1768,9 +1798,12 @@ Public Class UC_BeneficiaryReport
                 row.DefaultCellStyle.BackColor = Color.LightGray
                 row.DefaultCellStyle.ForeColor = Color.DarkGray
 
-                ' გადახაზული ფონტი
-                Dim strikeFont As Font = New Font(DgvSessions.DefaultCellStyle.Font, FontStyle.Strikeout)
-                row.DefaultCellStyle.Font = strikeFont
+                ' გადახაზული ფონტი - System.Drawing.Font-ის გამოყენება
+                Dim currentFont As System.Drawing.Font = DgvSessions.DefaultCellStyle.Font
+                If currentFont IsNot Nothing Then
+                    Dim strikeFont As New System.Drawing.Font(currentFont, FontStyle.Strikeout)
+                    row.DefaultCellStyle.Font = strikeFont
+                End If
             End If
 
         Catch ex As Exception
@@ -1906,14 +1939,14 @@ Public Class UC_BeneficiaryReport
 
                     ' ჯამი
                     csv.AppendLine()
-                    csv.AppendLine($"""ჯამური თანხა:"","","","","","","","{totalAmount: N2}""")
+                    csv.AppendLine($"""ჯამური თანხა:"","","","","","","",""{totalAmount:N2}""")
                     csv.AppendLine($"""თანხა სიტყვიერად"",""{EscapeCSV(ConvertAmountToWords(totalAmount))}""")
 
                     ' ფაილის ჩაწერა
                     System.IO.File.WriteAllText(saveDialog.FileName, csv.ToString(), utf8WithBom)
 
-                    Debug.WriteLine("UC_BeneficiaryReport Excel ინვოისი შეიქმნა")
-                    MessageBox.Show($"Excel ინვოისი წარმატებით შეიქმნა: {Environment.NewLine}{saveDialog.FileName}", "წარმატება",
+                    Debug.WriteLine("UC_BeneficiaryReport: Excel ინვოისი შეიქმნა")
+                    MessageBox.Show($"Excel ინვოისი წარმატებით შეიქმნა:{Environment.NewLine}{saveDialog.FileName}", "წარმატება",
                                    MessageBoxButtons.OK, MessageBoxIcon.Information)
 
                     ' ფაილის გახსნის შეთავაზება
@@ -1926,7 +1959,7 @@ Public Class UC_BeneficiaryReport
             End Using
 
         Catch ex As Exception
-            Debug.WriteLine($"UC_BeneficiaryReport CreateExcelInvoiceFile შეცდომა:  {ex.Message}")
+            Debug.WriteLine($"UC_BeneficiaryReport: CreateExcelInvoiceFile შეცდომა: {ex.Message}")
             Throw
         End Try
     End Sub
@@ -1938,11 +1971,11 @@ Public Class UC_BeneficiaryReport
     ''' <param name="filePath">ფაილის მისამართი (ფაილისთვის)</param>
     Private Sub CreateInvoiceHTML(forPrinting As Boolean, Optional filePath As String = "")
         Try
-            Debug.WriteLine($"UC_BeneficiaryReport ინვოისის html შექმნა - ბეჭდვისთვის:  {forPrinting}")
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის HTML შექმნა - ბეჭდვისთვის: {forPrinting}")
 
             Dim html As New System.Text.StringBuilder()
             Dim beneficiaryName = GetCurrentBeneficiaryInfo()
-            Dim period = $"{DtpDan.Valuedd.MM.yyyy} - {DtpMde.Value:dd.MM.yyyy}"
+            Dim period = $"{DtpDan.Value:dd.MM.yyyy} - {DtpMde.Value:dd.MM.yyyy}"
 
             ' HTML დოკუმენტის შექმნა
             html.AppendLine("<!DOCTYPE html>")
@@ -1951,170 +1984,170 @@ Public Class UC_BeneficiaryReport
             html.AppendLine("    <meta charset=""UTF-8"">")
             html.AppendLine("    <title>ინვოისი - " & beneficiaryName & "</title>")
             html.AppendLine("    <style>")
-            html.AppendLine("        @page { size A4; margin: 20mm; }")
-            html.AppendLine("        @media print { .no-print { display none; } }")
-            html.AppendLine("        body { font-family 'Sylfaen', Arial, sans-serif; font-size: 12px; line-height: 1.4; }")
+            html.AppendLine("        @page { size: A4; margin: 20mm; }")
+            html.AppendLine("        @media print { .no-print { display: none; } }")
+            html.AppendLine("        body { font-family: 'Sylfaen', Arial, sans-serif; font-size: 12px; line-height: 1.4; }")
             html.AppendLine("        .invoice-header { text-align: center; margin-bottom: 30px; }")
-                    html.AppendLine("        .invoice-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }")
-                    html.AppendLine("        .company-info { font-size: 11px; margin-bottom: 20px; }")
-                    html.AppendLine("        .beneficiary-info { border: 1px solid #333; padding: 15px; margin: 20px 0; background: #f9f9f9; }")
-                    html.AppendLine("        table { width: 100%; border-collapse: collapse; margin: 20px 0; }")
-                    html.AppendLine("        th, td { padding: 8px 4px; border: 1px solid #333; text-align: left; vertical-align: top; }")
-                    html.AppendLine("        th { background-color: #ddd; font-weight: bold; text-align: center; }")
-                    html.AppendLine("        .amount { text-align: right; }")
-                    html.AppendLine("        .total-section { margin-top: 20px; text-align: right; }")
-                    html.AppendLine("        .total-amount { font-size: 14px; font-weight: bold; }")
-                    html.AppendLine("        .signature-section { margin-top: 40px; text-align: center; }")
-                    html.AppendLine("        .print-button { padding: 15px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; }")
-                    html.AppendLine("    </style>")
-                    html.AppendLine("</head>")
-                    html.AppendLine("<body>")
+            html.AppendLine("        .invoice-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }")
+            html.AppendLine("        .company-info { font-size: 11px; margin-bottom: 20px; }")
+            html.AppendLine("        .beneficiary-info { border: 1px solid #333; padding: 15px; margin: 20px 0; background: #f9f9f9; }")
+            html.AppendLine("        table { width: 100%; border-collapse: collapse; margin: 20px 0; }")
+            html.AppendLine("        th, td { padding: 8px 4px; border: 1px solid #333; text-align: left; vertical-align: top; }")
+            html.AppendLine("        th { background-color: #ddd; font-weight: bold; text-align: center; }")
+            html.AppendLine("        .amount { text-align: right; }")
+            html.AppendLine("        .total-section { margin-top: 20px; text-align: right; }")
+            html.AppendLine("        .total-amount { font-size: 14px; font-weight: bold; }")
+            html.AppendLine("        .signature-section { margin-top: 40px; text-align: center; }")
+            html.AppendLine("        .print-button { padding: 15px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; }")
+            html.AppendLine("    </style>")
+            html.AppendLine("</head>")
+            html.AppendLine("<body>")
 
-                    ' ბეჭდვის ღილაკი (მხოლოდ ბრაუზერისთვის)
-                    If Not forPrinting Then
-                        html.AppendLine("    <div class=""no-print"" style=""text-align: center; margin: 20px 0;"">")
-                        html.AppendLine("        <button class=""print-button"" onclick=""window.print(); setTimeout(() => window.close(), 1000);"">")
-                        html.AppendLine("            🖨️ ინვოისის ბეჭდვა PDF-ად</button>")
-                        html.AppendLine("        <p>ღილაკზე დაჭერის შემდეგ აირჩიეთ ""Microsoft Print to PDF""</p>")
-                        html.AppendLine("    </div>")
+            ' ბეჭდვის ღილაკი (მხოლოდ ბრაუზერისთვის)
+            If Not forPrinting Then
+                html.AppendLine("    <div class=""no-print"" style=""text-align: center; margin: 20px 0;"">")
+                html.AppendLine("        <button class=""print-button"" onclick=""window.print(); setTimeout(() => window.close(), 1000);"">")
+                html.AppendLine("            🖨️ ინვოისის ბეჭდვა PDF-ად</button>")
+                html.AppendLine("        <p>ღილაკზე დაჭერის შემდეგ აირჩიეთ ""Microsoft Print to PDF""</p>")
+                html.AppendLine("    </div>")
+            End If
+
+            ' ინვოისის სათაური
+            html.AppendLine("    <div class=""invoice-header"">")
+            html.AppendLine("        <div class=""invoice-title"">ინვოისი მომსახურების გაწევაზე</div>")
+            html.AppendLine("        <div class=""company-info"">")
+            html.AppendLine("            შპს ""ბავშვთა და მოზარდთა განვითარების, აბილიტაციისა და რეაბილიტაციის ცენტრი - პროსპერო""<br>")
+            html.AppendLine("            მისამართი: [კომპანიის მისამართი]<br>")
+            html.AppendLine("            ტელ: [ტელეფონი] | ელ-ფოსტა: [ელფოსტა]")
+            html.AppendLine("        </div>")
+            html.AppendLine("    </div>")
+
+            ' ბენეფიციარის ინფორმაცია
+            html.AppendLine("    <div class=""beneficiary-info"">")
+            html.AppendLine($"        <strong>ბენეფიციარი:</strong> {EscapeHtml(beneficiaryName)}<br>")
+            html.AppendLine("        <strong>დაბადების თარიღი:</strong> _______________<br>")
+            html.AppendLine("        <strong>კანონიერი წარმომადგენელი:</strong> _______________<br>")
+            html.AppendLine("        <strong>წარმომადგენლის პ/ნ:</strong> _______________<br>")
+            html.AppendLine($"        <strong>პერიოდი:</strong> {period}")
+            html.AppendLine("    </div>")
+
+            ' მომსახურებების ცხრილი (შესრულების სვეტით + დაფინანსება)
+            html.AppendLine("    <table>")
+            html.AppendLine("        <thead>")
+            html.AppendLine("            <tr>")
+            html.AppendLine("                <th style=""width: 30px;"">N</th>")
+            html.AppendLine("                <th style=""width: 100px;"">თარიღი</th>")
+            html.AppendLine("                <th style=""width: 60px;"">ხანგძლ.</th>")
+            html.AppendLine("                <th style=""width: 110px;"">შესრულება</th>")
+            html.AppendLine("                <th style=""width: 180px;"">მომსახურების სახე</th>")
+            html.AppendLine("                <th style=""width: 140px;"">თერაპევტი</th>")
+            html.AppendLine("                <th style=""width: 100px;"">დაფინანსება</th>")
+            html.AppendLine("                <th style=""width: 80px;"">თანხა (₾)</th>")
+            html.AppendLine("            </tr>")
+            html.AppendLine("        </thead>")
+            html.AppendLine("        <tbody>")
+
+            ' მომსახურებების სია (მხოლოდ ინვოისში ჩართული)
+            Dim invoiceNumber As Integer = 1
+            Dim totalAmount As Decimal = 0
+
+            For Each row As DataGridViewRow In DgvSessions.Rows
+                Try
+                    ' შევამოწმოთ ინვოისში ჩართვა
+                    Dim isIncluded As Boolean = True
+                    If row.Cells("IncludeInInvoice").Value IsNot Nothing Then
+                        Boolean.TryParse(row.Cells("IncludeInInvoice").Value.ToString(), isIncluded)
                     End If
 
-                    ' ინვოისის სათაური
-                    html.AppendLine("    <div class=""invoice-header"">")
-                    html.AppendLine("        <div class=""invoice-title"">ინვოისი მომსახურების გაწევაზე</div>")
-                    html.AppendLine("        <div class=""company-info"">")
-                    html.AppendLine("            შპს ""ბავშვთა და მოზარდთა განვითარების, აბილიტაციისა და რეაბილიტაციის ცენტრი - პროსპერო""<br>")
-                    html.AppendLine("            მისამართი: [კომპანიის მისამართი]<br>")
-                    html.AppendLine("            ტელ: [ტელეფონი] | ელ-ფოსტა: [ელფოსტა]")
-                    html.AppendLine("        </div>")
-                    html.AppendLine("    </div>")
+                    If isIncluded Then
+                        Dim dateTime As String = If(row.Cells("DateTime").Value?.ToString(), "")
+                        Dim duration As String = If(row.Cells("Duration").Value?.ToString(), "")
+                        Dim status As String = If(row.Cells("Status").Value?.ToString(), "")
+                        Dim therapyType As String = If(row.Cells("TherapyType").Value?.ToString(), "")
+                        Dim therapist As String = If(row.Cells("Therapist").Value?.ToString(), "")
+                        Dim funding As String = If(row.Cells("Funding").Value?.ToString(), "")
 
-                    ' ბენეფიციარის ინფორმაცია
-                    html.AppendLine("    <div class=""beneficiary-info"">")
-                    html.AppendLine($"        <strong>ბენეფიციარი:</strong> {EscapeHtml(beneficiaryName)}<br>")
-                    html.AppendLine("        <strong>დაბადების თარიღი:</strong> _______________<br>")
-                    html.AppendLine("        <strong>კანონიერი წარმომადგენელი:</strong> _______________<br>")
-                    html.AppendLine("        <strong>წარმომადგენლის პ/ნ:</strong> _______________<br>")
-                    html.AppendLine($"        <strong>პერიოდი:</strong> {period}")
-                    html.AppendLine("    </div>")
-
-                    ' მომსახურებების ცხრილი (შესრულების სვეტით + დაფინანსება)
-                    html.AppendLine("    <table>")
-                    html.AppendLine("        <thead>")
-                    html.AppendLine("            <tr>")
-                    html.AppendLine("                <th style=""width: 30px;"">N</th>")
-                    html.AppendLine("                <th style=""width: 100px;"">თარიღი</th>")
-                    html.AppendLine("                <th style=""width: 60px;"">ხანგძლ.</th>")
-                    html.AppendLine("                <th style=""width: 110px;"">შესრულება</th>")
-                    html.AppendLine("                <th style=""width: 180px;"">მომსახურების სახე</th>")
-                    html.AppendLine("                <th style=""width: 140px;"">თერაპევტი</th>")
-                    html.AppendLine("                <th style=""width: 100px;"">დაფინანსება</th>")
-                    html.AppendLine("                <th style=""width: 80px;"">თანხა (₾)</th>")
-                    html.AppendLine("            </tr>")
-                    html.AppendLine("        </thead>")
-                    html.AppendLine("        <tbody>")
-
-                    ' მომსახურებების სია (მხოლოდ ინვოისში ჩართული)
-                    Dim invoiceNumber As Integer = 1
-                    Dim totalAmount As Decimal = 0
-
-                    For Each row As DataGridViewRow In DgvSessions.Rows
-                        Try
-                            ' შევამოწმოთ ინვოისში ჩართვა
-                            Dim isIncluded As Boolean = True
-                            If row.Cells("IncludeInInvoice").Value IsNot Nothing Then
-                                Boolean.TryParse(row.Cells("IncludeInInvoice").Value.ToString(), isIncluded)
-                            End If
-
-                            If isIncluded Then
-                                Dim dateTime As String = If(row.Cells("DateTime").Value?.ToString(), "")
-                                Dim duration As String = If(row.Cells("Duration").Value?.ToString(), "")
-                                Dim status As String = If(row.Cells("Status").Value?.ToString(), "")
-                                Dim therapyType As String = If(row.Cells("TherapyType").Value?.ToString(), "")
-                                Dim therapist As String = If(row.Cells("Therapist").Value?.ToString(), "")
-                                Dim funding As String = If(row.Cells("Funding").Value?.ToString(), "")
-
-                                Dim price As Decimal = 0
-                                If row.Cells("Price").Value IsNot Nothing Then
-                                    Decimal.TryParse(row.Cells("Price").Value.ToString(), price)
-                                End If
-
-                                totalAmount += price
-
-                                html.AppendLine("            <tr>")
-                                html.AppendLine($"                <td style=""text-align: center;"">{invoiceNumber}</td>")
-                                html.AppendLine($"                <td>{EscapeHtml(dateTime)}</td>")
-                                html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(duration)}</td>")
-                                html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(status)}</td>")
-                                html.AppendLine($"                <td>{EscapeHtml(therapyType)}</td>")
-                                html.AppendLine($"                <td>{EscapeHtml(therapist)}</td>")
-                                html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(funding)}</td>")
-                                html.AppendLine($"                <td class=""amount"">{price:N2}</td>")
-                                html.AppendLine("            </tr>")
-
-                                invoiceNumber += 1
-                            End If
-
-                        Catch
-                            Continue For
-                        End Try
-                    Next
-
-                    html.AppendLine("        </tbody>")
-                    html.AppendLine("    </table>")
-
-                    ' ჯამური თანხა
-                    html.AppendLine("    <div class=""total-section"">")
-                    html.AppendLine($"        <div class=""total-amount"">მომსახურების საფასური სულ: {totalAmount:N2} ₾</div>")
-                    html.AppendLine($"        <div>თანხა სიტყვიერად: {ConvertAmountToWords(totalAmount)}</div>")
-                    html.AppendLine("    </div>")
-
-                    ' ხელმოწერის სექცია
-                    html.AppendLine("    <div class=""signature-section"">")
-                    html.AppendLine("        <p><strong>ცენტრის დირექტორი:</strong></p>")
-                    html.AppendLine("        <p>თეა ჩანადირი MD PhD DBP</p>")
-                    html.AppendLine("        <p>მედიცინის დოქტორი, განვითარების და ქცევის პედიატრი</p>")
-                    html.AppendLine("        <br><br>")
-                    html.AppendLine("        <p>ხელმოწერა: ____________________</p>")
-                    html.AppendLine($"        <p>თარიღი: {DateTime.Now:dd.MM.yyyy}</p>")
-                    html.AppendLine("    </div>")
-
-                    html.AppendLine("</body>")
-                    html.AppendLine("</html>")
-
-                    ' ფაილის შენახვა ან დროებითი ფაილის შექმნა ბეჭდვისთვის
-                    Dim finalFilePath As String
-
-                    If forPrinting Then
-                        ' დროებითი ფაილი ბეჭდვისთვის
-                        finalFilePath = System.IO.Path.GetTempPath() & $"invoice_{DateTime.Now:yyyyMMddHHmmss}.html"
-                    Else
-                        ' მომხმარებლის მიერ არჩეული ფაილი
-                        finalFilePath = filePath
-                    End If
-
-                    ' HTML ფაილის ჩაწერა
-                    System.IO.File.WriteAllText(finalFilePath, html.ToString(), System.Text.Encoding.UTF8)
-
-                    Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის HTML შეიქმნა - {finalFilePath}")
-
-                    If forPrinting Then
-                        ' ბეჭდვისთვის - ფაილის გახსნა და ავტომატური ბეჭდვა
-                        System.Diagnostics.Process.Start(finalFilePath)
-                        MessageBox.Show("ინვოისი ბრაუზერში გაიხსნა ბეჭდვისთვის", "ინფორმაცია",
-                               MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    Else
-                        ' ფაილისთვის - შეტყობინება და გახსნის შეთავაზება
-                        MessageBox.Show($"ინვოისი წარმატებით შეიქმნა:{Environment.NewLine}{finalFilePath}" & Environment.NewLine & Environment.NewLine &
-                               "დააჭირეთ ფაილში 'ინვოისის ბეჭდვა PDF-ად' ღილაკს", "წარმატება",
-                               MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-                        Dim openResult As DialogResult = MessageBox.Show("გსურთ ინვოისის ფაილის გახსნა?", "ფაილის გახსნა",
-                                                                MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-                        If openResult = DialogResult.Yes Then
-                            System.Diagnostics.Process.Start(finalFilePath)
+                        Dim price As Decimal = 0
+                        If row.Cells("Price").Value IsNot Nothing Then
+                            Decimal.TryParse(row.Cells("Price").Value.ToString(), price)
                         End If
+
+                        totalAmount += price
+
+                        html.AppendLine("            <tr>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{invoiceNumber}</td>")
+                        html.AppendLine($"                <td>{EscapeHtml(dateTime)}</td>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(duration)}</td>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(status)}</td>")
+                        html.AppendLine($"                <td>{EscapeHtml(therapyType)}</td>")
+                        html.AppendLine($"                <td>{EscapeHtml(therapist)}</td>")
+                        html.AppendLine($"                <td style=""text-align: center;"">{EscapeHtml(funding)}</td>")
+                        html.AppendLine($"                <td class=""amount"">{price:N2}</td>")
+                        html.AppendLine("            </tr>")
+
+                        invoiceNumber += 1
                     End If
+
+                Catch
+                    Continue For
+                End Try
+            Next
+
+            html.AppendLine("        </tbody>")
+            html.AppendLine("    </table>")
+
+            ' ჯამური თანხა
+            html.AppendLine("    <div class=""total-section"">")
+            html.AppendLine($"        <div class=""total-amount"">მომსახურების საფასური სულ: {totalAmount:N2} ₾</div>")
+            html.AppendLine($"        <div>თანხა სიტყვიერად: {ConvertAmountToWords(totalAmount)}</div>")
+            html.AppendLine("    </div>")
+
+            ' ხელმოწერის სექცია
+            html.AppendLine("    <div class=""signature-section"">")
+            html.AppendLine("        <p><strong>ცენტრის დირექტორი:</strong></p>")
+            html.AppendLine("        <p>თეა ჩანადირი MD PhD DBP</p>")
+            html.AppendLine("        <p>მედიცინის დოქტორი, განვითარების და ქცევის პედიატრი</p>")
+            html.AppendLine("        <br><br>")
+            html.AppendLine("        <p>ხელმოწერა: ____________________</p>")
+            html.AppendLine($"        <p>თარიღი: {DateTime.Now:dd.MM.yyyy}</p>")
+            html.AppendLine("    </div>")
+
+            html.AppendLine("</body>")
+            html.AppendLine("</html>")
+
+            ' ფაილის შენახვა ან დროებითი ფაილის შექმნა ბეჭდვისთვის
+            Dim finalFilePath As String
+
+            If forPrinting Then
+                ' დროებითი ფაილი ბეჭდვისთვის
+                finalFilePath = System.IO.Path.GetTempPath() & $"invoice_{DateTime.Now:yyyyMMddHHmmss}.html"
+            Else
+                ' მომხმარებლის მიერ არჩეული ფაილი
+                finalFilePath = filePath
+            End If
+
+            ' HTML ფაილის ჩაწერა
+            System.IO.File.WriteAllText(finalFilePath, html.ToString(), System.Text.Encoding.UTF8)
+
+            Debug.WriteLine($"UC_BeneficiaryReport: ინვოისის HTML შეიქმნა - {finalFilePath}")
+
+            If forPrinting Then
+                ' ბეჭდვისთვის - ფაილის გახსნა და ავტომატური ბეჭდვა
+                System.Diagnostics.Process.Start(finalFilePath)
+                MessageBox.Show("ინვოისი ბრაუზერში გაიხსნა ბეჭდვისთვის", "ინფორმაცია",
+                       MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                ' ფაილისთვის - შეტყობინება და გახსნის შეთავაზება
+                MessageBox.Show($"ინვოისი წარმატებით შეიქმნა:{Environment.NewLine}{finalFilePath}" & Environment.NewLine & Environment.NewLine &
+                       "დააჭირეთ ფაილში 'ინვოისის ბეჭდვა PDF-ად' ღილაკს", "წარმატება",
+                       MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+                Dim openResult As DialogResult = MessageBox.Show("გსურთ ინვოისის ფაილის გახსნა?", "ფაილის გახსნა",
+                                                        MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                If openResult = DialogResult.Yes Then
+                    System.Diagnostics.Process.Start(finalFilePath)
+                End If
+            End If
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: CreateInvoiceHTML შეცდომა: {ex.Message}")
@@ -2208,7 +2241,6 @@ Public Class UC_BeneficiaryReport
     End Function
 
 #End Region
-
 #Region "🆕 ინვოისის მართვის საჯარო მეთოდები"
 
     ''' <summary>
