@@ -384,11 +384,16 @@ Public Class UC_TherapistReport
     End Function
 
     ''' <summary>
-    ''' ივენთების მიბმა ყველა საჭირო კონტროლზე
+    ''' 🔧 ივენთების გაუმჯობესებული მიბმა (ორმაგი მიბმის თავიდან აცილება)
     ''' </summary>
     Private Sub BindEvents()
         Try
             Debug.WriteLine("UC_TherapistReport: ივენთების მიბმა იწყება")
+
+            ' 🔧 ძველი ივენთების წაშლა (თუ არსებობს)
+            RemoveHandler DgvSessions.CellClick, AddressOf OnDataGridViewCellClick
+            RemoveHandler DgvSessions.CellValueChanged, AddressOf OnCheckBoxChanged
+            RemoveHandler DgvSessions.CurrentCellDirtyStateChanged, AddressOf OnCurrentCellDirtyStateChanged
 
             ' ფილტრების ივენთები
             AddHandler filterManager.FilterChanged, AddressOf OnFilterChanged
@@ -400,6 +405,7 @@ Public Class UC_TherapistReport
 
             ' თერაპევტის ComboBox ივენთი
             If CBPer IsNot Nothing Then
+                RemoveHandler CBPer.SelectedIndexChanged, AddressOf OnTherapistChanged
                 AddHandler CBPer.SelectedIndexChanged, AddressOf OnTherapistChanged
                 Debug.WriteLine("UC_TherapistReport: თერაპევტის ComboBox (CBPer) ივენთი მიბმულია")
             Else
@@ -411,6 +417,7 @@ Public Class UC_TherapistReport
             Dim cbFunding As ComboBox = FindComboBoxRecursive(Me, "CBDaf")
 
             If cbTherapyType IsNot Nothing Then
+                RemoveHandler cbTherapyType.SelectedIndexChanged, AddressOf OnTherapyTypeChanged
                 AddHandler cbTherapyType.SelectedIndexChanged, AddressOf OnTherapyTypeChanged
                 Debug.WriteLine("UC_TherapistReport: თერაპიის ComboBox (CBTer) ნაპოვნია და ივენთი მიბმულია")
             Else
@@ -418,6 +425,7 @@ Public Class UC_TherapistReport
             End If
 
             If cbFunding IsNot Nothing Then
+                RemoveHandler cbFunding.SelectedIndexChanged, AddressOf OnFundingChanged
                 AddHandler cbFunding.SelectedIndexChanged, AddressOf OnFundingChanged
                 Debug.WriteLine("UC_TherapistReport: დაფინანსების ComboBox (CBDaf) ნაპოვნია და ივენთი მიბმულია")
             Else
@@ -433,10 +441,63 @@ Public Class UC_TherapistReport
     End Sub
 
     ''' <summary>
-    ''' CurrentCellDirtyStateChanged ივენთი - CheckBox-ის მყისიერი რეაგირებისთვის
+    ''' 🔧 DataGridView-ის კონფიგურაციის გაუმჯობესება (ორმაგი კლიკების თავიდან აცილება)
+    ''' </summary>
+    Private Sub ConfigureDataGridViewBehavior()
+        Try
+            Debug.WriteLine("UC_TherapistReport: DataGridView ქცევის კონფიგურაცია")
+
+            If DgvSessions Is Nothing Then Return
+
+            With DgvSessions
+                ' CheckBox-ების ქცევის გაუმჯობესება
+                .EditMode = DataGridViewEditMode.EditOnEnter
+                .AllowUserToAddRows = False
+                .AllowUserToDeleteRows = False
+                .ReadOnly = False ' CheckBox-ების რედაქტირებისთვის
+
+                ' სელექციის რეჟიმი
+                .SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                .MultiSelect = True
+
+                ' ორმაგი კლიკის გამორთვა
+                .StandardTab = True
+                .TabStop = True
+
+                ' CheckBox სვეტის სპეციალური კონფიგურაცია
+                If .Columns.Contains("IncludeInReport") Then
+                    .Columns("IncludeInReport").ReadOnly = False
+                    .Columns("IncludeInReport").SortMode = DataGridViewColumnSortMode.NotSortable
+                End If
+
+                ' რედაქტირების ღილაკის კონფიგურაცია
+                If .Columns.Contains("Edit") Then
+                    .Columns("Edit").ReadOnly = True
+                    .Columns("Edit").SortMode = DataGridViewColumnSortMode.NotSortable
+                End If
+            End With
+
+            Debug.WriteLine("UC_TherapistReport: DataGridView ქცევა კონფიგურირებულია")
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_TherapistReport: ConfigureDataGridViewBehavior შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 გაუმჯობესებული CurrentCellDirtyStateChanged ივენთი
     ''' </summary>
     Private Sub OnCurrentCellDirtyStateChanged(sender As Object, e As EventArgs)
+        Static lastDirtyTime As DateTime = DateTime.MinValue
+
         Try
+            ' 🔧 ზედმეტი გამოძახებების თავიდან აცილება
+            Dim currentTime As DateTime = DateTime.Now
+            If currentTime.Subtract(lastDirtyTime).TotalMilliseconds < 100 Then
+                Return
+            End If
+            lastDirtyTime = currentTime
+
             ' თუ CheckBox სვეტში ვართ და უჯრა "ღია" არის
             If DgvSessions.IsCurrentCellDirty AndAlso
                DgvSessions.CurrentCell IsNot Nothing AndAlso
@@ -444,7 +505,7 @@ Public Class UC_TherapistReport
 
                 ' მყისიერად კომიტი - CheckBox-ის ცვლილების დაფიქსირება
                 DgvSessions.CommitEdit(DataGridViewDataErrorContexts.Commit)
-                Debug.WriteLine("UC_TherapistReport: CheckBox ცვლილება კომიტირებულია")
+                Debug.WriteLine("UC_TherapistReport: CheckBox ცვლილება კომიტირებულია (DirtyState)")
             End If
 
         Catch ex As Exception
@@ -1094,12 +1155,27 @@ Public Class UC_TherapistReport
     End Sub
 
     ''' <summary>
-    ''' CheckBox-ის შეცვლის ივენთი
+    ''' 🔧 გაუმჯობესებული CheckBox-ის შეცვლის ივენთი (მხოლოდ რეალური ცვლილებებისთვის)
     ''' </summary>
     Private Sub OnCheckBoxChanged(sender As Object, e As DataGridViewCellEventArgs)
+        Static lastChangeTime As DateTime = DateTime.MinValue
+        Static lastChangeRow As Integer = -1
+
         Try
             If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 AndAlso
               DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInReport" Then
+
+                ' 🔧 ორმაგი ცვლილების თავიდან აცილება
+                Dim currentTime As DateTime = DateTime.Now
+                Dim timeDifference = currentTime.Subtract(lastChangeTime).TotalMilliseconds
+
+                If timeDifference < 200 AndAlso lastChangeRow = e.RowIndex Then
+                    Debug.WriteLine($"UC_TherapistReport: ორმაგი ცვლილების იგნორირება - მწკრივი {e.RowIndex}")
+                    Return
+                End If
+
+                lastChangeTime = currentTime
+                lastChangeRow = e.RowIndex
 
                 ' CheckBox-ის მნიშვნელობის მიღება
                 Dim isIncluded As Boolean = False
@@ -1113,9 +1189,9 @@ Public Class UC_TherapistReport
                     End If
                 End If
 
-                Debug.WriteLine($"UC_TherapistReport: CheckBox შეიცვალა - მწკრივი {e.RowIndex}, ახალი მნიშვნელობა: {isIncluded}")
+                Debug.WriteLine($"UC_TherapistReport: CheckBox ცვლილება (CellValueChanged) - მწკრივი {e.RowIndex}, მნიშვნელობა: {isIncluded}")
 
-                ' მწკრივის ვიზუალური სტილის განახლება
+                ' ვიზუალური სტილის განახლება
                 UpdateRowVisualStyle(e.RowIndex, isIncluded)
 
                 ' რეპორტის ჯამების განახლება
@@ -1128,28 +1204,59 @@ Public Class UC_TherapistReport
     End Sub
 
     ''' <summary>
-    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი
+    ''' 🔧 გაუმჯობესებული DataGridView-ის უჯრაზე დაჭერის ივენთი (ორმაგი დაჭერის თავიდან აცილება)
     ''' </summary>
     Private Sub OnDataGridViewCellClick(sender As Object, e As DataGridViewCellEventArgs)
+        Static lastClickTime As DateTime = DateTime.MinValue
+        Static lastClickRow As Integer = -1
+        Static lastClickColumn As Integer = -1
+
         Try
             If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
+
+            ' 🔧 ორმაგი დაჭერის თავიდან აცილება
+            Dim currentTime As DateTime = DateTime.Now
+            Dim timeDifference = currentTime.Subtract(lastClickTime).TotalMilliseconds
+
+            ' თუ იგივე უჯრაზე 300ms-ში დაიჭირა, იგნორირება
+            If timeDifference < 300 AndAlso lastClickRow = e.RowIndex AndAlso lastClickColumn = e.ColumnIndex Then
+                Debug.WriteLine($"UC_TherapistReport: ორმაგი კლიკის იგნორირება - მწკრივი {e.RowIndex}, სვეტი {e.ColumnIndex}")
+                Return
+            End If
+
+            ' ახალი კლიკის პარამეტრების შენახვა
+            lastClickTime = currentTime
+            lastClickRow = e.RowIndex
+            lastClickColumn = e.ColumnIndex
 
             ' CheckBox სვეტზე დაჭერა
             If DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInReport" Then
                 Debug.WriteLine($"UC_TherapistReport: CheckBox სვეტზე დაჭერა - მწკრივი {e.RowIndex}")
 
-                ' CheckBox-ის მნიშვნელობის ჩვენება/დამალვა მყისიერად
-                Try
-                    DgvSessions.BeginEdit(True)
-                Catch
-                    ' თუ რედაქტირება ვერ დაიწყო, გაგრძელება
-                End Try
+                ' CheckBox-ის მნიშვნელობის ინვერსია
+                Dim currentValue As Boolean = False
+                If DgvSessions.Rows(e.RowIndex).Cells("IncludeInReport").Value IsNot Nothing Then
+                    Boolean.TryParse(DgvSessions.Rows(e.RowIndex).Cells("IncludeInReport").Value.ToString(), currentValue)
+                End If
 
+                ' ახალი მნიშვნელობის დაყენება
+                Dim newValue As Boolean = Not currentValue
+                DgvSessions.Rows(e.RowIndex).Cells("IncludeInReport").Value = newValue
+
+                ' ვიზუალური სტილის განახლება
+                UpdateRowVisualStyle(e.RowIndex, newValue)
+
+                ' რეპორტის ჯამების განახლება
+                UpdateReportTotals()
+
+                Debug.WriteLine($"UC_TherapistReport: CheckBox შეიცვალა - {currentValue} → {newValue}")
                 Return
             End If
 
             ' რედაქტირების ღილაკზე დაჭერა
             If DgvSessions.Columns(e.ColumnIndex).Name = "Edit" Then
+                Debug.WriteLine($"UC_TherapistReport: რედაქტირების ღილაკზე დაჭერა - მწკრივი {e.RowIndex}")
+
                 Dim sessionId As Integer = 0
                 If DgvSessions.Rows(e.RowIndex).Tag IsNot Nothing Then
                     Integer.TryParse(DgvSessions.Rows(e.RowIndex).Tag.ToString(), sessionId)
@@ -1174,6 +1281,8 @@ Public Class UC_TherapistReport
                         MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
                                       MessageBoxButtons.OK, MessageBoxIcon.Error)
                     End Try
+                Else
+                    Debug.WriteLine($"UC_TherapistReport: ⚠️ სესიის ID ვერ მოიძებნა მწკრივი {e.RowIndex}-სთვის")
                 End If
             End If
 
