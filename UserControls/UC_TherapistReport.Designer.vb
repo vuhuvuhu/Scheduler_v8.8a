@@ -178,7 +178,7 @@ Partial Class UC_TherapistReport
         Me.pnlFilter.Controls.Add(Me.Label2)
         Me.pnlFilter.Location = New System.Drawing.Point(3, 3)
         Me.pnlFilter.Name = "pnlFilter"
-        Me.pnlFilter.Size = New System.Drawing.Size(1310, 79)
+        Me.pnlFilter.Size = New System.Drawing.Size(1324, 79)
         Me.pnlFilter.TabIndex = 59
         '
         'BtnToExcel
@@ -187,7 +187,7 @@ Partial Class UC_TherapistReport
         Me.BtnToExcel.BackgroundImage = CType(resources.GetObject("BtnToExcel.BackgroundImage"), System.Drawing.Image)
         Me.BtnToExcel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnToExcel.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnToExcel.Location = New System.Drawing.Point(1032, 4)
+        Me.BtnToExcel.Location = New System.Drawing.Point(1046, 4)
         Me.BtnToExcel.Name = "BtnToExcel"
         Me.BtnToExcel.Size = New System.Drawing.Size(50, 50)
         Me.BtnToExcel.TabIndex = 71
@@ -199,7 +199,7 @@ Partial Class UC_TherapistReport
         Me.btnToPDF.BackgroundImage = CType(resources.GetObject("btnToPDF.BackgroundImage"), System.Drawing.Image)
         Me.btnToPDF.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.btnToPDF.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.btnToPDF.Location = New System.Drawing.Point(1088, 4)
+        Me.btnToPDF.Location = New System.Drawing.Point(1102, 4)
         Me.btnToPDF.Name = "btnToPDF"
         Me.btnToPDF.Size = New System.Drawing.Size(50, 50)
         Me.btnToPDF.TabIndex = 70
@@ -211,7 +211,7 @@ Partial Class UC_TherapistReport
         Me.btbPrint.BackgroundImage = CType(resources.GetObject("btbPrint.BackgroundImage"), System.Drawing.Image)
         Me.btbPrint.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.btbPrint.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.btbPrint.Location = New System.Drawing.Point(1144, 4)
+        Me.btbPrint.Location = New System.Drawing.Point(1158, 4)
         Me.btbPrint.Name = "btbPrint"
         Me.btbPrint.Size = New System.Drawing.Size(50, 50)
         Me.btbPrint.TabIndex = 69
@@ -283,7 +283,7 @@ Partial Class UC_TherapistReport
         Me.BtnAddSchedule.BackgroundImage = CType(resources.GetObject("BtnAddSchedule.BackgroundImage"), System.Drawing.Image)
         Me.BtnAddSchedule.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnAddSchedule.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnAddSchedule.Location = New System.Drawing.Point(1200, 4)
+        Me.BtnAddSchedule.Location = New System.Drawing.Point(1214, 4)
         Me.BtnAddSchedule.Name = "BtnAddSchedule"
         Me.BtnAddSchedule.Size = New System.Drawing.Size(50, 50)
         Me.BtnAddSchedule.TabIndex = 64
@@ -319,7 +319,7 @@ Partial Class UC_TherapistReport
         Me.BtnRef.BackgroundImage = CType(resources.GetObject("BtnRef.BackgroundImage"), System.Drawing.Image)
         Me.BtnRef.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch
         Me.BtnRef.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.BtnRef.Location = New System.Drawing.Point(1256, 4)
+        Me.BtnRef.Location = New System.Drawing.Point(1270, 4)
         Me.BtnRef.Name = "BtnRef"
         Me.BtnRef.Size = New System.Drawing.Size(50, 50)
         Me.BtnRef.TabIndex = 65
@@ -483,7 +483,7 @@ Partial Class UC_TherapistReport
         Me.GBSumFin.Controls.Add(Me.cbgs)
         Me.GBSumFin.Controls.Add(Me.cbga)
         Me.GBSumFin.Controls.Add(Me.cbs)
-        Me.GBSumFin.Location = New System.Drawing.Point(969, 311)
+        Me.GBSumFin.Location = New System.Drawing.Point(980, 309)
         Me.GBSumFin.Name = "GBSumFin"
         Me.GBSumFin.Size = New System.Drawing.Size(347, 278)
         Me.GBSumFin.TabIndex = 112
@@ -999,7 +999,7 @@ Partial Class UC_TherapistReport
         Me.GBSumInf.Controls.Add(Me.Label11)
         Me.GBSumInf.Controls.Add(Me.Label10)
         Me.GBSumInf.Controls.Add(Me.Label1)
-        Me.GBSumInf.Location = New System.Drawing.Point(969, 88)
+        Me.GBSumInf.Location = New System.Drawing.Point(983, 86)
         Me.GBSumInf.Name = "GBSumInf"
         Me.GBSumInf.Size = New System.Drawing.Size(344, 217)
         Me.GBSumInf.TabIndex = 111
@@ -1583,7 +1583,7 @@ Partial Class UC_TherapistReport
         Me.DgvSessions.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
         Me.DgvSessions.Location = New System.Drawing.Point(3, 86)
         Me.DgvSessions.Name = "DgvSessions"
-        Me.DgvSessions.Size = New System.Drawing.Size(960, 668)
+        Me.DgvSessions.Size = New System.Drawing.Size(977, 668)
         Me.DgvSessions.TabIndex = 113
         '
         'UC_TherapistReport
@@ -1595,7 +1595,7 @@ Partial Class UC_TherapistReport
         Me.Controls.Add(Me.GBSumInf)
         Me.Controls.Add(Me.pnlFilter)
         Me.Name = "UC_TherapistReport"
-        Me.Size = New System.Drawing.Size(1381, 757)
+        Me.Size = New System.Drawing.Size(1330, 757)
         Me.pnlFilter.ResumeLayout(False)
         Me.pnlFilter.PerformLayout()
         Me.GBSumFin.ResumeLayout(False)
