@@ -214,8 +214,8 @@ Public Class UC_BeneficiaryReport
     End Sub
 
 
-    ''' <summary>
-    ''' ბენეფიციარის სვეტების კონფიგურაცია (CheckBox-ის გაუმჯობესებული მართვით)
+    '' <summary>
+    ''' 🔧 ბენეფიციარის სვეტების კონფიგურაცია (გაუმჯობესებული CheckBox მართვით)
     ''' </summary>
     Private Sub ConfigureBeneficiaryColumns()
         Try
@@ -245,6 +245,8 @@ Public Class UC_BeneficiaryReport
                 includeColumn.FalseValue = False
                 includeColumn.IndeterminateValue = False
                 includeColumn.ThreeState = False
+                ' 🔧 ReadOnly = False - მომხმარებლის რედაქტირების უფლება
+                includeColumn.ReadOnly = False
                 .Add(includeColumn)
 
                 ' რედაქტირების ღილაკი
@@ -257,15 +259,24 @@ Public Class UC_BeneficiaryReport
                 .Add(editBtn)
             End With
 
-            ' DataGridView-ის ზოგადი პარამეტრები CheckBox-ისთვის
-            DgvSessions.EditMode = DataGridViewEditMode.EditOnEnter
-            DgvSessions.AllowUserToAddRows = False
-            DgvSessions.AllowUserToDeleteRows = False
+            ' 🔧 DataGridView-ის ზოგადი პარამეტრები CheckBox-ისთვის
+            With DgvSessions
+                ' ზოგადი პარამეტრები
+                .EditMode = DataGridViewEditMode.EditOnEnter
+                .AllowUserToAddRows = False
+                .AllowUserToDeleteRows = False
+                .SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                .MultiSelect = True
+
+                ' 🔧 CheckBox-ის სპეციალური პარამეტრები
+                .StandardTab = True
+                .CausesValidation = False
+            End With
 
             ' სვეტების სიგანეების დაყენება
             SetBeneficiaryColumnWidths()
 
-            Debug.WriteLine("UC_BeneficiaryReport: ბენეფიციარის სვეტები კონფიგურირებულია")
+            Debug.WriteLine("UC_BeneficiaryReport: ბენეფიციარის სვეტები კონფიგურირებულია (🔧 გაუმჯობესებული CheckBox)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: ConfigureBeneficiaryColumns შეცდომა: {ex.Message}")
@@ -433,17 +444,19 @@ Public Class UC_BeneficiaryReport
     End Function
 
     ''' <summary>
-    ''' ივენთების მიბმა (CheckBox-ის გაუმჯობესებული მართვით)
+    ''' ივენთების მიბმა (🔧 შესწორებული ორმაგი დაჭერის თავიდან აცილებით)
     ''' </summary>
     Private Sub BindEvents()
         Try
             ' ფილტრების ივენთები
             AddHandler filterManager.FilterChanged, AddressOf OnFilterChanged
 
-            ' 🔧 DataGridView-ის ივენთები - CheckBox-ის სწორი მართვისთვის
+            ' 🔧 DataGridView-ის ივენთები - მხოლოდ CellClick გამოვიყენოთ
             AddHandler DgvSessions.CellClick, AddressOf OnDataGridViewCellClick
+
+            ' 🔧 მოვაცილოთ CheckBox-ის ორმაგი ივენთები
+            ' დავტოვოთ მხოლოდ CellValueChanged CheckBox-ის ცვლილებისთვის
             AddHandler DgvSessions.CellValueChanged, AddressOf OnCheckBoxChanged
-            AddHandler DgvSessions.CurrentCellDirtyStateChanged, AddressOf OnCurrentCellDirtyStateChanged
 
             ' ბენეფიციარის ComboBox-ების ივენთები
             AddHandler CBBeneName.SelectedIndexChanged, AddressOf OnBeneficiaryNameChanged
@@ -468,7 +481,7 @@ Public Class UC_BeneficiaryReport
             AddHandler RBRaport.CheckedChanged, AddressOf OnReportModeChanged
             AddHandler CBDaf.SelectedIndexChanged, AddressOf OnFundingChanged
 
-            Debug.WriteLine("UC_BeneficiaryReport: ყველა ივენთი მიბმულია")
+            Debug.WriteLine("UC_BeneficiaryReport: ყველა ივენთი მიბმულია (🔧 შესწორებული ორმაგი დაჭერისგან)")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: BindEvents შეცდომა: {ex.Message}")
@@ -901,7 +914,7 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში (CheckBox-ის გაუმჯობესებული ინიციალიზაცია)
+    ''' 🔧 ბენეფიციარის სესიების ჩატვირთვა DataGridView-ში (გაუმჯობესებული CheckBox ინიციალიზაცია)
     ''' </summary>
     Private Sub LoadBeneficiarySessionsToGrid()
         Try
@@ -921,25 +934,9 @@ Public Class UC_BeneficiaryReport
             For i As Integer = 0 To currentBeneficiaryData.Count - 1
                 Dim session = currentBeneficiaryData(i)
 
-                ' თერაპევტის ფილტრაცია
-                If Not String.IsNullOrEmpty(selectedTherapist) AndAlso selectedTherapist <> "ყველა" Then
-                    If Not session.TherapistName.Trim().Equals(selectedTherapist, StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    End If
-                End If
-
-                ' თერაპიის ფილტრაცია
-                If Not String.IsNullOrEmpty(selectedTherapyType) AndAlso selectedTherapyType <> "ყველა" Then
-                    If Not session.TherapyType.Trim().Equals(selectedTherapyType, StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    End If
-                End If
-
-                ' დაფინანსების ფილტრაცია (მხოლოდ ინვოისის რეჟიმში)
-                If RBInvoice.Checked AndAlso Not String.IsNullOrEmpty(selectedFunding) Then
-                    If Not session.Funding.Trim().Equals(selectedFunding, StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    End If
+                ' ფილტრაცია
+                If Not PassesFilters(session, selectedTherapist, selectedTherapyType, selectedFunding) Then
+                    Continue For
                 End If
 
                 ' მწკრივის მონაცემები
@@ -959,19 +956,14 @@ Public Class UC_BeneficiaryReport
                 ' მწკრივის დამატება
                 Dim addedRowIndex = DgvSessions.Rows.Add(rowData)
 
-                ' სესიის ID-ის შენახვა მწკრივში
+                ' 🔧 სესიის ID-ის შენახვა მწკრივში
                 DgvSessions.Rows(addedRowIndex).Tag = session.Id
 
-                ' 🔧 CheckBox-ის მნიშვნელობის ექსპლიციტური დაყენება
+                ' 🔧 CheckBox-ის ექსპლიციტური ინიციალიზაცია
                 DgvSessions.Rows(addedRowIndex).Cells("IncludeInInvoice").Value = True
 
                 ' მწკრივის ფერის დაყენება სტატუსის მიხედვით
-                Try
-                    Dim statusColor = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
-                    DgvSessions.Rows(addedRowIndex).DefaultCellStyle.BackColor = statusColor
-                Catch
-                    ' სტატუსის ფერის შეცდომის შემთხვევაში
-                End Try
+                ApplySessionStatusColor(addedRowIndex, session)
             Next
 
             ' ინვოისის ჯამების განახლება
@@ -981,6 +973,54 @@ Public Class UC_BeneficiaryReport
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: LoadBeneficiarySessionsToGrid შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 სესიის ფილტრაციის შემოწმება
+    ''' </summary>
+    Private Function PassesFilters(session As SessionModel, selectedTherapist As String, selectedTherapyType As String, selectedFunding As String) As Boolean
+        Try
+            ' თერაპევტის ფილტრაცია
+            If Not String.IsNullOrEmpty(selectedTherapist) AndAlso selectedTherapist <> "ყველა" Then
+                If Not session.TherapistName.Trim().Equals(selectedTherapist, StringComparison.OrdinalIgnoreCase) Then
+                    Return False
+                End If
+            End If
+
+            ' თერაპიის ფილტრაცია
+            If Not String.IsNullOrEmpty(selectedTherapyType) AndAlso selectedTherapyType <> "ყველა" Then
+                If Not session.TherapyType.Trim().Equals(selectedTherapyType, StringComparison.OrdinalIgnoreCase) Then
+                    Return False
+                End If
+            End If
+
+            ' დაფინანსების ფილტრაცია (მხოლოდ ინვოისის რეჟიმში)
+            If RBInvoice.Checked AndAlso Not String.IsNullOrEmpty(selectedFunding) Then
+                If Not session.Funding.Trim().Equals(selectedFunding, StringComparison.OrdinalIgnoreCase) Then
+                    Return False
+                End If
+            End If
+
+            Return True
+
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' 🔧 სესიის სტატუსის ფერის გამოყენება
+    ''' </summary>
+    Private Sub ApplySessionStatusColor(rowIndex As Integer, session As SessionModel)
+        Try
+            If rowIndex < 0 OrElse rowIndex >= DgvSessions.Rows.Count Then Return
+
+            Dim statusColor = SessionStatusColors.GetStatusColor(session.Status, session.DateTime)
+            DgvSessions.Rows(rowIndex).DefaultCellStyle.BackColor = statusColor
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ApplySessionStatusColor შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -1304,32 +1344,28 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' CheckBox-ის შეცვლის ივენთი (გაუმჯობესებული ვერსია)
+    ''' 🔧 CheckBox-ის ცვლილების ივენთი (მხოლოდ პროგრამული ცვლილებებისთვის)
     ''' </summary>
     Private Sub OnCheckBoxChanged(sender As Object, e As DataGridViewCellEventArgs)
         Try
+            ' 🔧 ეს ივენთი გააქტიურდება მხოლოდ პროგრამული ცვლილებისას
+            ' მომხმარებლის კლიკი უკვე ToggleCheckBoxValue-ში ხდება
+
             If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 AndAlso
               DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInInvoice" Then
 
-                ' CheckBox-ის მნიშვნელობის მიღება
+                Debug.WriteLine($"UC_BeneficiaryReport: CheckBox პროგრამული ცვლილება - მწკრივი {e.RowIndex}")
+
+                ' მხოლოდ ვიზუალური განახლება (ღირებულება უკვე შეცვლილია)
                 Dim isIncluded As Boolean = False
                 Dim cellValue = DgvSessions.Rows(e.RowIndex).Cells("IncludeInInvoice").Value
 
                 If cellValue IsNot Nothing Then
-                    If TypeOf cellValue Is Boolean Then
-                        isIncluded = DirectCast(cellValue, Boolean)
-                    Else
-                        Boolean.TryParse(cellValue.ToString(), isIncluded)
-                    End If
+                    Boolean.TryParse(cellValue.ToString(), isIncluded)
                 End If
 
-                Debug.WriteLine($"UC_BeneficiaryReport: CheckBox შეიცვალა - მწკრივი {e.RowIndex}, ახალი მნიშვნელობა: {isIncluded}")
-
-                ' მწკრივის ვიზუალური სტილის განახლება
+                ' ვიზუალური სტილის განახლება
                 UpdateRowVisualStyle(e.RowIndex, isIncluded)
-
-                ' ინვოისის ჯამების განახლება
-                UpdateInvoiceTotals()
             End If
 
         Catch ex As Exception
@@ -1338,57 +1374,104 @@ Public Class UC_BeneficiaryReport
     End Sub
 
     ''' <summary>
-    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი (გაუმჯობესებული)
+    ''' 🔧 შესწორებული DataGridView უჯრაზე დაჭერის ივენთი
+    ''' თავიდან ავცილოთ ორმაგი დაჭერის პრობლემა
     ''' </summary>
     Private Sub OnDataGridViewCellClick(sender As Object, e As DataGridViewCellEventArgs)
         Try
             If e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
 
-            ' CheckBox სვეტზე დაჭერა
+            Debug.WriteLine($"UC_BeneficiaryReport: უჯრაზე დაჭერა - მწკრივი {e.RowIndex}, სვეტი {e.ColumnIndex} ({DgvSessions.Columns(e.ColumnIndex).Name})")
+
+            ' 🔧 CheckBox სვეტზე დაჭერა - გავამარტივოთ ლოგიკა
             If DgvSessions.Columns(e.ColumnIndex).Name = "IncludeInInvoice" Then
                 Debug.WriteLine($"UC_BeneficiaryReport: CheckBox სვეტზე დაჭერა - მწკრივი {e.RowIndex}")
 
-                ' CheckBox-ის მნიშვნელობის ჩვენება/დამალვა მყისიერად
-                Try
-                    DgvSessions.BeginEdit(True)
-                Catch
-                    ' თუ რედაქტირება ვერ დაიწყო, გაგრძელება
-                End Try
-
+                ' 🔧 მარტივი CheckBox მნიშვნელობის შებრუნება
+                ToggleCheckBoxValue(e.RowIndex)
                 Return
             End If
 
             ' რედაქტირების ღილაკზე დაჭერა
             If DgvSessions.Columns(e.ColumnIndex).Name = "Edit" Then
-                Dim sessionId As Integer = 0
-                If DgvSessions.Rows(e.RowIndex).Tag IsNot Nothing Then
-                    Integer.TryParse(DgvSessions.Rows(e.RowIndex).Tag.ToString(), sessionId)
-                End If
-
-                If sessionId > 0 Then
-                    Debug.WriteLine($"UC_BeneficiaryReport: რედაქტირება - სესია ID={sessionId}")
-
-                    Try
-                        Using editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_BeneficiaryReport")
-                            Dim result As DialogResult = editForm.ShowDialog()
-
-                            If result = DialogResult.OK Then
-                                RefreshData()
-                                MessageBox.Show($"სესია ID={sessionId} წარმატებით განახლდა", "წარმატება",
-                                             MessageBoxButtons.OK, MessageBoxIcon.Information)
-                            End If
-                        End Using
-
-                    Catch formEx As Exception
-                        Debug.WriteLine($"UC_BeneficiaryReport: რედაქტირების ფორმის შეცდომა: {formEx.Message}")
-                        MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
-                                      MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    End Try
-                End If
+                HandleEditButtonClick(e.RowIndex)
+                Return
             End If
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: OnDataGridViewCellClick შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 მარტივი CheckBox მნიშვნელობის შებრუნება
+    ''' </summary>
+    ''' <param name="rowIndex">მწკრივის ინდექსი</param>
+    Private Sub ToggleCheckBoxValue(rowIndex As Integer)
+        Try
+            If rowIndex < 0 OrElse rowIndex >= DgvSessions.Rows.Count Then Return
+
+            Dim row As DataGridViewRow = DgvSessions.Rows(rowIndex)
+
+            ' მიმდინარე მნიშვნელობის მიღება
+            Dim currentValue As Boolean = True
+            If row.Cells("IncludeInInvoice").Value IsNot Nothing Then
+                Boolean.TryParse(row.Cells("IncludeInInvoice").Value.ToString(), currentValue)
+            End If
+
+            ' მნიშვნელობის შებრუნება
+            Dim newValue As Boolean = Not currentValue
+            row.Cells("IncludeInInvoice").Value = newValue
+
+            Debug.WriteLine($"UC_BeneficiaryReport: CheckBox შეიცვალა - მწკრივი {rowIndex}, ძველი: {currentValue}, ახალი: {newValue}")
+
+            ' მწკრივის ვიზუალური სტილის განახლება
+            UpdateRowVisualStyle(rowIndex, newValue)
+
+            ' ინვოისის ჯამების განახლება
+            UpdateInvoiceTotals()
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: ToggleCheckBoxValue შეცდომა: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' 🔧 რედაქტირების ღილაკის დაჭერის მართვა
+    ''' </summary>
+    ''' <param name="rowIndex">მწკრივის ინდექსი</param>
+    Private Sub HandleEditButtonClick(rowIndex As Integer)
+        Try
+            If rowIndex < 0 OrElse rowIndex >= DgvSessions.Rows.Count Then Return
+
+            Dim sessionId As Integer = 0
+            If DgvSessions.Rows(rowIndex).Tag IsNot Nothing Then
+                Integer.TryParse(DgvSessions.Rows(rowIndex).Tag.ToString(), sessionId)
+            End If
+
+            If sessionId > 0 Then
+                Debug.WriteLine($"UC_BeneficiaryReport: რედაქტირება - სესია ID={sessionId}")
+
+                Try
+                    Using editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_BeneficiaryReport")
+                        Dim result As DialogResult = editForm.ShowDialog()
+
+                        If result = DialogResult.OK Then
+                            RefreshData()
+                            MessageBox.Show($"სესია ID={sessionId} წარმატებით განახლდა", "წარმატება",
+                                         MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        End If
+                    End Using
+
+                Catch formEx As Exception
+                    Debug.WriteLine($"UC_BeneficiaryReport: რედაქტირების ფორმის შეცდომა: {formEx.Message}")
+                    MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
+                                  MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+
+        Catch ex As Exception
+            Debug.WriteLine($"UC_BeneficiaryReport: HandleEditButtonClick შეცდომა: {ex.Message}")
         End Try
     End Sub
 
@@ -1718,7 +1801,6 @@ Public Class UC_BeneficiaryReport
             For Each row As DataGridViewRow In DgvSessions.Rows
                 Try
                     row.Cells("IncludeInInvoice").Value = True
-                    ' ვიზუალური სტილის განახლება
                     UpdateRowVisualStyle(row.Index, True)
                 Catch
                     Continue For
@@ -1744,7 +1826,6 @@ Public Class UC_BeneficiaryReport
             For Each row As DataGridViewRow In DgvSessions.Rows
                 Try
                     row.Cells("IncludeInInvoice").Value = False
-                    ' ვიზუალური სტილის განახლება
                     UpdateRowVisualStyle(row.Index, False)
                 Catch
                     Continue For
@@ -2241,10 +2322,11 @@ Public Class UC_BeneficiaryReport
     End Function
 
 #End Region
+
 #Region "🆕 ინვოისის მართვის საჯარო მეთოდები"
 
     ''' <summary>
-    ''' 🆕 მონიშნული სესიების ინვოისში ჩართვა/ამოღება
+    ''' 🆕 ყველა მონიშნული სესიის ინვოისში ჩართვა/ამოღება
     ''' </summary>
     Public Sub ToggleSelectedSessionsInvoice()
         Try
@@ -2256,22 +2338,28 @@ Public Class UC_BeneficiaryReport
                 Return
             End If
 
+            ' პირველი მონიშნული მწკრივის მნიშვნელობის საფუძველზე ყველას დაყენება
+            Dim firstRow As DataGridViewRow = DgvSessions.SelectedRows(0)
+            Dim targetValue As Boolean = True
+
+            If firstRow.Cells("IncludeInInvoice").Value IsNot Nothing Then
+                Boolean.TryParse(firstRow.Cells("IncludeInInvoice").Value.ToString(), targetValue)
+                targetValue = Not targetValue ' შებრუნება
+            End If
+
+            ' ყველა მონიშნული მწკრივისთვის იგივე მნიშვნელობის დაყენება
             For Each row As DataGridViewRow In DgvSessions.SelectedRows
                 Try
-                    ' მიმდინარე მდგომარეობის შებრუნება
-                    Dim currentValue As Boolean = True
-                    If row.Cells("IncludeInInvoice").Value IsNot Nothing Then
-                        Boolean.TryParse(row.Cells("IncludeInInvoice").Value.ToString(), currentValue)
-                    End If
-
-                    row.Cells("IncludeInInvoice").Value = Not currentValue
-
+                    row.Cells("IncludeInInvoice").Value = targetValue
+                    UpdateRowVisualStyle(row.Index, targetValue)
                 Catch
                     Continue For
                 End Try
             Next
 
             UpdateInvoiceTotals()
+
+            Debug.WriteLine($"UC_BeneficiaryReport: {DgvSessions.SelectedRows.Count} მონიშნული სესია დაყენდა: {targetValue}")
 
         Catch ex As Exception
             Debug.WriteLine($"UC_BeneficiaryReport: ToggleSelectedSessionsInvoice შეცდომა: {ex.Message}")
