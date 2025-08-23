@@ -1,15 +1,9 @@
-﻿' ===========================================
-' 📄 Services/SheetDataService.vb
-' -------------------------------------------
-' გაუმჯობესებული ვერსია, რომელიც უზრუნველყოფს მონაცემების ქეშირებას
-' და API-ს გამოძახებების რაოდენობის კონტროლს
-' ===========================================
-Imports Google.Apis.Auth.OAuth2
+﻿Imports Google.Apis.Auth.OAuth2
 Imports Google.Apis.Sheets.v4
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
+Imports System.Threading.Tasks
 
 Namespace Scheduler_v8_8a.Services
-
     ''' <summary>
     ''' SheetDataService - მონაცემთა წაკითხვა და ჩაწერა სერვის აკაუნტის გამოყენებით
     ''' API-ს მოთხოვნების რაოდენობის შეზღუდვით და მონაცემების ქეშირებით
@@ -145,7 +139,7 @@ Namespace Scheduler_v8_8a.Services
             cachedBirthdays = Nothing
             cachedBirthdaysTime = DateTime.MinValue
 
-            Debug.WriteLine("SheetDataService: მთლიანი ქეში გაუქმებულია (ხელით განახლება)")
+            Debug.WriteLine("SheetDataService: მთლიანი ქესი გაუქმებულია (ხელით განახლება)")
         End Sub
 
         ''' <summary>
@@ -221,7 +215,7 @@ Namespace Scheduler_v8_8a.Services
                 cachedTodaySessions = sessions
                 cachedSessionsTime = DateTime.Now
 
-                Debug.WriteLine($"GetTodaySessions: ნაპოვნია {sessions.Count} დღევანდელი სესია")
+                Debug.WriteLine($"GetTodaySessions: ნაპოვნი {sessions.Count} დღევანდელი სესია")
                 Return sessions
 
             Catch ex As Exception
@@ -294,7 +288,7 @@ Namespace Scheduler_v8_8a.Services
                                     birthday.PersonSurname = lastName
                                     birthday.BirthDate = birthDate
 
-                                    ' დავამატოთ ყველა დაბადების თარიღი, ქეშისთვის
+                                    ' დავამატოთ ყველა დაბადების თარიხი, ქეშისთვის
                                     birthdays.Add(birthday)
 
                                     Debug.WriteLine($"GetUpcomingBirthdays: დაემატა დაბადების დღე - ID={birthday.Id}, " &
@@ -302,7 +296,7 @@ Namespace Scheduler_v8_8a.Services
                                              $"თარიღი={birthday.BirthDate:dd.MM.yyyy}, დარჩა={birthday.DaysUntilBirthday} დღე")
 
                                 Else
-                                    Debug.WriteLine($"GetUpcomingBirthdays: ვერ მოხერხდა დაბადების თარიღის '{birthDateStr}' პარსინგი")
+                                    Debug.WriteLine($"GetUpcomingBirthdays: ვერ მოხერხდა დაბადების თარიხის '{birthDateStr}' პარსინგი")
                                 End If
                             End If
                         Catch ex As Exception
@@ -445,6 +439,35 @@ Namespace Scheduler_v8_8a.Services
             End If
 
             Return allSessions
+        End Function
+
+        ' --- Async wrappers ---
+        Public Function GetDataAsync(range As String) As Task(Of IList(Of IList(Of Object))) Implements IDataService.GetDataAsync
+            Return Task.Run(Function() CType(GetData(range), IList(Of IList(Of Object))))
+        End Function
+        Public Function GetUserRoleAsync(email As String) As Task(Of String) Implements IDataService.GetUserRoleAsync
+            Return Task.Run(Function() GetUserRole(email))
+        End Function
+        Public Function GetOrCreateUserRoleAsync(email As String) As Task(Of String) Implements IDataService.GetOrCreateUserRoleAsync
+            Return Task.Run(Function() GetOrCreateUserRole(email))
+        End Function
+        Public Function GetTodaySessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetTodaySessionsAsync
+            Return Task.Run(Function() GetTodaySessions())
+        End Function
+        Public Function GetUpcomingBirthdaysAsync(Optional days As Integer = 7) As Task(Of List(Of BirthdayModel)) Implements IDataService.GetUpcomingBirthdaysAsync
+            Return Task.Run(Function() GetUpcomingBirthdays(days))
+        End Function
+        Public Function GetPendingSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetPendingSessionsAsync
+            Return Task.Run(Function() GetPendingSessions())
+        End Function
+        Public Function GetActiveTasksAsync() As Task(Of List(Of TaskModel)) Implements IDataService.GetActiveTasksAsync
+            Return Task.Run(Function() GetActiveTasks())
+        End Function
+        Public Function GetOverdueSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetOverdueSessionsAsync
+            Return Task.Run(Function() GetOverdueSessions())
+        End Function
+        Public Function GetAllSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetAllSessionsAsync
+            Return Task.Run(Function() GetAllSessions())
         End Function
     End Class
 End Namespace

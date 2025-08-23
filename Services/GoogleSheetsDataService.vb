@@ -13,6 +13,7 @@ Imports Newtonsoft.Json
 Imports Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports System.Text
+Imports System.Threading.Tasks
 
 Namespace Scheduler_v8_8a.Services
 
@@ -112,7 +113,7 @@ Namespace Scheduler_v8_8a.Services
         End Sub
 
         ''' <summary>
-        ''' მონაცემთა შენახვა ქეშში
+        ''' მონაცემების შენახვა ქეშში
         ''' </summary>
         Private Sub CacheData(key As String, data As Object)
             cache(key) = New CacheEntry With {
@@ -131,7 +132,7 @@ Namespace Scheduler_v8_8a.Services
                     result = CType(cache(key).Data, T)
                     Return True
                 Catch
-                    ' თუ ტიპების გარდაქმნა ვერ ხერხდება, ვაბრუნებთ false
+                    ' თუ ტიპების გარდაქმნა ვერ ხდება, ვაბრუნებთ false
                     Return False
                 End Try
             End If
@@ -291,7 +292,7 @@ Namespace Scheduler_v8_8a.Services
         ''' IDataService.GetUpcomingBirthdays იმპლემენტაცია
         ''' </summary>
         Public Function GetUpcomingBirthdays(Optional days As Integer = 7) As List(Of BirthdayModel) Implements IDataService.GetUpcomingBirthdays
-            ' შევამოწმოთ ქეში
+            ' შევამოწმოთ ქეშში
             Dim cacheKey = $"upcoming_birthdays_{days}"
             Dim cachedBirthdays As List(Of BirthdayModel) = Nothing
 
@@ -352,7 +353,7 @@ Namespace Scheduler_v8_8a.Services
                             ' შევქმნათ SessionModel
                             Dim session = SessionModel.FromSheetRow(row)
 
-                            ' შევამოწმოთ არის თუ არა სესია მოლოდინში
+                            ' შევამოწმოთ არის თუ არა სესია מოლოდინში
                             ' მოლოდინში არის სესია, რომელიც ჯერ არ არის შესრულებული და დაგეგმილია მომავალში
                             If session.Status = "დაგეგმილი" AndAlso session.DateTime > DateTime.Now Then
                                 sessions.Add(session)
@@ -544,6 +545,35 @@ Namespace Scheduler_v8_8a.Services
                 Debug.WriteLine($"GetTodaySessions: შეცდომა - {ex.Message}")
                 Return New List(Of Models.SessionModel)()
             End Try
+        End Function
+
+        ' --- Async wrappers ---
+        Public Function GetDataAsync(range As String) As Task(Of IList(Of IList(Of Object))) Implements IDataService.GetDataAsync
+            Return Task.Run(Function() GetData(range))
+        End Function
+        Public Function GetUserRoleAsync(email As String) As Task(Of String) Implements IDataService.GetUserRoleAsync
+            Return Task.Run(Function() GetUserRole(email))
+        End Function
+        Public Function GetOrCreateUserRoleAsync(email As String) As Task(Of String) Implements IDataService.GetOrCreateUserRoleAsync
+            Return Task.Run(Function() GetOrCreateUserRole(email))
+        End Function
+        Public Function GetTodaySessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetTodaySessionsAsync
+            Return Task.Run(Function() GetTodaySessions())
+        End Function
+        Public Function GetUpcomingBirthdaysAsync(Optional days As Integer = 7) As Task(Of List(Of BirthdayModel)) Implements IDataService.GetUpcomingBirthdaysAsync
+            Return Task.Run(Function() GetUpcomingBirthdays(days))
+        End Function
+        Public Function GetPendingSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetPendingSessionsAsync
+            Return Task.Run(Function() GetPendingSessions())
+        End Function
+        Public Function GetActiveTasksAsync() As Task(Of List(Of TaskModel)) Implements IDataService.GetActiveTasksAsync
+            Return Task.Run(Function() GetActiveTasks())
+        End Function
+        Public Function GetOverdueSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetOverdueSessionsAsync
+            Return Task.Run(Function() GetOverdueSessions())
+        End Function
+        Public Function GetAllSessionsAsync() As Task(Of List(Of SessionModel)) Implements IDataService.GetAllSessionsAsync
+            Return Task.Run(Function() GetAllSessions())
         End Function
     End Class
 End Namespace

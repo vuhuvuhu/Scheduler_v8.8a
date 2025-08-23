@@ -46,11 +46,13 @@ Namespace Scheduler_v8_8a.Services
         ''' <param name="email">მომხმარებლის ელ.ფოსტა</param>
         ''' <returns>მომხმარებლის როლი როგორც სტრიქონი</returns>
         Function GetOrCreateUserRole(email As String) As String
+
         ''' <summary>
         ''' წამოიღებს ყველა სესიას დღევანდელი სტატისტიკისთვის
         ''' </summary>
         ''' <returns>სესიების მოდელების სია</returns>
         Function GetTodaySessions() As List(Of Models.SessionModel)
+
         ''' <summary>
         ''' წამოიღებს მოახლოებულ დაბადების დღეებს (X დღეში)
         ''' </summary>
@@ -65,20 +67,82 @@ Namespace Scheduler_v8_8a.Services
         Function GetPendingSessions() As List(Of Models.SessionModel)
 
         ''' <summary>
-        ''' წამოიღებს აქტიურ დავალებებს
+        ''' წამოიღებს აქტიური დავალებებს
         ''' </summary>
         ''' <returns>დავალებების მოდელების სია</returns>
         Function GetActiveTasks() As List(Of Models.TaskModel)
+
         ''' <summary>
         ''' წამოიღებს ვადაგადაცილებულ სესიებს (სტატუსით "დაგეგმილი", მაგრამ თარიღი უკვე გასულია)
         ''' </summary>
         ''' <returns>ვადაგადაცილებული სესიების მოდელების სია</returns>
         Function GetOverdueSessions() As List(Of Models.SessionModel)
+
         ''' <summary>
         ''' წამოიღებს ყველა სესიას
         ''' </summary>
         ''' <returns>სესიების მოდელების სია</returns>
         Function GetAllSessions() As List(Of Models.SessionModel)
+
+        ' --- Async ვერსიები ---
+
+        ''' <summary>
+        ''' წაიკითხავს მონაცემებს მითითებული დიაპაზონიდან ასინქრონულად
+        ''' </summary>
+        ''' <param name="range">მონაცემთა დიაპაზონი (მაგ: "DB-Users!B2:C10")</param>
+        ''' <returns>მონაცემთა მასივი (მწკრივები და სვეტები)</returns>
+        Function GetDataAsync(range As String) As Task(Of IList(Of IList(Of Object)))
+
+        ''' <summary>
+        ''' წაიკითხავს მომხმარებლის როლს ელ.ფოსტის მიხედვით ასინქრონულად
+        ''' </summary>
+        ''' <param name="email">მომხმარებლის ელ.ფოსტა</param>
+        ''' <returns>მომხმარებლის როლი როგორც სტრიქონი</returns>
+        Function GetUserRoleAsync(email As String) As Task(Of String)
+
+        ''' <summary>
+        ''' მიიღებს ან შექმნის მომხმარებლის ჩანაწერს ასინქრონულად
+        ''' </summary>
+        ''' <param name="email">მომხმარებლის ელ.ფოსტა</param>
+        ''' <returns>მომხმარებლის როლი როგორც სტრიქონი</returns>
+        Function GetOrCreateUserRoleAsync(email As String) As Task(Of String)
+
+        ''' <summary>
+        ''' წამოიღებს ყველა სესიას დღევანდელი სტატისტიკისთვის ასინქრონულად
+        ''' </summary>
+        ''' <returns>სესიების მოდელების სია</returns>
+        Function GetTodaySessionsAsync() As Task(Of List(Of Models.SessionModel))
+
+        ''' <summary>
+        ''' წამოიღებს მოახლოებულ დაბადების დღეებს (X დღეში) ასინქრონულად
+        ''' </summary>
+        ''' <param name="days">რამდენი დღის განმავლობაში (ნაგულისხმები: 7)</param>
+        ''' <returns>დაბადების დღეების მოდელების სია</returns>
+        Function GetUpcomingBirthdaysAsync(Optional days As Integer = 7) As Task(Of List(Of Models.BirthdayModel))
+
+        ''' <summary>
+        ''' წამოიღებს მოლოდინში არსებულ სესიებს ასინქრონულად
+        ''' </summary>
+        ''' <returns>სესიების მოდელების სია</returns>
+        Function GetPendingSessionsAsync() As Task(Of List(Of Models.SessionModel))
+
+        ''' <summary>
+        ''' წამოიღებს აქტიური დავალებებს ასინქრონულად
+        ''' </summary>
+        ''' <returns>დავალებების მოდელების სია</returns>
+        Function GetActiveTasksAsync() As Task(Of List(Of Models.TaskModel))
+
+        ''' <summary>
+        ''' წამოიღებს ვადაგადაცილებულ სესიებს (სტატუსით "დაგეგმილი", მაგრამ თარიღი უკვე გასულია) ასინქრონულ
+        ''' </summary>
+        ''' <returns>ვადაგადაცილებული სესიების მოდელების სია</returns>
+        Function GetOverdueSessionsAsync() As Task(Of List(Of Models.SessionModel))
+
+        ''' <summary>
+        ''' წამოიღებს ყველა სესიას ასინქრონულად
+        ''' </summary>
+        ''' <returns>სესიების მოდელების სია</returns>
+        Function GetAllSessionsAsync() As Task(Of List(Of Models.SessionModel))
     End Interface
 
 End Namespace

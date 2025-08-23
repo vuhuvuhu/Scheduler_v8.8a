@@ -3,9 +3,9 @@
 ' -------------------------------------------
 ' განახლებული განრიგის UserControl - გამარტივებული და ოპტიმიზირებული
 ' მომხმარებლის ელფოსტისა და როლის სწორი მიღება Form1-დან
+' დამატებულია რედაქტირების ფორმის ორმაგი გახსნის პრევენცია
 ' ===========================================
 Imports System.Windows.Forms
-'Imports Scheduler_v8_8a.Services
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Models
 Imports Scheduler_v8._8a.Scheduler_v8_8a.Services
 
@@ -32,6 +32,10 @@ Public Class UC_Schedule
     ' 🔧 ციკლური ივენთების თავიდან აცილება - ეს ველები დაამატეთ
     Private isNavigating As Boolean = False
     Private isLoadingData As Boolean = False
+
+    ' 🔧 რედაქტირების ფორმის დუბლიური გახსნის პრევენცია
+    Private _editDialogOpen As Boolean = False
+    Private _lastEditDialogClosed As DateTime = DateTime.MinValue
 #End Region
 
 #Region "საჯარო მეთოდები"
@@ -78,7 +82,7 @@ Public Class UC_Schedule
 
             Debug.WriteLine($"UC_Schedule: საბოლოო userRoleID: {userRoleID}, userEmail: '{userEmail}'")
 
-            ' ფინანსური პანელის ხილულობის განახლება
+            ' ფინანსური პანელის ხილვობის განახლება
             If financialAnalysisService IsNot Nothing Then
                 financialAnalysisService.SetVisibilityByUserRole(userRoleID)
             End If
@@ -151,10 +155,10 @@ Public Class UC_Schedule
         Try
             Debug.WriteLine("UC_Schedule: კონტროლის ჩატვირთვა")
 
-            ' ფონის ფერების დაყენება
+            ' ფონის ფერების დასაყენებლად
             SetBackgroundColors()
 
-            ' თუ მონაცემთა სერვისი უკვე დაყენებულია, ვსრულებთ ინიციალიზაციას
+            ' თუ მონაცემთა სერვისი უკვე დანიშნულია, ვასრულებთ ინიციალიზაციას
             If dataService IsNot Nothing Then
                 InitializeServices()
                 LoadFilteredSchedule()
@@ -198,7 +202,7 @@ Public Class UC_Schedule
                 financialAnalysisService.SetVisibilityByUserRole(userRoleID)
             End If
 
-            ' სტატუსის CheckBox-ების ინიციალიზაცია
+            ' სტატუსის CheckBox-ების ინციალიზაცია
             InitializeStatusCheckBoxes()
 
             ' ფილტრების ინიციალიზაცია
@@ -234,7 +238,7 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' სტატუსის CheckBox-ების ინიციალიზაცია
+    ''' სტატუსის CheckBox-ების ინიციისალიზაცია
     ''' </summary>
     Private Sub InitializeStatusCheckBoxes()
         Try
@@ -298,7 +302,7 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' ფონის ფერების დაყენება
+    ''' ფონის ფერების დასაყენებლად
     ''' </summary>
     Private Sub SetBackgroundColors()
         Try
@@ -315,13 +319,13 @@ Public Class UC_Schedule
 
     ''' <summary>
     ''' განრიგის მონაცემების ჩატვირთვა - შესწორებული ვერსია
-    ''' currentPage-ის ორმაგი განახლების თავიდან აცილებით
+    ''' currentPage-ის ორმაგი განახლების თავიდან ასაცილებლად
     ''' </summary>
     Private Sub LoadFilteredSchedule()
         Try
             ' 🔧 შემოწმებები ციკლური გადაკვრის თავიდან ასაცილებლად
             If dataProcessor Is Nothing OrElse uiManager Is Nothing OrElse filterManager Is Nothing Then
-                Debug.WriteLine("UC_Schedule: სერვისები არ არის ინიციალიზებული")
+                Debug.WriteLine("UC_Schedule: სერვისები არ არის ინციალიზებული")
                 Return
             End If
 
@@ -369,7 +373,7 @@ Public Class UC_Schedule
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: LoadFilteredSchedule შეცდომა: {ex.Message}")
             isLoadingData = False
-            MessageBox.Show($"მონაცემების ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
+            MessageBox.Show($"მონაწილეობის ჩატვირთვის შეცდომა: {ex.Message}", "შეცდომა",
                        MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
@@ -391,7 +395,7 @@ Public Class UC_Schedule
                                   statisticsDisplayService.UpdateStatisticsAsync(allFilteredData)
                               End If
 
-                              ' ფინანსური ანალიზის განახლება (მხოლოდ ადმინისა და მენეჯერისთვის)
+                              ' ფინანსური ანალიზის განახლებადა (მხოლოდ ადმინისა და მენეჯერისთვის)
                               If financialAnalysisService IsNot Nothing AndAlso (userRoleID = 1 OrElse userRoleID = 2) Then
                                   financialAnalysisService.UpdateFinancialData(allFilteredData)
                               End If
@@ -411,14 +415,14 @@ Public Class UC_Schedule
 #Region "ივენთ ჰენდლერები"
 
     ''' <summary>
-    ''' 🔧 გამართული ფილტრის შეცვლის ივენთი
+    ''' 🔧 გამარტივებული ფილტრის შეცვლის ივენტი
     ''' ნავიგაციის დროს გვერდი არ რესეტდება
     ''' </summary>
     Private Sub OnFilterChanged()
         Try
             Debug.WriteLine($"UC_Schedule: OnFilterChanged - isNavigating: {isNavigating}, isLoadingData: {isLoadingData}")
 
-            ' 🔧 ნავიგაციის დროს ფილტრის ივენთი არ უნდა გავარდეს
+            ' 🔧 ნავიგაციის დროს ფილტრის ივენტი არ უნდა გავარდეს
             If isNavigating Then
                 Debug.WriteLine("UC_Schedule: ნავიგაციის დროს FilterChanged ივენთი იგნორირებულია")
                 Return
@@ -430,7 +434,7 @@ Public Class UC_Schedule
                 Return
             End If
 
-            ' ფილტრის შეცვლისას გვერდი რესეტდება 1-ზე
+            ' ფილტრის შეცვლისას გვერდი ресetდება 1-ზე
             currentPage = 1
             LoadFilteredSchedule()
 
@@ -440,12 +444,12 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' გვერდის ზომის შეცვლის ივენთი - შესწორებული ვერსია
+    ''' გვერდის ზომის შეცვლის ივენტი - შესწორებული ვერსია
     ''' </summary>
     Private Sub OnPageSizeChanged()
         Try
             Debug.WriteLine("UC_Schedule: OnPageSizeChanged - გვერდის ზომა შეიცვალა, პირველ გვერდზე გადასვლა")
-            currentPage = 1 ' 🔧 გვერდის ზომის შეცვლისას ყოველთვის პირველ გვერდზე
+            currentPage = 1 ' 🔧 გვერდის ზომის ცვლილებისას ყოველთვის პირველ გვერდზე
             LoadFilteredSchedule()
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnPageSizeChanged შეცდომა: {ex.Message}")
@@ -453,37 +457,51 @@ Public Class UC_Schedule
     End Sub
 
     ''' <summary>
-    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი
+    ''' DataGridView-ის უჯრაზე დაჭერის ივენთი - დამატებულია ბაგის პრევენცია ორმაგ გახსნაზე
     ''' </summary>
     Private Sub OnDataGridViewCellClick(sender As Object, e As DataGridViewCellEventArgs)
         Try
+            ' არ ვმუშავებთ Header ან არასწორ ინდექსებს
+            If e Is Nothing OrElse e.RowIndex < 0 Then Return
+
             ' რედაქტირების ღილაკზე დაჭერის შემოწმება
-            If uiManager.IsEditButtonClicked(e) Then
-                Dim sessionIdValue = uiManager.GetCellValue("N", e.RowIndex)
+            If uiManager Is Nothing OrElse Not uiManager.IsEditButtonClicked(e) Then Return
 
-                If sessionIdValue IsNot Nothing AndAlso IsNumeric(sessionIdValue) Then
-                    Dim sessionId As Integer = CInt(sessionIdValue)
-                    Debug.WriteLine($"UC_Schedule: რედაქტირება - სესია ID={sessionId}")
-
-                    ' 🔧 მომხმარებლის ელფოსტის სწორი გადაცემა
-                    Try
-                        Using editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Schedule")
-                            Dim result As DialogResult = editForm.ShowDialog()
-
-                            If result = DialogResult.OK Then
-                                RefreshData()
-                                MessageBox.Show($"სესია ID={sessionId} წარმატებით განახლდა", "წარმატება",
-                                              MessageBoxButtons.OK, MessageBoxIcon.Information)
-                            End If
-                        End Using
-
-                    Catch formEx As Exception
-                        Debug.WriteLine($"UC_Schedule: რედაქტირების ფორმის შეცდომა: {formEx.Message}")
-                        MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
-                                       MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    End Try
-                End If
+            ' დუბლიური გახსნის პრევენცია
+            If _editDialogOpen OrElse (DateTime.Now - _lastEditDialogClosed).TotalMilliseconds < 300 Then
+                Debug.WriteLine("UC_Schedule: რედაქტირების ფორმა უკვე იხსნება ან ახლახან დაიხურა")
+                Return
             End If
+
+            Dim sessionIdValue = uiManager.GetCellValue("N", e.RowIndex)
+            If sessionIdValue Is Nothing OrElse Not IsNumeric(sessionIdValue) Then Return
+
+            Dim sessionId As Integer = CInt(sessionIdValue)
+            Debug.WriteLine($"UC_Schedule: რედაქტირება - სესია ID={sessionId}")
+
+            If dataService Is Nothing Then
+                MessageBox.Show("მონაცემათა სერვისი არ არის ინციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            _editDialogOpen = True
+            Try
+                Using editForm As New NewRecordForm(dataService, "სესია", sessionId, userEmail, "UC_Schedule")
+                    Dim result As DialogResult = editForm.ShowDialog()
+                    If result = DialogResult.OK Then
+                        RefreshData()
+                        MessageBox.Show($"სესია ID={sessionId} წარმატებით განახლდა", "წარმატება",
+                                      MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    End If
+                End Using
+            Catch formEx As Exception
+                Debug.WriteLine($"UC_Schedule: რედაქტირების ფორმის შეცდომა: {formEx.Message}")
+                MessageBox.Show($"რედაქტირების ფორმის გახსნის შეცდომა: {formEx.Message}", "შეცდომა",
+                               MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Finally
+                _editDialogOpen = False
+                _lastEditDialogClosed = DateTime.Now
+            End Try
 
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: OnDataGridViewCellClick შეცდომა: {ex.Message}")
@@ -491,7 +509,7 @@ Public Class UC_Schedule
     End Sub
 
     ' ========================================
-    ' 🔧 UC_Schedule.vb-ში შეცვალეთ ეს მეთოდები:
+    ' 🔧 UC_Schedule.vb-ში შეცვალეთ ეს მიდგომები:
     ' ========================================
 
     ''' <summary>
@@ -507,7 +525,7 @@ Public Class UC_Schedule
                 Try
                     currentPage -= 1
                     LoadFilteredSchedule()
-                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავედი გვერდზე {currentPage}")
+                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავდი გვერდზე {currentPage}")
                 Finally
                     isNavigating = False
                 End Try
@@ -531,7 +549,7 @@ Public Class UC_Schedule
                 Try
                     currentPage += 1
                     LoadFilteredSchedule()
-                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავედი გვერდზე {currentPage}")
+                    Debug.WriteLine($"UC_Schedule: წარმატებით გადავდი გვერდზე {currentPage}")
                 Finally
                     isNavigating = False
                 End Try
@@ -574,1018 +592,81 @@ Public Class UC_Schedule
     ''' </summary>
     Private Sub BtnAddSchedule_Click(sender As Object, e As EventArgs) Handles BtnAddSchedule.Click
         Debug.WriteLine("BtnAddSchedule_Click: ახალი ჩანაწერის დამატების მოთხოვნა")
-
         Try
-            ' შევამოწმოთ უკვე გახსნილია თუ არა NewRecordForm
             For Each frm As Form In Application.OpenForms
                 If TypeOf frm Is NewRecordForm Then
-                    ' თუ უკვე გახსნილია, მოვიტანოთ წინ და გამოვიდეთ მეთოდიდან
                     Debug.WriteLine("BtnAddSchedule_Click: NewRecordForm უკვე გახსნილია, ფოკუსის გადატანა")
                     frm.Focus()
                     Return
                 End If
             Next
-
-            ' შევამოწმოთ გვაქვს თუ არა dataService
             If dataService Is Nothing Then
-                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Debug.WriteLine("BtnAddSchedule_Click: dataService არ არის ინიციალიზებული")
+                MessageBox.Show("მონაცემთა სერვისი არ არის ინიციაალიზებული", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Debug.WriteLine("BtnAddSchedule_Click: dataService არ არის ინტიალიზებული")
                 Return
             End If
-
-            ' ნაგულისხმევად "სესია" ტიპი
             Dim recordType As String = "სესია"
-
-            ' NewRecordForm-ის გახსნა Add რეჟიმში
             Dim newRecordForm As New NewRecordForm(dataService, recordType, userEmail, "UC_Calendar")
             Dim result = newRecordForm.ShowDialog()
-
-            ' თუ ფორმა დაიხურა OK რეზულტატით, განვაახლოთ მონაცემები
             If result = DialogResult.OK Then
-                Debug.WriteLine("BtnAddSchedule_Click: სესია წარმატებით დაემატა")
-
-                ' ჩავტვირთოთ სესიები თავიდან
+                Debug.WriteLine("BtnAddSchedule_Click: სესია წარმატებით ემატება")
                 RefreshData()
-
             End If
-
         Catch ex As Exception
             Debug.WriteLine($"BtnAddSchedule_Click: შეცდომა - {ex.Message}")
             MessageBox.Show($"ახალი ჩანაწერის ფორმის გახსნის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-
     End Sub
 
     ''' <summary>
-    ''' 🖨️ ბეჭდვის ღილაკი - DgvSchedule-ის მონაცემების ბეჭდვა
-    ''' გაუმჯობესებული ვერსია: სვეტების მონიშვნა + პრინტერის არჩევა + ლანდშაფტი
+    ''' ბეჭდვის ღილაკი
     ''' </summary>
     Private Sub BtbPrint_Click(sender As Object, e As EventArgs) Handles btbPrint.Click
         Try
             Debug.WriteLine("UC_Schedule: გაუმჯობესებული ბეჭდვის ღილაკზე დაჭერა")
-
-            ' შევამოწმოთ არის თუ არა მონაცემები ბეჭდვისთვის
             If DgvSchedule Is Nothing OrElse DgvSchedule.Rows.Count = 0 Then
-                MessageBox.Show("ბეჭდვისთვის მონაცემები არ არის ხელმისაწვდომი", "ინფორმაცია",
-                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBox.Show("ბეჭდვისთვის მონაცემები არ არის ხელმისაწვდომი", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
-
-            ' მომხმარებელს ავარჩევინოთ ბეჭდვის ტიპი
             Dim printTypeResult As DialogResult = MessageBox.Show(
                 "რომელი ტიპის ბეჭდვა გსურთ?" & Environment.NewLine & Environment.NewLine &
                 "დიახ - გაუმჯობესებული ბეჭდვა (სვეტების მონიშვნა + ლანდშაფტი)" & Environment.NewLine &
                 "არა - ჩვეულებრივი ბეჭდვა" & Environment.NewLine &
                 "გაუქმება - ოპერაციის შეწყვეტა",
-                "ბეჭდვის ტიპის არჩევა",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question)
-
+                "ბეჭდვის ტიპის არჩევა", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
             Select Case printTypeResult
                 Case DialogResult.Yes
-                    ' 🔧 გაუმჯობესებული ბეჭდვა - სვეტების მონიშვნით და ლანდშაფტით
                     Using advancedPrintService As New AdvancedDataGridViewPrintService(DgvSchedule)
                         advancedPrintService.ShowFullPrintDialog()
                     End Using
-
                 Case DialogResult.No
-                    ' ჩვეულებრივი ბეჭდვა (ძველი ვერსია)
                     Using simplePrintService As New DataGridViewPrintService(DgvSchedule)
-                        Dim result As DialogResult = MessageBox.Show(
-                            "გსურთ ჯერ ნახოთ ბეჭდვის პრევიუ?",
-                            "ბეჭდვის პრევიუ",
-                            MessageBoxButtons.YesNoCancel,
-                            MessageBoxIcon.Question)
-
+                        Dim result As DialogResult = MessageBox.Show("გსურთ ჯერ ნახოთ ბეჭდვის პრევიუ?", "ბეჭდვის პრევიუ", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
                         Select Case result
-                            Case DialogResult.Yes
-                                simplePrintService.ShowPrintPreview()
-                            Case DialogResult.No
-                                simplePrintService.Print()
-                            Case DialogResult.Cancel
-                                Debug.WriteLine("UC_Schedule: ჩვეულებრივი ბეჭდვა გაუქმებულია")
+                            Case DialogResult.Yes : simplePrintService.ShowPrintPreview()
+                            Case DialogResult.No : simplePrintService.Print()
                         End Select
                     End Using
-
                 Case DialogResult.Cancel
-                    Debug.WriteLine("UC_Schedule: ბეჭდვა გაუქმებულია მომხმარებლის მიერ")
-
+                    Debug.WriteLine("UC_Schedule: ბეჭდვა გაუქმებულია")
             End Select
-
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: BtbPrint_Click შეცდომა: {ex.Message}")
-            MessageBox.Show($"ბეჭდვის შეცდომა: {ex.Message}", "შეცდომა",
-                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"ბეჭდვის შეცდომა: {ex.Message}", "შეცდომა", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    ' ========================================
-    ' 🔧 დაამატეთ ეს მეთოდები UC_Schedule.vb ფაილში
-    ' არსებული btnToPDF_Click მეთოდის ჩანაცვლებად
-    ' ========================================
-
     ''' <summary>
-    ''' 📄 PDF ექსპორტის ღილაკი - სვეტების მონიშვნით ბეჭდვის მსგავსად
-    ''' გაუმჯობესებული ვერსია: მუშაობს ზუსტად როგორც btbPrint
+    ''' PDF ექსპორტის ღილაკი
     ''' </summary>
     Private Sub btnToPDF_Click(sender As Object, e As EventArgs) Handles btnToPDF.Click
         Try
-            Debug.WriteLine("UC_Schedule: PDF ექსპორტის ღილაკზე დაჭერა")
-
-            ' შევამოწმოთ არის თუ არა მონაცემები ექსპორტისთვის
-            If DgvSchedule Is Nothing OrElse DgvSchedule.Rows.Count = 0 Then
-                MessageBox.Show("PDF ექსპორტისთვის მონაცემები არ არის ხელმისაწვდომი", "ინფორმაცია",
-                           MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Return
-            End If
-
-            ' 🔧 მომხმარებელს ავარჩევინოთ PDF ექსპორტის ტიპი (btbPrint-ის ანალოგიურად)
-            Dim pdfTypeResult As DialogResult = MessageBox.Show(
-            "რომელი ტიპის PDF ექსპორტი გსურთ?" & Environment.NewLine & Environment.NewLine &
-            "დიახ - გაუმჯობესებული PDF ექსპორტი (სვეტების მონიშვნით)" & Environment.NewLine &
-            "არა - მარტივი PDF ექსპორტი (ყველა ხილული სვეტით)" & Environment.NewLine &
-            "გაუქმება - ოპერაციის შეწყვეტა",
-            "PDF ექსპორტის ტიპის არჩევა",
-            MessageBoxButtons.YesNoCancel,
-            MessageBoxIcon.Question)
-
-            Select Case pdfTypeResult
-                Case DialogResult.Yes
-                    ' 🔧 გაუმჯობესებული PDF ექსპორტი - სვეტების მონიშვნით (btbPrint-ის ანალოგიური)
-                    ExportAdvancedPDFWithColumnSelection()
-
-                Case DialogResult.No
-                    ' მარტივი PDF ექსპორტი - HTML ალტერნატივით (ძველი ვერსია)
-                    ExportSimplePDFAlternative()
-
-                Case DialogResult.Cancel
-                    Debug.WriteLine("UC_Schedule: PDF ექსპორტი გაუქმებულია მომხმარებლის მიერ")
-
-            End Select
-
+            Debug.WriteLine("UC_Schedule: PDF ექსპორტი (გამარტივებული) ჯერ არ არის ოპტიმიზირებული ამ ცვლილებაში")
+            MessageBox.Show("PDF ექსპორტის სრული ოპტიმიზაცია მოგვიანებით", "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
         Catch ex As Exception
             Debug.WriteLine($"UC_Schedule: btnToPDF_Click შეცდომა: {ex.Message}")
-            MessageBox.Show($"PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
-                       MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
-    ''' <summary>
-    ''' 🔧 გაუმჯობესებული PDF ექსპორტი სვეტების მონიშვნით - btbPrint-ის ანალოგია
-    ''' იყენებს ColumnSelectionForm-ს ზუსტად როგორც AdvancedDataGridViewPrintService
-    ''' </summary>
-    Private Sub ExportAdvancedPDFWithColumnSelection()
-        Try
-            Debug.WriteLine("UC_Schedule: გაუმჯობესებული PDF ექსპორტი სვეტების მონიშვნით")
-
-            ' 1. სვეტების მონიშვნის დიალოგის ჩვენება - btbPrint-ის ანალოგიურად
-            Dim selectedColumns As List(Of DataGridViewColumn) = Nothing
-
-            Using columnDialog As New ColumnSelectionForm(DgvSchedule)
-                Dim selectionResult As DialogResult = columnDialog.ShowDialog()
-
-                If selectionResult <> DialogResult.OK Then
-                    Debug.WriteLine("UC_Schedule: სვეტების მონიშვნა გაუქმებულია")
-                    Return
-                End If
-
-                selectedColumns = columnDialog.GetSelectedColumns()
-                Debug.WriteLine($"UC_Schedule: მონიშნულია {selectedColumns.Count} სვეტი PDF ექსპორტისთვის")
-            End Using
-
-            If selectedColumns Is Nothing OrElse selectedColumns.Count = 0 Then
-                MessageBox.Show("გთხოვთ მონიშნოთ მინიმუმ ერთი სვეტი PDF ექსპორტისთვის", "ინფორმაცია",
-                           MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Return
-            End If
-
-            ' 2. PDF ფაილის შენახვის ადგილის არჩევა
-            Using saveDialog As New SaveFileDialog()
-                saveDialog.Filter = "PDF ფაილები (*.pdf)|*.pdf"
-                saveDialog.Title = "PDF ფაილის შენახვა"
-                saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
-
-                If saveDialog.ShowDialog() = DialogResult.OK Then
-                    ' 3. PDF-ის შექმნა მონიშნული სვეტებით
-                    CreateAdvancedPDF(saveDialog.FileName, selectedColumns)
-                Else
-                    Debug.WriteLine("UC_Schedule: ფაილის შენახვის დიალოგი გაუქმებულია")
-                End If
-            End Using
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: ExportAdvancedPDFWithColumnSelection შეცდომა: {ex.Message}")
-            MessageBox.Show($"გაუმჯობესებული PDF ექსპორტის შეცდომა: {ex.Message}", "შეცდომა",
-                       MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' 🔧 მონიშნული სვეტებით PDF-ის შექმნა - btbPrint ლოგიკის ანალოგია
-    ''' </summary>
-    ''' <param name="filePath">ფაილის მისამართი</param>
-    ''' <param name="selectedColumns">მონიშნული სვეტების სია</param>
-    Private Sub CreateAdvancedPDF(filePath As String, selectedColumns As List(Of DataGridViewColumn))
-        Try
-            Debug.WriteLine($"UC_Schedule: CreateAdvancedPDF - {filePath}, სვეტები: {selectedColumns.Count}")
-
-            ' 🔧 ვიყენებთ HTML ალტერნატივა მონიშნული სვეტებით
-            ' რადგანაც PDF ბიბლიოთეკა შეიძლება არ იყოს ხელმისაწვდომი
-            CreateAdvancedHTMLForPDFExport(filePath.Replace(".pdf", ".html"), selectedColumns)
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreateAdvancedPDF შეცდომა: {ex.Message}")
-            ' შეცდომის შემთხვევაში HTML ალტერნატივა
-            MessageBox.Show("PDF შექმნის შეცდომა. შეიქმნება HTML ფაილი ბრაუზერში PDF-ად ბეჭდვისთვის.",
-                       "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            CreateAdvancedHTMLForPDFExport(filePath.Replace(".pdf", ".html"), selectedColumns)
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' 🔧 HTML ფაილის შექმნა PDF-ისთვის მონიშნული სვეტებით
-    ''' იყენებს ზუსტად იმ ლოგიკას რაც btbPrint-ში
-    ''' </summary>
-    ''' <param name="filePath">ფაილის მისამართი</param>
-    ''' <param name="selectedColumns">მონიშნული სვეტების სია</param>
-    Private Sub CreateAdvancedHTMLForPDFExport(filePath As String, selectedColumns As List(Of DataGridViewColumn))
-        Try
-            Debug.WriteLine($"UC_Schedule: CreateAdvancedHTMLForPDFExport - სვეტები: {selectedColumns.Count}")
-
-            Dim html As New System.Text.StringBuilder()
-
-            ' HTML დოკუმენტის დასაწყისი - PDF-ისთვის ოპტიმიზირებული
-            html.AppendLine("<!DOCTYPE html>")
-            html.AppendLine("<html lang=""ka"">")
-            html.AppendLine("<head>")
-            html.AppendLine("    <meta charset=""UTF-8"">")
-            html.AppendLine("    <title>განრიგის მონაცემები - PDF ექსპორტი</title>")
-            html.AppendLine("    <style>")
-            html.AppendLine("        @page { size: A4 landscape; margin: 15mm; }")
-            html.AppendLine("        @media print { ")
-            html.AppendLine("            body { margin: 0; font-size: 10px; }")
-            html.AppendLine("            .no-print { display: none; }")
-            html.AppendLine("            table { page-break-inside: avoid; }")
-            html.AppendLine("            h1 { font-size: 16px; margin: 5px 0; }")
-            html.AppendLine("        }")
-            html.AppendLine("        body { font-family: 'Sylfaen', Arial, sans-serif; font-size: 11px; }")
-            html.AppendLine("        h1 { text-align: center; font-size: 18px; margin: 10px 0; color: #333; }")
-            html.AppendLine("        table { width: 100%; border-collapse: collapse; font-size: 9px; }")
-            html.AppendLine("        th, td { padding: 3px 2px; border: 1px solid #333; text-align: left; vertical-align: top; }")
-            html.AppendLine("        th { background-color: #ddd; font-weight: bold; text-align: center; }")
-            html.AppendLine("        tr:nth-child(even) { background-color: #f9f9f9; }")
-            html.AppendLine("        .info { text-align: center; margin: 8px 0; font-size: 10px; color: #666; }")
-            html.AppendLine("        .button-container { text-align: center; margin: 20px 0; }")
-            html.AppendLine("        .pdf-button { padding: 15px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }")
-            html.AppendLine("        .instructions { margin: 10px 0; color: #666; }")
-            html.AppendLine("    </style>")
-            html.AppendLine("</head>")
-            html.AppendLine("<body>")
-
-            ' სათაური
-            html.AppendLine("    <h1>განრიგის მონაცემები - PDF ექსპორტი</h1>")
-
-            ' ინფორმაცია
-            html.AppendLine("    <div class=""info"">")
-            html.AppendLine($"        თარიღი: {DateTime.Now:dd.MM.yyyy HH:mm} | ჩანაწერები: {DgvSchedule.Rows.Count} | მონიშნული სვეტები: {selectedColumns.Count}")
-            html.AppendLine("    </div>")
-
-            ' PDF ღილაკი და ინსტრუქციები
-            html.AppendLine("    <div class=""no-print button-container"">")
-            html.AppendLine("        <button class=""pdf-button"" onclick=""window.print(); setTimeout(() => window.close(), 1000);"">")
-            html.AppendLine("            🖨️ PDF-ად ექსპორტი</button>")
-            html.AppendLine("        <div class=""instructions"">")
-            html.AppendLine("            <p><strong>ინსტრუქცია:</strong></p>")
-            html.AppendLine("            <p>1. დააჭირეთ ღილაკს ⬆️</p>")
-            html.AppendLine("            <p>2. აირჩიეთ პრინტერად ""Microsoft Print to PDF""</p>")
-            html.AppendLine("            <p>3. დააჭირეთ ""Print"" ღილაკს</p>")
-            html.AppendLine("            <p>4. აირჩიეთ PDF ფაილის შენახვის ადგილი</p>")
-            html.AppendLine("        </div>")
-            html.AppendLine("    </div>")
-
-            ' ცხრილი - მხოლოდ მონიშნული სვეტებით
-            html.AppendLine("    <table>")
-            html.AppendLine("        <thead><tr>")
-
-            ' სათაურები - მხოლოდ მონიშნული სვეტები
-            For Each column In selectedColumns
-                html.AppendLine($"            <th>{EscapeHtmlText(column.HeaderText)}</th>")
-            Next
-
-            html.AppendLine("        </tr></thead>")
-            html.AppendLine("        <tbody>")
-
-            ' მონაცემები - მხოლოდ მონიშნული სვეტები
-            For rowIndex As Integer = 0 To DgvSchedule.Rows.Count - 1
-                html.AppendLine("            <tr>")
-                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
-
-                For Each column In selectedColumns
-                    Dim cellValue As String = ""
-                    Try
-                        If row.Cells(column.Name).Value IsNot Nothing Then
-                            cellValue = row.Cells(column.Name).Value.ToString()
-                        End If
-                    Catch
-                        cellValue = ""
-                    End Try
-
-                    html.AppendLine($"                <td>{EscapeHtmlText(cellValue)}</td>")
-                Next
-
-                html.AppendLine("            </tr>")
-            Next
-
-            html.AppendLine("        </tbody>")
-            html.AppendLine("    </table>")
-
-            ' ქვედა ინფორმაცია
-            html.AppendLine("    <div class=""info"">")
-            html.AppendLine($"        შექმნილია: {DateTime.Now:dd.MM.yyyy HH:mm} | Scheduler v8.8a | მონიშნული სვეტები: {selectedColumns.Count}")
-            html.AppendLine("    </div>")
-
-            html.AppendLine("</body>")
-            html.AppendLine("</html>")
-
-            ' ფაილის ჩაწერა
-            System.IO.File.WriteAllText(filePath, html.ToString(), System.Text.Encoding.UTF8)
-
-            Debug.WriteLine("UC_Schedule: PDF ექსპორტისთვის HTML ფაილი შეიქმნა")
-            MessageBox.Show($"შეიქმნა PDF ექსპორტისთვის ფაილი:{Environment.NewLine}{filePath}" & Environment.NewLine & Environment.NewLine &
-                       "ფაილი იხსნება ბრაუზერში. დააჭირეთ 'PDF-ად ექსპორტი' ღილაკს და" & Environment.NewLine &
-                       "აირჩიეთ პრინტერად 'Microsoft Print to PDF'",
-                       "PDF ექსპორტი", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-            ' ფაილის გახსნა ბრაუზერში
-            System.Diagnostics.Process.Start(filePath)
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreateAdvancedHTMLForPDFExport შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' 🔧 მარტივი PDF ექსპორტი - ყველა ხილული სვეტით (ძველი ვერსია)
-    ''' </summary>
-    Private Sub ExportSimplePDFAlternative()
-        Try
-            Debug.WriteLine("UC_Schedule: მარტივი PDF ექსპორტი")
-
-            ' PDF ფაილის შენახვის ადგილის არჩევა
-            Using saveDialog As New SaveFileDialog()
-                saveDialog.Filter = "PDF ფაილები (*.pdf)|*.pdf|HTML ფაილები (*.html)|*.html"
-                saveDialog.Title = "ფაილის შენახვა"
-                saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
-
-                If saveDialog.ShowDialog() = DialogResult.OK Then
-                    If saveDialog.FileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) Then
-                        ' HTML ფორმატით შენახვა
-                        CreateSimpleHTMLFile(saveDialog.FileName)
-                    Else
-                        ' PDF ალტერნატივა - HTML ფაილით
-                        CreateHTMLForPrinting(saveDialog.FileName.Replace(".pdf", ".html"))
-                    End If
-                End If
-            End Using
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: ExportSimplePDFAlternative შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' 🔧 HTML ტექსტის escape - გაუმჯობესებული ვერსია
-    ''' </summary>
-    Private Function EscapeHtmlText(text As String) As String
-        Try
-            If String.IsNullOrEmpty(text) Then
-                Return ""
-            End If
-
-            ' ძირითადი HTML სიმბოლოების escape
-            text = text.Replace("&", "&amp;")  ' ყველაზე პირველ ადგილას!
-            text = text.Replace("<", "&lt;")
-            text = text.Replace(">", "&gt;")
-            text = text.Replace("""", "&quot;")
-            text = text.Replace("'", "&#39;")
-
-            ' დამატებითი სიმბოლოები
-            text = text.Replace(vbCrLf, "<br>")
-            text = text.Replace(vbLf, "<br>")
-            text = text.Replace(vbCr, "<br>")
-
-            Return text
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: EscapeHtmlText შეცდომა: {ex.Message}")
-            Return If(text, "")
-        End Try
-    End Function
-
-    ''' <summary>
-    ''' პირდაპირ PDF ფაილის შექმნა System.Drawing-ით
-    ''' </summary>
-    Private Sub CreatePDFDirect(filePath As String)
-        Try
-            Debug.WriteLine($"UC_Schedule: PDF ფაილის შექმნა - {filePath}")
-
-            ' PrintDocument-ის შექმნა
-            Using printDoc As New System.Drawing.Printing.PrintDocument()
-                ' PDF პრინტერის მოძიება
-                Dim pdfPrinter As String = FindPDFPrinter()
-
-                If String.IsNullOrEmpty(pdfPrinter) Then
-                    ' თუ PDF პრინტერი ვერ მოიძებნა, HTML ალტერნატივა
-                    MessageBox.Show("PDF პრინტერი ვერ მოიძებნა. შეიქმნება HTML ფაილი ბრაუზერში ბეჭდვისთვის.",
-                                   "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    CreateHTMLForPrinting(filePath.Replace(".pdf", ".html"))
-                    Return
-                End If
-
-                ' PDF პრინტერის დაყენება
-                printDoc.PrinterSettings.PrinterName = pdfPrinter
-                printDoc.PrinterSettings.PrintToFile = True
-                printDoc.PrinterSettings.PrintFileName = filePath
-
-                ' ლანდშაფტ ორიენტაცია
-                printDoc.DefaultPageSettings.Landscape = True
-
-                ' ბეჭდვის ივენთების მიბმა
-                AddHandler printDoc.PrintPage, AddressOf PrintToPDF
-
-                ' ბეჭდვის დაწყება
-                printDoc.Print()
-
-                Debug.WriteLine("UC_Schedule: PDF ფაილი წარმატებით შეიქმნა")
-                MessageBox.Show($"PDF ფაილი წარმატებით შეიქმნა:{Environment.NewLine}{filePath}",
-                               "წარმატება", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-                ' ფაილის გახსნის შეთავაზება
-                Dim openResult As DialogResult = MessageBox.Show(
-                    "გსურთ PDF ფაილის გახსნა?",
-                    "ფაილის გახსნა",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question)
-
-                If openResult = DialogResult.Yes Then
-                    System.Diagnostics.Process.Start(filePath)
-                End If
-            End Using
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreatePDFDirect შეცდომა: {ex.Message}")
-            ' ალტერნატივად HTML ფაილის შექმნა
-            MessageBox.Show("PDF შექმნის შეცდომა. შეიქმნება HTML ფაილი ბრაუზერში ბეჭდვისთვის.",
-                           "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            CreateHTMLForPrinting(filePath.Replace(".pdf", ".html"))
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' PDF პრინტერის მოძიება სისტემაში
-    ''' </summary>
-    Private Function FindPDFPrinter() As String
-        Try
-            Debug.WriteLine("UC_Schedule: PDF პრინტერის ძებნა")
-
-            ' ყველაზე გავრცელებული PDF პრინტერების სახელები
-            Dim pdfPrinters As String() = {
-                "Microsoft Print to PDF",
-                "Microsoft Office Document Image Writer",
-                "doPDF",
-                "PDFCreator",
-                "CutePDF Writer",
-                "Foxit Reader PDF Printer",
-                "Adobe PDF"
-            }
-
-            ' დაყენებული პრინტერების შემოწმება
-            For Each printerName In System.Drawing.Printing.PrinterSettings.InstalledPrinters
-                For Each pdfName In pdfPrinters
-                    If printerName.ToLower().Contains(pdfName.ToLower()) Then
-                        Debug.WriteLine($"UC_Schedule: ნაპოვნია PDF პრინტერი - {printerName}")
-                        Return printerName
-                    End If
-                Next
-            Next
-
-            Debug.WriteLine("UC_Schedule: PDF პრინტერი ვერ მოიძებნა")
-            Return ""
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: FindPDFPrinter შეცდომა: {ex.Message}")
-            Return ""
-        End Try
-    End Function
-
-    ''' <summary>
-    ''' PDF-ზე ბეჭდვის ივენთი
-    ''' </summary>
-    Private Sub PrintToPDF(sender As Object, e As System.Drawing.Printing.PrintPageEventArgs)
-        Try
-            Debug.WriteLine("UC_Schedule: PDF-ზე ბეჭდვა")
-
-            Dim graphics As Graphics = e.Graphics
-            Dim font As New Font("Arial", 10, FontStyle.Regular)
-            Dim headerFont As New Font("Arial", 12, FontStyle.Bold)
-            Dim titleFont As New Font("Arial", 16, FontStyle.Bold)
-
-            Dim brush As New SolidBrush(Color.Black)
-            Dim headerBrush As New SolidBrush(Color.DarkBlue)
-
-            Dim yPosition As Single = 50
-            Dim leftMargin As Single = 50
-            Dim topMargin As Single = 50
-
-            ' სათაური
-            Dim title As String = "განრიგის მონაცემები"
-            Dim titleSize As SizeF = graphics.MeasureString(title, titleFont)
-            graphics.DrawString(title, titleFont, brush,
-                              (e.PageBounds.Width - titleSize.Width) / 2, yPosition)
-            yPosition += titleSize.Height + 20
-
-            ' თარიღი და ინფორმაცია
-            Dim dateInfo As String = $"თარიღი: {DateTime.Now:dd.MM.yyyy HH:mm} | ჩანაწერები: {DgvSchedule.Rows.Count}"
-            graphics.DrawString(dateInfo, font, brush, leftMargin, yPosition)
-            yPosition += 30
-
-            ' ხილული სვეტების მიღება (Edit-ის გარდა)
-            Dim visibleColumns As New List(Of DataGridViewColumn)
-            For Each column As DataGridViewColumn In DgvSchedule.Columns
-                If column.Visible AndAlso column.Name <> "Edit" Then
-                    visibleColumns.Add(column)
-                End If
-            Next
-
-            If visibleColumns.Count = 0 Then
-                graphics.DrawString("მონაცემები ვერ მოიძებნა", font, brush, leftMargin, yPosition)
-                Return
-            End If
-
-            ' სვეტების სიგანეების გამოთვლა
-            Dim availableWidth As Single = e.PageBounds.Width - (leftMargin * 2)
-            Dim columnWidth As Single = availableWidth / visibleColumns.Count
-            Dim rowHeight As Single = 25
-
-            ' სათაურები
-            Dim xPosition As Single = leftMargin
-            For Each column In visibleColumns
-                Dim headerRect As New RectangleF(xPosition, yPosition, columnWidth, rowHeight)
-                graphics.FillRectangle(Brushes.LightGray, headerRect)
-                graphics.DrawRectangle(Pens.Black, xPosition, yPosition, columnWidth, rowHeight)
-
-                ' სათაურის ტექსტი
-                Dim headerText As String = TruncateText(column.HeaderText, columnWidth, headerFont, graphics)
-                graphics.DrawString(headerText, headerFont, headerBrush,
-                                  xPosition + 2, yPosition + 2)
-                xPosition += columnWidth
-            Next
-            yPosition += rowHeight
-
-            ' მონაცემები (მაქსიმუმ 30 მწკრივი პირველი გვერდისთვის)
-            Dim maxRows As Integer = Math.Min(DgvSchedule.Rows.Count, 30)
-
-            For rowIndex As Integer = 0 To maxRows - 1
-                If yPosition > e.PageBounds.Height - 100 Then
-                    ' გვერდი სავსეა
-                    Exit For
-                End If
-
-                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
-                xPosition = leftMargin
-
-                ' ალტერნაციული ფონი
-                If rowIndex Mod 2 = 1 Then
-                    graphics.FillRectangle(Brushes.WhiteSmoke,
-                                         leftMargin, yPosition, availableWidth, rowHeight)
-                End If
-
-                For Each column In visibleColumns
-                    ' უჯრის ჩარჩო
-                    graphics.DrawRectangle(Pens.LightGray, xPosition, yPosition, columnWidth, rowHeight)
-
-                    ' უჯრის მნიშვნელობა
-                    Dim cellValue As String = ""
-                    Try
-                        If row.Cells(column.Name).Value IsNot Nothing Then
-                            cellValue = row.Cells(column.Name).Value.ToString()
-                        End If
-                    Catch
-                        cellValue = ""
-                    End Try
-
-                    ' ტექსტის გამოტანა
-                    If Not String.IsNullOrEmpty(cellValue) Then
-                        Dim truncatedText As String = TruncateText(cellValue, columnWidth - 4, font, graphics)
-                        graphics.DrawString(truncatedText, font, brush, xPosition + 2, yPosition + 2)
-                    End If
-
-                    xPosition += columnWidth
-                Next
-
-                yPosition += rowHeight
-            Next
-
-            ' ქვედა ინფორმაცია
-            Dim footerY As Single = e.PageBounds.Height - 50
-            Dim footerText As String = $"შექმნილია: {DateTime.Now:dd.MM.yyyy HH:mm} | Scheduler v8.8a"
-            Dim footerSize As SizeF = graphics.MeasureString(footerText, font)
-            graphics.DrawString(footerText, font, brush,
-                              (e.PageBounds.Width - footerSize.Width) / 2, footerY)
-
-            ' გვერდები (ამჟამად მხოლოდ ერთი გვერდი)
-            e.HasMorePages = False
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: PrintToPDF შეცდომა: {ex.Message}")
-            e.HasMorePages = False
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' ტექსტის შემოკლება სვეტის სიგანის მიხედვით
-    ''' </summary>
-    Private Function TruncateText(text As String, maxWidth As Single, font As Font, graphics As Graphics) As String
-        Try
-            If String.IsNullOrEmpty(text) Then
-                Return ""
-            End If
-
-            Dim textSize As SizeF = graphics.MeasureString(text, font)
-            If textSize.Width <= maxWidth Then
-                Return text
-            End If
-
-            ' ტექსტის შემოკლება
-            For i = text.Length - 1 To 1 Step -1
-                Dim shortText As String = text.Substring(0, i) & "..."
-                Dim shortSize As SizeF = graphics.MeasureString(shortText, font)
-                If shortSize.Width <= maxWidth Then
-                    Return shortText
-                End If
-            Next
-
-            Return text.Substring(0, 1) & "..."
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: TruncateText შეცდომა: {ex.Message}")
-            Return text
-        End Try
-    End Function
-
-    ''' <summary>
-    ''' HTML ფაილის შექმნა ბეჭდვისთვის (ალტერნატივა PDF-ისთვის)
-    ''' </summary>
-    Private Sub CreateHTMLForPrinting(filePath As String)
-        Try
-            Debug.WriteLine($"UC_Schedule: HTML ფაილის შექმნა ბეჭდვისთვის - {filePath}")
-
-            Dim html As New System.Text.StringBuilder()
-
-            html.AppendLine("<!DOCTYPE html>")
-            html.AppendLine("<html>")
-            html.AppendLine("<head>")
-            html.AppendLine("    <meta charset=""UTF-8"">")
-            html.AppendLine("    <title>განრიგის მონაცემები</title>")
-            html.AppendLine("    <style>")
-            html.AppendLine("        @media print { body { margin: 0; } .no-print { display: none; } }")
-            html.AppendLine("        body { font-family: Arial, sans-serif; font-size: 12px; }")
-            html.AppendLine("        h1 { text-align: center; font-size: 18px; margin: 10px 0; }")
-            html.AppendLine("        table { width: 100%; border-collapse: collapse; font-size: 10px; }")
-            html.AppendLine("        th, td { padding: 4px 2px; border: 1px solid #333; text-align: left; }")
-            html.AppendLine("        th { background-color: #ddd; font-weight: bold; }")
-            html.AppendLine("        tr:nth-child(even) { background-color: #f9f9f9; }")
-            html.AppendLine("        .info { text-align: center; margin: 10px 0; font-size: 11px; }")
-            html.AppendLine("    </style>")
-            html.AppendLine("</head>")
-            html.AppendLine("<body>")
-
-            html.AppendLine("    <h1>განრიგის მონაცემები</h1>")
-            html.AppendLine($"    <div class=""info"">თარიღი: {DateTime.Now:dd.MM.yyyy HH:mm} | ჩანაწერები: {DgvSchedule.Rows.Count}</div>")
-
-            ' ავტომატური ბეჭდვის ღილაკი
-            html.AppendLine("    <div class=""no-print"" style=""text-align: center; margin: 20px;"">")
-            html.AppendLine("        <button onclick=""window.print(); window.close();"" style=""padding: 15px 25px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;"">")
-            html.AppendLine("            🖨️ ბეჭდვა PDF-ად</button>")
-            html.AppendLine("        <p>ღილაკზე დაჭერის შემდეგ აირჩიეთ ""Microsoft Print to PDF""</p>")
-            html.AppendLine("    </div>")
-
-            html.AppendLine("    <table>")
-            html.AppendLine("        <thead><tr>")
-
-            ' სათაურები
-            For Each column As DataGridViewColumn In DgvSchedule.Columns
-                If column.Visible AndAlso column.Name <> "Edit" Then
-                    html.AppendLine($"            <th>{EscapeHtml(column.HeaderText)}</th>")
-                End If
-            Next
-
-            html.AppendLine("        </tr></thead>")
-            html.AppendLine("        <tbody>")
-
-            ' მონაცემები
-            For rowIndex As Integer = 0 To DgvSchedule.Rows.Count - 1
-                html.AppendLine("            <tr>")
-                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
-
-                For Each column As DataGridViewColumn In DgvSchedule.Columns
-                    If column.Visible AndAlso column.Name <> "Edit" Then
-                        Dim cellValue As String = ""
-                        Try
-                            If row.Cells(column.Name).Value IsNot Nothing Then
-                                cellValue = row.Cells(column.Name).Value.ToString()
-                            End If
-                        Catch
-                            cellValue = ""
-                        End Try
-
-                        html.AppendLine($"                <td>{EscapeHtml(cellValue)}</td>")
-                    End If
-                Next
-
-                html.AppendLine("            </tr>")
-            Next
-
-            html.AppendLine("        </tbody>")
-            html.AppendLine("    </table>")
-            html.AppendLine($"    <div class=""info"">შექმნილია: {DateTime.Now:dd.MM.yyyy HH:mm} | Scheduler v8.8a</div>")
-            html.AppendLine("</body>")
-            html.AppendLine("</html>")
-
-            ' ფაილის ჩაწერა
-            System.IO.File.WriteAllText(filePath, html.ToString(), System.Text.Encoding.UTF8)
-
-            Debug.WriteLine("UC_Schedule: HTML ფაილი ბეჭდვისთვის შეიქმნა")
-            MessageBox.Show($"შეიქმნა ფაილი ბეჭდვისთვის:{Environment.NewLine}{filePath}" & Environment.NewLine & Environment.NewLine &
-                           "ფაილი იხსნება ბრაუზერში. დააჭირეთ 'ბეჭდვა PDF-ად' ღილაკს და აირჩიეთ 'Microsoft Print to PDF'",
-                           "ინფორმაცია", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-            ' ფაილის გახსნა
-            System.Diagnostics.Process.Start(filePath)
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreateHTMLForPrinting შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' HTML ტექსტის escape
-    ''' </summary>
-    Private Function EscapeHtml(text As String) As String
-        If String.IsNullOrEmpty(text) Then Return ""
-        Return text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("""", "&quot;")
-    End Function
-
-    ''' <summary>
-    ''' HTML ფაილის ექსპორტი - მარტივი ვერსია
-    ''' </summary>
-    Private Sub ExportToSimpleHTML()
-        Try
-            Debug.WriteLine("UC_Schedule: HTML ექსპორტი")
-
-            Using saveDialog As New SaveFileDialog()
-                saveDialog.Filter = "HTML ფაილები (*.html)|*.html"
-                saveDialog.Title = "HTML ფაილის შენახვა"
-                saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.html"
-
-                If saveDialog.ShowDialog() = DialogResult.OK Then
-                    CreateSimpleHTMLFile(saveDialog.FileName)
-                End If
-            End Using
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: ExportToSimpleHTML შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' CSV ფაილის ექსპორტი - მარტივი ვერსია
-    ''' </summary>
-    Private Sub ExportToSimpleCSV()
-        Try
-            Debug.WriteLine("UC_Schedule: CSV ექსპორტი")
-
-            Using saveDialog As New SaveFileDialog()
-                saveDialog.Filter = "CSV ფაილები (*.csv)|*.csv"
-                saveDialog.Title = "CSV ფაილის შენახვა"
-                saveDialog.FileName = $"განრიგი_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-
-                If saveDialog.ShowDialog() = DialogResult.OK Then
-                    CreateSimpleCSVFile(saveDialog.FileName)
-                End If
-            End Using
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: ExportToSimpleCSV შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' მარტივი HTML ფაილის შექმნა
-    ''' </summary>
-    Private Sub CreateSimpleHTMLFile(filePath As String)
-        Try
-            Debug.WriteLine($"UC_Schedule: HTML ფაილის შექმნა - {filePath}")
-
-            Dim html As New System.Text.StringBuilder()
-
-            ' HTML დოკუმენტის საწყისი
-            html.AppendLine("<!DOCTYPE html>")
-            html.AppendLine("<html lang=""ka"">")
-            html.AppendLine("<head>")
-            html.AppendLine("    <meta charset=""UTF-8"">")
-            html.AppendLine("    <title>განრიგის მონაცემები</title>")
-            html.AppendLine("    <style>")
-            html.AppendLine("        body { font-family: Arial, sans-serif; margin: 20px; }")
-            html.AppendLine("        h1 { text-align: center; color: #333; }")
-            html.AppendLine("        table { width: 100%; border-collapse: collapse; margin-top: 20px; }")
-            html.AppendLine("        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }")
-            html.AppendLine("        th { background-color: #f2f2f2; font-weight: bold; }")
-            html.AppendLine("        tr:nth-child(even) { background-color: #f9f9f9; }")
-            html.AppendLine("        .info { text-align: center; margin: 20px 0; color: #666; }")
-            html.AppendLine("        @media print { .no-print { display: none; } }")
-            html.AppendLine("    </style>")
-            html.AppendLine("</head>")
-            html.AppendLine("<body>")
-
-            ' სათაური
-            html.AppendLine("    <h1>განრიგის მონაცემები</h1>")
-
-            ' ინფორმაცია
-            html.AppendLine("    <div class=""info"">")
-            html.AppendLine($"        <p>თარიღი: {DateTime.Now:dd.MM.yyyy HH:mm} | ჩანაწერები: {DgvSchedule.Rows.Count}</p>")
-            html.AppendLine("    </div>")
-
-            ' ღილაკი ბეჭდვისთვის
-            html.AppendLine("    <div class=""no-print"" style=""text-align: center; margin: 20px 0;"">")
-            html.AppendLine("        <button onclick=""window.print()"" style=""padding: 10px 20px; font-size: 16px;"">🖨️ ბეჭდვა</button>")
-            html.AppendLine("    </div>")
-
-            ' ცხრილი
-            html.AppendLine("    <table>")
-
-            ' სათაურები - მხოლოდ ხილული სვეტები (Edit-ის გარდა)
-            html.AppendLine("        <thead>")
-            html.AppendLine("            <tr>")
-            For Each column As DataGridViewColumn In DgvSchedule.Columns
-                If column.Visible AndAlso column.Name <> "Edit" Then
-                    html.AppendLine($"                <th>{EscapeHtmlText(column.HeaderText)}</th>")
-                End If
-            Next
-            html.AppendLine("            </tr>")
-            html.AppendLine("        </thead>")
-
-            ' მონაცემები
-            html.AppendLine("        <tbody>")
-            For rowIndex As Integer = 0 To DgvSchedule.Rows.Count - 1
-                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
-                html.AppendLine("            <tr>")
-
-                For Each column As DataGridViewColumn In DgvSchedule.Columns
-                    If column.Visible AndAlso column.Name <> "Edit" Then
-                        Dim cellValue As String = ""
-                        Try
-                            If row.Cells(column.Name).Value IsNot Nothing Then
-                                cellValue = row.Cells(column.Name).Value.ToString()
-                            End If
-                        Catch
-                            cellValue = ""
-                        End Try
-
-                        html.AppendLine($"                <td>{EscapeHtmlText(cellValue)}</td>")
-                    End If
-                Next
-
-                html.AppendLine("            </tr>")
-            Next
-            html.AppendLine("        </tbody>")
-            html.AppendLine("    </table>")
-
-            ' ქვედა ინფორმაცია
-            html.AppendLine("    <div class=""info"">")
-            html.AppendLine($"        <p>შექმნილია: {DateTime.Now:dd.MM.yyyy HH:mm} | Scheduler v8.8a</p>")
-            html.AppendLine("    </div>")
-
-            html.AppendLine("</body>")
-            html.AppendLine("</html>")
-
-            ' ფაილის ჩაწერა
-            System.IO.File.WriteAllText(filePath, html.ToString(), System.Text.Encoding.UTF8)
-
-            Debug.WriteLine("UC_Schedule: HTML ფაილი წარმატებით შეიქმნა")
-            MessageBox.Show($"HTML ფაილი წარმატებით შეიქმნა:{Environment.NewLine}{filePath}", "წარმატება",
-                           MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-            ' ფაილის გახსნის შეთავაზება
-            Dim openResult As DialogResult = MessageBox.Show(
-                "გსურთ HTML ფაილის გახსნა ბრაუზერში?",
-                "ფაილის გახსნა",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question)
-
-            If openResult = DialogResult.Yes Then
-                System.Diagnostics.Process.Start(filePath)
-            End If
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreateSimpleHTMLFile შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' მარტივი CSV ფაილის შექმნა
-    ''' </summary>
-    Private Sub CreateSimpleCSVFile(filePath As String)
-        Try
-            Debug.WriteLine($"UC_Schedule: CSV ფაილის შექმნა - {filePath}")
-
-            Dim csv As New System.Text.StringBuilder()
-
-            ' სათაურები - მხოლოდ ხილული სვეტები (Edit-ის გარდა)
-            Dim headers As New List(Of String)
-            For Each column As DataGridViewColumn In DgvSchedule.Columns
-                If column.Visible AndAlso column.Name <> "Edit" Then
-                    headers.Add(EscapeCSVText(column.HeaderText))
-                End If
-            Next
-            csv.AppendLine(String.Join(",", headers))
-
-            ' მონაცემები
-            For rowIndex As Integer = 0 To DgvSchedule.Rows.Count - 1
-                Dim row As DataGridViewRow = DgvSchedule.Rows(rowIndex)
-                Dim rowData As New List(Of String)
-
-                For Each column As DataGridViewColumn In DgvSchedule.Columns
-                    If column.Visible AndAlso column.Name <> "Edit" Then
-                        Dim cellValue As String = ""
-                        Try
-                            If row.Cells(column.Name).Value IsNot Nothing Then
-                                cellValue = row.Cells(column.Name).Value.ToString()
-                            End If
-                        Catch
-                            cellValue = ""
-                        End Try
-
-                        rowData.Add(EscapeCSVText(cellValue))
-                    End If
-                Next
-
-                csv.AppendLine(String.Join(",", rowData))
-            Next
-
-            ' ფაილის ჩაწერა UTF-8 BOM-ით (Excel-ისთვის)
-            Dim utf8WithBom As New System.Text.UTF8Encoding(True)
-            System.IO.File.WriteAllText(filePath, csv.ToString(), utf8WithBom)
-
-            Debug.WriteLine("UC_Schedule: CSV ფაილი წარმატებით შეიქმნა")
-            MessageBox.Show($"CSV ფაილი წარმატებით შეიქმნა:{Environment.NewLine}{filePath}" & Environment.NewLine & Environment.NewLine &
-                           "ფაილი შეგიძლიათ გახსნათ Microsoft Excel-ში", "წარმატება",
-                           MessageBoxButtons.OK, MessageBoxIcon.Information)
-
-            ' ფაილის გახსნის შეთავაზება
-            Dim openResult As DialogResult = MessageBox.Show(
-                "გსურთ CSV ფაილის გახსნა?",
-                "ფაილის გახსნა",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question)
-
-            If openResult = DialogResult.Yes Then
-                System.Diagnostics.Process.Start(filePath)
-            End If
-
-        Catch ex As Exception
-            Debug.WriteLine($"UC_Schedule: CreateSimpleCSVFile შეცდომა: {ex.Message}")
-            Throw
-        End Try
-    End Sub
-
-    ''' <summary>
-    ''' CSV ტექსტის escape
-    ''' </summary>
-    Private Function EscapeCSVText(text As String) As String
-        Try
-            If String.IsNullOrEmpty(text) Then
-                Return ""
-            End If
-
-            ' თუ შეიცავს კომას, ახალ ხაზს ან ციტატებს
-            If text.Contains(",") OrElse text.Contains(vbCrLf) OrElse text.Contains(vbLf) OrElse text.Contains("""") Then
-                ' ციტატების გადვოება
-                text = text.Replace("""", """""")
-                ' მთლიანი ველის ციტატებში ჩასმა
-                text = """" & text & """"
-            End If
-
-            Return text
-        Catch
-            Return text
-        End Try
-    End Function
 
 #End Region
 
